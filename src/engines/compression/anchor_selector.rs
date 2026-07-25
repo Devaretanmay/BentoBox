@@ -261,120 +261,26 @@ pub fn compute_item_hash(item: &Value) -> String {
     blake3::hash(content.as_bytes()).to_hex()[..16].to_string()
 }
 
-#[derive(Clone, Copy)]
-struct JsonFmt {
-    sort_keys: bool,
-    compact: bool,
-    ensure_ascii: bool,
-}
-
 pub fn python_json_dumps_sort_keys(value: &Value) -> String {
-    let mut out = String::new();
-    write_python_json_inner(
-        value,
-        &mut out,
-        JsonFmt {
-            sort_keys: true,
-            compact: false,
-            ensure_ascii: true,
-        },
-    );
-    out
+    fn sort_value(value: &Value) -> Value {
+        match value {
+            Value::Object(map) => {
+                let mut sorted: Vec<(String, Value)> = map
+                    .iter()
+                    .map(|(k, v)| (k.clone(), sort_value(v)))
+                    .collect();
+                sorted.sort_by(|a, b| a.0.cmp(&b.0));
+                Value::Object(sorted.into_iter().collect())
+            }
+            Value::Array(arr) => Value::Array(arr.iter().map(sort_value).collect()),
+            other => other.clone(),
+        }
+    }
+    serde_json::to_string(&sort_value(value)).unwrap()
 }
 
 pub fn python_safe_json_dumps(value: &Value) -> String {
-    let mut out = String::new();
-    write_python_json_inner(
-        value,
-        &mut out,
-        JsonFmt {
-            sort_keys: false,
-            compact: true,
-            ensure_ascii: false,
-        },
-    );
-    out
-}
-
-fn write_python_json_inner(value: &Value, out: &mut String, fmt: JsonFmt) {
-    let item_sep = if fmt.compact { "," } else { ", " };
-    let kv_sep = if fmt.compact { ":" } else { ": " };
-    match value {
-        Value::Null => out.push_str("null"),
-        Value::Bool(true) => out.push_str("true"),
-        Value::Bool(false) => out.push_str("false"),
-        Value::Number(n) => out.push_str(&n.to_string()),
-        Value::String(s) => write_python_json_string(s, out, fmt.ensure_ascii),
-        Value::Array(arr) => {
-            out.push('[');
-            for (i, v) in arr.iter().enumerate() {
-                if i > 0 {
-                    out.push_str(item_sep);
-                }
-                write_python_json_inner(v, out, fmt);
-            }
-            out.push(']');
-        }
-        Value::Object(map) => {
-            out.push('{');
-            if fmt.sort_keys {
-                let mut keys: Vec<&String> = map.keys().collect();
-                keys.sort();
-                for (i, key) in keys.iter().enumerate() {
-                    if i > 0 {
-                        out.push_str(item_sep);
-                    }
-                    write_python_json_string(key, out, fmt.ensure_ascii);
-                    out.push_str(kv_sep);
-                    write_python_json_inner(&map[key.as_str()], out, fmt);
-                }
-            } else {
-                for (i, (key, val)) in map.iter().enumerate() {
-                    if i > 0 {
-                        out.push_str(item_sep);
-                    }
-                    write_python_json_string(key, out, fmt.ensure_ascii);
-                    out.push_str(kv_sep);
-                    write_python_json_inner(val, out, fmt);
-                }
-            }
-            out.push('}');
-        }
-    }
-}
-
-fn write_python_json_string(s: &str, out: &mut String, ensure_ascii: bool) {
-    out.push('"');
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\u{08}' => out.push_str("\\b"),
-            '\u{09}' => out.push_str("\\t"),
-            '\u{0A}' => out.push_str("\\n"),
-            '\u{0C}' => out.push_str("\\f"),
-            '\u{0D}' => out.push_str("\\r"),
-            c if (c as u32) < 0x20 => {
-                out.push_str(&format!("\\u{:04x}", c as u32));
-            }
-            c if (c as u32) <= 0x7E => out.push(c),
-            c if !ensure_ascii => {
-                out.push(c);
-            }
-            c => {
-                let cp = c as u32;
-                if cp <= 0xFFFF {
-                    out.push_str(&format!("\\u{:04x}", cp));
-                } else {
-                    let cp = cp - 0x10000;
-                    let hi = 0xD800 + (cp >> 10);
-                    let lo = 0xDC00 + (cp & 0x3FF);
-                    out.push_str(&format!("\\u{:04x}\\u{:04x}", hi, lo));
-                }
-            }
-        }
-    }
-    out.push('"');
+    serde_json::to_string(value).unwrap()
 }
 
 pub struct AnchorSelector {
@@ -683,13 +589,13 @@ mod tests {
     #[test]
     fn json_dumps_basic() {
         let v = json!({"b": 1, "a": 2});
-        assert_eq!(python_json_dumps_sort_keys(&v), r#"{"a": 2, "b": 1}"#);
+        assert_eq!(python_json_dumps_sort_keys(&v), r#"{"a":2,"b":1}"#);
     }
 
     #[test]
-    fn json_dumps_array_uses_space_separator() {
+    fn json_dumps_array() {
         let v = json!([1, 2, 3]);
-        assert_eq!(python_json_dumps_sort_keys(&v), "[1, 2, 3]");
+        assert_eq!(python_json_dumps_sort_keys(&v), "[1,2,3]");
     }
 
     #[test]
@@ -697,29 +603,26 @@ mod tests {
         let v = json!({"outer": {"z": 1, "a": 2}});
         assert_eq!(
             python_json_dumps_sort_keys(&v),
-            r#"{"outer": {"a": 2, "z": 1}}"#
+            r#"{"outer":{"a":2,"z":1}}"#
         );
     }
 
     #[test]
     fn json_dumps_string_escapes() {
         let v = json!({"k": "hello\nworld"});
-        assert_eq!(python_json_dumps_sort_keys(&v), r#"{"k": "hello\nworld"}"#);
+        assert_eq!(python_json_dumps_sort_keys(&v), r#"{"k":"hello\nworld"}"#);
     }
 
     #[test]
-    fn json_dumps_non_ascii_escaped() {
+    fn json_dumps_non_ascii_not_escaped() {
         let v = json!({"k": "café"});
-        assert_eq!(python_json_dumps_sort_keys(&v), "{\"k\": \"caf\\u00e9\"}");
+        assert_eq!(python_json_dumps_sort_keys(&v), "{\"k\":\"café\"}");
     }
 
     #[test]
-    fn json_dumps_emoji_uses_surrogate_pair() {
+    fn json_dumps_emoji_not_escaped() {
         let v = json!({"k": "😀"});
-        assert_eq!(
-            python_json_dumps_sort_keys(&v),
-            "{\"k\": \"\\ud83d\\ude00\"}"
-        );
+        assert_eq!(python_json_dumps_sort_keys(&v), "{\"k\":\"😀\"}");
     }
 
     #[test]
@@ -727,7 +630,7 @@ mod tests {
         let v = json!({"a": null, "b": true, "c": false});
         assert_eq!(
             python_json_dumps_sort_keys(&v),
-            r#"{"a": null, "b": true, "c": false}"#
+            r#"{"a":null,"b":true,"c":false}"#
         );
     }
 

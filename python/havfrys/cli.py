@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from havfrys import havfrys
 from havfrys.server import run_server
 from havfrys.installer import run_init_wizard, run_doctor
 
@@ -28,21 +27,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """Execute a command via HAVFRYS runtime."""
-    from havfrys.ui import symbol_bullet, symbol_ok, symbol_err, BOLD, GREEN, RED, CYAN, DIM, RESET
-    cmd = " ".join(args.command)
-    res = havfrys(cmd, workdir=args.workdir)
-    out = res.output or res.error or ""
-    if out:
-        print(out.strip())
-    
-    icon = symbol_ok() if res.status in ("success", "cached") else symbol_err()
-    mode_text = f"Cached Hit" if res.cached else f"{res.mode.title()} Path"
-    print(f"\n{icon} {BOLD}HAVFRYS Task:{RESET} \"{cmd}\"")
-    print(f"  {DIM}├─ Status: {res.status.upper()}{RESET}")
-    print(f"  {DIM}├─ Mode: {mode_text}{RESET}")
-    print(f"  {DIM}└─ Latency: {res.execution_time_s:.2f}s ({res.retries + 1} attempt(s)){RESET}\n")
-    return 0 if res.status in ("success", "cached") else 1
+    """Execute a command via HAVFRYS runtime (alias for exe)."""
+    return cmd_exe(args)
 
 
 def cmd_maintain(args: argparse.Namespace) -> int:

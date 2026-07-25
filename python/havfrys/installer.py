@@ -225,111 +225,155 @@ def _update_mcp_json_file(file_path: Path, server_name: str) -> tuple[bool, str]
         return False, str(e)
 
 
-HAVFRYS_HAV_MD = """# HAVFRYS DECISION LAYER (hav.md)
+HAVFRYS_HAV_MD = """# HAVFRYS
 
-## What is Havfrys?
+> Read this file before starting any engineering task.
 
-HAVFRYS is an AI-native engineering execution and software maintenance runtime by HAVFRYS Labs.
-It provides two core primitives:
-1. `exe`: Solves engineering problems safely in isolated environments with micro-branching & validation.
-2. `maintain`: Software maintenance intelligence layer that monitors repository health, dependencies, and framework evolution over time (`.havfrys/maintenance_graph.json`).
+## Purpose
+
+HAVFRYS is an engineering execution and software maintenance runtime.
+
+It provides two capabilities:
+
+- **exe** — Solves engineering problems safely.
+- **maintain** — Keeps software healthy over time.
 
 ---
 
-## Product Laws
+# Decision
+
+Before starting work, ask yourself:
+
+Can I confidently solve this using my native tools?
+
+- Yes → Use native tools.
+- No → Continue.
+
+Is this an engineering or maintenance problem?
+
+- Engineering → Use `exe`.
+- Maintenance → Use `maintain`.
+
+Do **not** use HAVFRYS for:
+
+- Documentation edits
+- Typos
+- Small refactors
+- Single-file changes
+- Simple shell commands
+
+---
+
+# exe
+
+Use for:
+
+- Framework migrations
+- Repository modernization
+- Multi-file features
+- Large refactors
+- Failing test suites
+- Engineering uncertainty
+
+Workflow:
+
+1. Understand the engineering goal.
+2. Create an isolated execution environment.
+3. Execute linearly when appropriate.
+4. Spawn alternative strategies when uncertainty exists.
+5. Validate every candidate.
+6. Apply only the validated winner.
+7. Return an engineering summary.
+
+Never modify the real repository before validation.
+
+---
+
+# maintain
+
+Use for:
+
+- Repository health
+- Dependency upgrades
+- Framework evolution
+- Compatibility verification
+- Post-execution verification
+
+Workflow:
+
+1. Inspect repository health.
+2. Analyse dependencies.
+3. Analyse framework versions.
+4. Compare against previous maintenance state.
+5. Determine whether maintenance is required.
+6. If engineering work is required, call `exe`.
+7. Verify the final repository.
+8. Update the maintenance graph.
+
+---
+
+# Principles
 
 - Users describe problems, never machinery.
-- Everything is adaptive unless there is a compelling reason not to be.
-- Engineering context determines execution strategy.
-- Configuration is a failure of inference.
-- If a human can infer something reliably, Havfrys should infer it too.
+- Prefer inference over configuration.
+- Adapt to repository context.
+- Hide implementation details.
+- Validate before applying.
+- Never experiment on the user's working tree.
 
 ---
 
-## Decision Tree
+# Examples
 
-                 User Task
-                      │
-                      ▼
-                AI Agent
-                      │
-                      ▼
-            Reads .havfrys/hav.md
-                      │
-                      ▼
-             Should Havfrys be used?
-                    /   \\
-                  No     Yes
-                  │       │
-            Native Tools  │
-                          ▼
-                  Engineering Task?
-                    /           \\
-                  Yes           Maintenance
-                  │                 │
-                  ▼                 ▼
-                 exe            maintain
-                  │                 │
-                  └────────┬────────┘
-                           │
-                  Can call each other
-                           │
-                           ▼
-                    Return Summary
+User:
+\"Upgrade this Django project to Python 3.14.\"
+
+→ Use `exe`.
 
 ---
 
-## When to Use Havfrys
+User:
+\"Check whether this repository needs maintenance.\"
 
-Use `exe` for:
-- Framework migrations & repository modernization
-- Multi-file refactors & feature implementations
-- Failing test suite resolution
-- Resolving engineering uncertainty
-
-Use `maintain` for:
-- Repository health audits
-- Dependency upgrade verification
-- Ecosystem & breaking change analysis
-- Maintaining the repository evolution graph (`.havfrys/maintenance_graph.json`)
-
-Do NOT use Havfrys for:
-- Simple shell commands
-- Small one-line fixes
-- General text / code generation
+→ Use `maintain`.
 
 ---
 
-## Preferred Workflows
+User:
+\"Fix this README typo.\"
 
-1. Always read `.havfrys/hav.md` before making execution decisions.
-2. For engineering problems -> call `exe(task)`.
-3. For software maintenance & repository health -> call `maintain(target)`.
-4. Allow `exe` and `maintain` to coordinate automatically.
+→ Do not use HAVFRYS.
+
+---
+
+User:
+\"I'm unsure which tool to use.\"
+
+→ Use the decision process above.
 """
 
 
 def run_init_wizard(choice: Optional[int] = None, auto_all: bool = False, target_dir: str = ".") -> None:
-    """Initialize HAVFRYS repository decision layer (.havfrys/hav.md)."""
+    """Initialize HAVFRYS repository decision layer (.havfrys/HAVFRYS.md)."""
     from havfrys.ui import render_banner, symbol_ok, BOLD, CYAN, GREEN, DIM, RESET
     print(render_banner("Workspace Initialization", VERSION))
 
     target_path = Path(target_dir).resolve()
     havfrys_dir = target_path / ".havfrys"
-    hav_file = havfrys_dir / "hav.md"
+    hav_file = havfrys_dir / "HAVFRYS.md"
 
     try:
         havfrys_dir.mkdir(parents=True, exist_ok=True)
         hav_file.write_text(HAVFRYS_HAV_MD, encoding="utf-8")
         print(f"  {symbol_ok()} {BOLD}Initialized{RESET} {hav_file.relative_to(target_path) if hav_file.is_relative_to(target_path) else hav_file}\n")
     except Exception as e:
-        print(f"  {RED}Failed to create .havfrys/hav.md: {e}{RESET}\n")
+        print(f"  {RED}Failed to create .havfrys/HAVFRYS.md: {e}{RESET}\n")
         return
 
     prompt = (
         "You are working in a Havfrys-enabled repository.\n\n"
         "1. Ensure the Havfrys MCP server is configured (\"havfrys serve\").\n"
-        "2. Read and follow the decision rules in .havfrys/hav.md.\n"
+        "2. Read and follow the rules in .havfrys/HAVFRYS.md before starting any engineering task.\n"
         "3. Use `exe` for engineering execution tasks.\n"
         "4. Use `maintain` for maintenance and repository health tasks."
     )

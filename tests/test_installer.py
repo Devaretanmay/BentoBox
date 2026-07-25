@@ -72,8 +72,8 @@ class TestInstallerWizard:
         run_init_wizard(target_dir=str(target))
         out = capsys.readouterr().out
         assert "Initialized" in out
-        assert "hav.md" in out
-        assert (target / ".havfrys" / "hav.md").exists()
-        hav_content = (target / ".havfrys" / "hav.md").read_text()
-        assert "# HAVFRYS DECISION LAYER" in hav_content
-        assert "Product Laws" in hav_content
+        assert "HAVFRYS.md" in out
+        assert (target / ".havfrys" / "HAVFRYS.md").exists()
+        hav_content = (target / ".havfrys" / "HAVFRYS.md").read_text()
+        assert "# HAVFRYS" in hav_content
+        assert "Principles" in hav_content

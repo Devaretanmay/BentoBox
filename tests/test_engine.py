@@ -14,7 +14,7 @@ import os
 import time
 import pytest
 
-from havfrys.core import havfrys, run, inspect
+from havfrys.core import havfrys, exe, inspect
 from havfrys.branch_loop import BranchLoopDetector, AttemptSignature
 from havfrys.uncertainty import detect_uncertainty
 from havfrys.memory import EngineeringMemory, StrategyOutcome
@@ -176,7 +176,7 @@ class TestCoreLinearPath:
                 pass
 
     def test_simple_command_succeeds_linearly(self):
-        result = run("echo hello havfrys engine")
+        result = exe("echo hello havfrys engine")
         assert result.status == "success"
         assert result.mode == "linear"
         assert result.uncertainty_points == 0
@@ -186,37 +186,37 @@ class TestCoreLinearPath:
         assert result.status == "success"
 
     def test_empty_task_fails(self):
-        result = run("")
+        result = exe("")
         assert result.status == "failed"
 
     def test_inspect_returns_report_fields(self):
-        run("echo inspect test")
+        exe("echo inspect test")
         info = inspect()
         assert "mode" in info
         assert "uncertainty_points" in info
         assert info["mode"] == "linear"
 
     def test_failing_command_retries_linearly(self):
-        result = run("bash -c 'exit 1'")
+        result = exe("bash -c 'exit 1'")
         assert result.status == "failed"
         assert result.retries >= 1
 
     def test_readonly_workdir_does_not_crash(self):
-        result = run("echo print hello world", workdir="/")
+        result = exe("echo print hello world", workdir="/")
         assert result.status == "success"
 
     def test_print_hello_world_returns_output(self):
-        result = run("print hello world")
+        result = exe("print hello world")
         assert result.status == "success"
         assert "hello world" in result.output
 
     def test_math_eval_returns_output(self):
-        result = run("12345 * 6789")
+        result = exe("12345 * 6789")
         assert result.status == "success"
         assert "83810205" in result.output
 
     def test_destructive_operation_is_blocked(self):
-        result = run("delete all files in /")
+        result = exe("delete all files in /")
         assert result.status == "failed"
         assert "blocked by HAVFRYS safety guard" in result.output
 

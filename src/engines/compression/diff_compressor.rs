@@ -2,10 +2,9 @@ use std::collections::BTreeMap;
 use std::sync::OnceLock;
 use std::time::Instant;
 
-use blake3;
 use regex::Regex;
 
-use crate::runtime::ccr::InMemoryCcrStore;
+use crate::runtime::ccr::{self, InMemoryCcrStore};
 
 pub const SCORE_CHANGE_DENSITY_WEIGHT: f64 = 0.03;
 pub const SCORE_CHANGE_DENSITY_CAP: f64 = 0.3;
@@ -277,7 +276,7 @@ impl DiffCompressor {
         if self.config.enable_ccr
             && (compressed_line_count as f64) < (original_line_count as f64) * savings_threshold
         {
-            let key = md5_hex_24(content);
+            let key = ccr::compute_key(content.as_bytes());
             compressed_output.push('\n');
             compressed_output.push_str(&format!(
                 "[{} lines compressed to {}. Retrieve full diff: hash={}]",
@@ -811,11 +810,6 @@ fn count_split_lines(s: &str) -> usize {
     s.split('\n').count()
 }
 
-fn md5_hex_24(s: &str) -> String {
-    let h = blake3::hash(s.as_bytes());
-    h.to_hex().as_str()[..24].to_string()
-}
-
 fn emit_span_and_return(stats: DiffCompressorStats) -> DiffCompressorStats {
     tracing::info!(
         target: "diff_compressor",
@@ -864,12 +858,6 @@ mod tests {
         let r = c.compress(&input, "");
         assert_eq!(r.compressed, input);
         assert_eq!(r.files_affected, 0);
-    }
-
-    #[test]
-    fn md5_24_is_blake3_prefix() {
-        assert_eq!(md5_hex_24("hello"), "ea8f163db38682925e4491c5");
-        assert_eq!(md5_hex_24(""), "af1349b9f5f9a1a6a0404dea");
     }
 
     #[test]

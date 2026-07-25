@@ -5,7 +5,7 @@ import os
 import subprocess
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 from havfrys._core import route_and_compress
 from havfrys.uncertainty import detect_uncertainty, UncertaintySignal

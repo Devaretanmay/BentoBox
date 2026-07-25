@@ -6,7 +6,7 @@ Core primitives:
     havfrys.run("Fix failing tests")
 """
 
-from .core import havfrys, exe, run, maintain, resume, inspect, HavfrysResult
+from .core import havfrys, exe, maintain, resume, inspect, HavfrysResult
 
-__all__ = ["havfrys", "exe", "run", "maintain", "resume", "inspect", "HavfrysResult"]
+__all__ = ["havfrys", "exe", "maintain", "resume", "inspect", "HavfrysResult"]
 __version__ = "0.3.3"

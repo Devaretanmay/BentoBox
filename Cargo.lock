@@ -113,7 +113,7 @@ checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 
 [[package]]
 name = "havfrys-core"
-version = "0.3.3"
+version = "0.3.5"
 dependencies = [
  "aho-corasick",
  "blake3",
@@ -123,7 +123,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yml",
- "thiserror",
  "tracing",
 ]
 
@@ -412,26 +411,6 @@ name = "target-lexicon"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
-
-[[package]]
-name = "thiserror"
-version = "2.0.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09a43598840e33d5b0331f38c5e30d13bb11c11210a4b58f0d9b18a5a5eefcd9"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43cbfe0cf76104d42a574802844187e84a305e531ed54455f11fbde0f10541cd"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.2",
-]
 
 [[package]]
 name = "tracing"

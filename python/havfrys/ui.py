@@ -21,10 +21,9 @@ if SUPPORTS_COLOR:
     GREEN = "\033[32m"
     YELLOW = "\033[33m"
     RED = "\033[31m"
-    MAGENTA = "\033[35m"
     RESET = "\033[0m"
 else:
-    BOLD = DIM = CYAN = GREEN = YELLOW = RED = MAGENTA = RESET = ""
+    BOLD = DIM = CYAN = GREEN = YELLOW = RED = RESET = ""
 
 
 def symbol_ok() -> str:
@@ -34,13 +33,6 @@ def symbol_ok() -> str:
 def symbol_err() -> str:
     return f"{RED}✖{RESET}" if SUPPORTS_COLOR else "[ERR]"
 
-
-def symbol_info() -> str:
-    return f"{CYAN}ℹ{RESET}" if SUPPORTS_COLOR else "[INFO]"
-
-
-def symbol_bullet() -> str:
-    return f"{CYAN}◆{RESET}" if SUPPORTS_COLOR else "->"
 
 
 def render_banner(title: str, version: str = "") -> str:

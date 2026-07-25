@@ -1,12 +1,8 @@
 """Docker backend for HAVFRYS execution isolation."""
 
-import inspect
-import json
-import os
 import shutil
 import subprocess
-import sys
-from typing import Any, Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 
 # Internal mount path inside the container
@@ -77,34 +73,4 @@ class DockerBackend:
         )
         return proc.returncode, proc.stdout, proc.stderr
 
-    def execute_callable(self, fn: Callable[[], Any]) -> Tuple[int, str, str]:
-        if not self._container:
-            raise RuntimeError("Container not running")
-        mod = inspect.getmodule(fn)
-        if mod is None:
-            mod = sys.modules.get(getattr(fn, "__module__", ""))
-        if mod is None or mod is inspect.getmodule(inspect):
-            raise RuntimeError("Could not read module source.")
-        try:
-            module_source = inspect.getsource(mod)
-        except OSError:
-            raise RuntimeError("Could not read module source.")
 
-        payload = {"source": module_source, "name": getattr(fn, "__name__", "target")}
-        script = (
-            "import json,sys\n"
-            "p=json.loads(sys.stdin.read())\n"
-            "ns={}\n"
-            "exec(p['source'], ns)\n"
-            "fn=ns.get(p['name'])\n"
-            "fn() if callable(fn) else None\n"
-        )
-        exec_args = ["docker", "exec", "-i"]
-        if self.workdir:
-            exec_args += ["-w", _WORKSPACE]
-        exec_args += [self._container, "python3", "-c", script]
-        proc = subprocess.run(
-            exec_args,
-            input=json.dumps(payload), capture_output=True, text=True, timeout=self.timeout
-        )
-        return proc.returncode, proc.stdout, proc.stderr

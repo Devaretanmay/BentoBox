@@ -5,7 +5,7 @@ import json
 import os
 import shutil
 import subprocess
-import tempfile
+
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -193,11 +193,6 @@ def exe(task: str, *, workdir: str = "") -> HavfrysResult:
     )
 
 
-def run(goal: str, *, workdir: str = "") -> HavfrysResult:
-    """Alias to exe() primitive for engineering execution."""
-    return exe(goal, workdir=workdir)
-
-
 def maintain(target: str = ".", *, workdir: str = "", verification_mode: bool = False) -> HavfrysResult:
     """Run software maintenance intelligence (audit dependencies, verify compatibility, update maintenance graph)."""
     start = time.time()
@@ -383,7 +378,7 @@ def resume() -> HavfrysResult:
     global _LAST_TASK
     if not _LAST_TASK:
         return HavfrysResult(status="failed", error="No previous session to resume")
-    return run(_LAST_TASK)
+    return exe(_LAST_TASK)
 
 
 def inspect() -> dict[str, Any]:
@@ -693,50 +688,4 @@ def _detect_uv_python(workdir: str) -> str:
     return ""
 
 
-class HavfrysCallable:
-    def __init__(self):
-        self._last_report: Optional[ExecutionReport] = None
-        self._last_task: str = ""
-
-    def __call__(self, *args, **kwargs) -> HavfrysResult:
-        return exe(*args, **kwargs)
-
-    @staticmethod
-    def exe(task: str, *, workdir: str = "") -> HavfrysResult:
-        return exe(task, workdir=workdir)
-
-    @staticmethod
-    def run(goal: str, *, workdir: str = "") -> HavfrysResult:
-        return exe(goal, workdir=workdir)
-
-    @staticmethod
-    def maintain(target: str = ".", *, workdir: str = "") -> HavfrysResult:
-        return maintain(target, workdir=workdir)
-
-    def resume(self) -> HavfrysResult:
-        if not self._last_task:
-            return HavfrysResult(status="failed", error="No previous session to resume")
-        return run(self._last_task)
-
-    def inspect(self) -> dict[str, Any]:
-        if not self._last_report:
-            return {"status": "none", "history": []}
-        r = self._last_report
-        return {
-            "status": r.status,
-            "mode": r.mode,
-            "execution_time_s": round(r.execution_time_s, 2),
-            "total_attempts": r.total_attempts,
-            "uncertainty_points": r.uncertainty_points,
-            "uncertainty_resolved": r.uncertainty_resolved,
-            "branches_spawned": r.branches_spawned,
-            "branches_killed": r.branches_killed,
-            "token_reduction_pct": r.token_reduction_pct,
-            "winning_fix": r.winning_fix,
-            "branch_summaries": r.branch_summaries,
-            "output": r.output[:500] if r.output else "",
-            "error": r.error,
-        }
-
-
-havfrys = HavfrysCallable()
+havfrys = exe

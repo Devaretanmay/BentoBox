@@ -1,17 +1,11 @@
 #[derive(Debug, Clone)]
 pub struct SmartCrusherConfig {
-    pub enabled: bool,
     pub min_items_to_analyze: usize,
     pub min_tokens_to_crush: usize,
     pub variance_threshold: f64,
-    pub uniqueness_threshold: f64,
-    pub similarity_threshold: f64,
     pub max_items_after_crush: usize,
     pub preserve_change_points: bool,
     pub factor_out_constants: bool,
-    pub include_summaries: bool,
-    pub use_feedback_hints: bool,
-    pub toin_confidence_threshold: f64,
     pub dedup_identical_items: bool,
     pub first_fraction: f64,
     pub last_fraction: f64,
@@ -30,18 +24,12 @@ pub struct SmartCrusherConfig {
 impl Default for SmartCrusherConfig {
     fn default() -> Self {
         SmartCrusherConfig {
-            enabled: true,
             min_items_to_analyze: 5,
             min_tokens_to_crush: 200,
             variance_threshold: 2.0,
-            uniqueness_threshold: 0.1,
-            similarity_threshold: 0.8,
             max_items_after_crush: 15,
             preserve_change_points: true,
             factor_out_constants: false,
-            include_summaries: false,
-            use_feedback_hints: true,
-            toin_confidence_threshold: 0.5,
             dedup_identical_items: true,
             first_fraction: 0.3,
             last_fraction: 0.15,
@@ -66,18 +54,12 @@ mod tests {
     #[test]
     fn defaults_match_python() {
         let c = SmartCrusherConfig::default();
-        assert!(c.enabled);
         assert_eq!(c.min_items_to_analyze, 5);
         assert_eq!(c.min_tokens_to_crush, 200);
         assert_eq!(c.variance_threshold, 2.0);
-        assert_eq!(c.uniqueness_threshold, 0.1);
-        assert_eq!(c.similarity_threshold, 0.8);
         assert_eq!(c.max_items_after_crush, 15);
         assert!(c.preserve_change_points);
         assert!(!c.factor_out_constants);
-        assert!(!c.include_summaries);
-        assert!(c.use_feedback_hints);
-        assert_eq!(c.toin_confidence_threshold, 0.5);
         assert!(c.dedup_identical_items);
         assert_eq!(c.first_fraction, 0.3);
         assert_eq!(c.last_fraction, 0.15);

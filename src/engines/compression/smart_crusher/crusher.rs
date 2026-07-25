@@ -17,7 +17,7 @@ use super::types::{CompressionPlan, CompressionStrategy, CrushResult};
 use crate::engines::compression::adaptive_sizer::compute_optimal_k;
 use crate::engines::compression::anchor_selector::AnchorConfig;
 use crate::engines::compression::anchor_selector::AnchorSelector;
-use crate::engines::compression::bm25::{HybridScorer, RelevanceScorer};
+use crate::engines::compression::bm25::{BM25Scorer, RelevanceScorer};
 use crate::runtime::ccr::InMemoryCcrStore;
 
 pub struct CrushArrayResult {
@@ -54,7 +54,7 @@ impl SmartCrusher {
             ..CompactConfig::default()
         };
         let anchor_selector = AnchorSelector::new(AnchorConfig::default());
-        let scorer = Box::<HybridScorer>::default();
+        let scorer = Box::<BM25Scorer>::default();
         let analyzer = SmartAnalyzer::new(config.clone());
         let compaction = Some(CompactionStage::csv_schema(compact_cfg));
         let ccr_store: Option<Arc<InMemoryCcrStore>> = Some(Arc::new(InMemoryCcrStore::new()));
@@ -70,7 +70,7 @@ impl SmartCrusher {
 
     pub fn without_compaction(config: SmartCrusherConfig) -> Self {
         let anchor_selector = AnchorSelector::new(AnchorConfig::default());
-        let scorer = Box::<HybridScorer>::default();
+        let scorer = Box::<BM25Scorer>::default();
         let analyzer = SmartAnalyzer::new(config.clone());
         let ccr_store: Option<Arc<InMemoryCcrStore>> = Some(Arc::new(InMemoryCcrStore::new()));
         SmartCrusher {

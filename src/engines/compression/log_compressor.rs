@@ -6,7 +6,7 @@ use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
 use regex::Regex;
 
 use crate::engines::compression::adaptive_sizer::compute_optimal_k;
-use crate::runtime::ccr::InMemoryCcrStore;
+use crate::runtime::ccr::{self, InMemoryCcrStore};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LogFormat {
@@ -541,7 +541,7 @@ impl LogCompressor {
             if ratio >= self.config.min_compression_ratio_for_ccr {
                 stats.ccr_skip_reason = Some("compression ratio too high");
             } else if let Some(store) = store {
-                let key = md5_hex_24(content);
+                let key = ccr::compute_key(content.as_bytes());
                 store.put(&key, content);
                 let marker = format!(
                     "\n[{} lines compressed to {}. Retrieve more: hash={}]",
@@ -874,10 +874,6 @@ fn hex_regex() -> &'static Regex {
 fn path_regex() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| Regex::new(r"/[\w/]+/").expect("static regex must compile"))
-}
-
-fn md5_hex_24(s: &str) -> String {
-    blake3::hash(s.as_bytes()).to_hex()[..24].to_string()
 }
 
 #[cfg(test)]

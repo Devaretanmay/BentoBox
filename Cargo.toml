@@ -1,6 +1,6 @@
 [package]
 name = "havfrys-core"
-version = "0.3.3"
+version = "0.3.5"
 edition = "2021"
 license = "BUSL-1.1"
 description = "HAVFRYS — Agent execution optimization and log compression engine by HAVFRYS Labs (Rust core)"
@@ -20,7 +20,7 @@ serde = { version = "1.0.228", features = ["derive", "alloc"] }
 serde_json = { version = "1.0.150", default-features = false, features = ["alloc"] }
 serde_yml = "0.0.13"
 regex = "1"
-thiserror = "2.0"
+
 tracing = "0.1"
 flate2 = "1"
 aho-corasick = "1"

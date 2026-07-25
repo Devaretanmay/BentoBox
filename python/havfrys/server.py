@@ -71,7 +71,7 @@ def create_server() -> Any:
             JSON with execution status, outcome summary, token reduction %, and next steps.
         """
         result = _havfrys(
-            goal=task,
+            task=task,
             workdir=workdir,
         )
 

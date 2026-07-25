@@ -1,25 +1,5 @@
 use std::collections::HashMap;
 
-/// A relevance score for a piece of content.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RelevanceScore {
-    pub score: f64,
-}
-
-impl RelevanceScore {
-    pub fn new(score: f64) -> Self {
-        Self {
-            score: score.clamp(0.0, 1.0),
-        }
-    }
-}
-
-impl From<f64> for RelevanceScore {
-    fn from(score: f64) -> Self {
-        Self::new(score)
-    }
-}
-
 /// Trait for scoring the relevance of content items.
 pub trait RelevanceScorer {
     /// Score a batch of items against an optional context query.
@@ -127,16 +107,4 @@ impl RelevanceScorer for BM25Scorer {
     }
 }
 
-/// A hybrid scorer that combines BM25 scores.
-/// This bridges from the old `HybridScorer` type that was previously
-/// in the `relevance` module before it was inlined.
-#[derive(Debug, Clone, Default)]
-pub struct HybridScorer {
-    bm25: BM25Scorer,
-}
 
-impl RelevanceScorer for HybridScorer {
-    fn score_batch(&self, items: &[&str], context: Option<&str>) -> Vec<f64> {
-        self.bm25.score_batch(items, context)
-    }
-}
