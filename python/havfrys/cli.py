@@ -26,11 +26,6 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_run(args: argparse.Namespace) -> int:
-    """Execute a command via HAVFRYS runtime (alias for exe)."""
-    return cmd_exe(args)
-
-
 def cmd_maintain(args: argparse.Namespace) -> int:
     """Run automated maintenance across target repository."""
     from havfrys import maintain
@@ -102,12 +97,6 @@ def build_parser() -> argparse.ArgumentParser:
     serve_p.add_argument("--host", default="0.0.0.0", help="Host for SSE")
     serve_p.add_argument("--port", type=int, default=8080, help="Port for SSE")
     serve_p.set_defaults(func=cmd_serve)
-
-    # havfrys run <command> (alias for exe)
-    run_p = sub.add_parser("run", help="Alias for havfrys exe")
-    run_p.add_argument("command", nargs="+", help="Command or task to execute")
-    run_p.add_argument("--workdir", default="", help="Working directory override")
-    run_p.set_defaults(func=cmd_run)
 
     return parser
 

@@ -1,11 +1,4 @@
-"""HAVFRYS MCP Server — one single tool for engineering execution by HAVFRYS Labs.
-
-Input:
-    { "task": "...", "constraints": [] }
-
-Output:
-    { "status": "...", "summary": "...", "output": "...", "next_steps": "..." }
-"""
+"""HAVFRYS MCP Server — exposes exe and maintain over MCP."""
 
 from __future__ import annotations
 
@@ -14,8 +7,6 @@ import json
 import sys
 from typing import Any
 
-from havfrys.core import havfrys as _havfrys
-
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
@@ -23,7 +14,7 @@ except ImportError:
 
 
 def create_server() -> Any:
-    """Create and return the HAVFRYS FastMCP server instance with ONE single tool."""
+    """Create and return the HAVFRYS FastMCP server instance."""
     if FastMCP is None:
         print("MCP SDK required: pip install mcp", file=sys.stderr)
         sys.exit(1)
@@ -54,62 +45,6 @@ def create_server() -> Any:
             "error": result.error,
             "token_reduction_pct": result.token_reduction_pct,
         }
-        return json.dumps(response, indent=2)
-
-    @mcp.tool()
-    def run(
-        task: str,
-        workdir: str = "",
-    ) -> str:
-        """Execute an engineering problem. HAVFRYS decides all execution machinery internally.
-
-        Args:
-            task: Engineering task or problem description in plain English or CLI command.
-            workdir: Optional working directory override.
-
-        Returns:
-            JSON with execution status, outcome summary, token reduction %, and next steps.
-        """
-        result = _havfrys(
-            task=task,
-            workdir=workdir,
-        )
-
-        status_text = "completed successfully" if result.status in ("success", "cached") else "failed"
-
-        if result.mode == "branching":
-            summary = (
-                f"Task {status_text} in {result.execution_time_s:.2f}s. "
-                f"Uncertainty points: {result.uncertainty_points}, "
-                f"resolved: {result.uncertainty_resolved}. "
-                f"Token reduction: {result.token_reduction_pct:.0f}%."
-            )
-        else:
-            summary = f"Task {status_text} in {result.execution_time_s:.2f}s across {result.retries + 1} attempt(s)."
-
-        next_steps = "Proceed to next task." if result.status in ("success", "cached") else "Inspect failure log and attempt code fix."
-
-        response: dict[str, Any] = {
-            "status": result.status,
-            "summary": summary,
-            "output": result.output,
-            "error": result.error,
-            "next_steps": next_steps,
-            "retries": result.retries,
-            "cached": result.cached,
-            "mode": result.mode,
-            "token_reduction_pct": result.token_reduction_pct,
-        }
-
-        if result.uncertainty_points > 0:
-            response["uncertainty_points"] = result.uncertainty_points
-            response["uncertainty_resolved"] = result.uncertainty_resolved
-            response["branches_spawned"] = result.branches_spawned
-            response["branches_killed"] = result.branches_killed
-            response["token_reduction_pct"] = result.token_reduction_pct
-            if result.winning_fix:
-                response["winning_fix"] = result.winning_fix
-
         return json.dumps(response, indent=2)
 
     @mcp.tool()
