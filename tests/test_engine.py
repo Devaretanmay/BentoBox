@@ -219,3 +219,49 @@ class TestCoreLinearPath:
         result = run("delete all files in /")
         assert result.status == "failed"
         assert "blocked by HAVFRYS safety guard" in result.output
+
+    def test_maintain_primitive(self):
+        from havfrys import maintain
+        result = maintain(".")
+        assert result.status in ("success", "cached")
+
+
+class TestBranchPath:
+
+    def test_uncertainty_triggers_micro_branching(self, tmp_path):
+        from havfrys.orchestrator import Orchestrator
+        from havfrys.micro_branch import BranchBudget
+        from pathlib import Path
+        import subprocess
+
+        proj_dir = tmp_path / "fail_repo"
+        proj_dir.mkdir()
+        (proj_dir / ".git").mkdir()
+
+        subprocess.run(["git", "init"], cwd=str(proj_dir), capture_output=True)
+        (proj_dir / "test.py").write_text("assert 1 == 1\n")
+
+        subprocess.run(["git", "add", "-A"], cwd=str(proj_dir), capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"],
+            cwd=str(proj_dir),
+            capture_output=True,
+            env={**__import__("os").environ, "GIT_AUTHOR_NAME": "test",
+                 "GIT_AUTHOR_EMAIL": "test@test.com",
+                 "GIT_COMMITTER_NAME": "test",
+                 "GIT_COMMITTER_EMAIL": "test@test.com"},
+        )
+
+        budget = BranchBudget(max_attempts=2, max_tokens=500, max_seconds=30)
+        orch = Orchestrator(
+            task="run failing test",
+            workdir=str(proj_dir),
+            max_linear_retries=2,
+            branch_budget=budget,
+            timeout=60,
+        )
+
+        report = orch.execute("python3 -c 'import sys; sys.exit(1)'")
+
+        assert report.total_attempts >= 1
+        assert report.mode in ("linear", "branching")

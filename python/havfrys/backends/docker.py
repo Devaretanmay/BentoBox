@@ -32,14 +32,19 @@ class DockerBackend:
     def start(self) -> str:
         if not shutil.which("docker"):
             raise RuntimeError("Docker is required for HAVFRYS but was not found.")
+        pull = subprocess.run(
+            ["docker", "pull", self.image],
+            capture_output=True, text=True, timeout=120,
+        )
+        if pull.returncode != 0:
+            raise RuntimeError(f"Failed to pull image {self.image}: {pull.stderr.strip()}")
         args = ["docker", "run", "-d", "--rm", "-e", "HAVFRYS_SESSION=1"]
-        # Mount host working directory into the container
         if self.workdir:
             args += ["-v", f"{self.workdir}:{_WORKSPACE}"]
             args += ["-w", _WORKSPACE]
         args += self.resource_args + self.network_args
         args += [self.image, "sleep", "infinity"]
-        proc = subprocess.run(args, capture_output=True, text=True, check=True)
+        proc = subprocess.run(args, capture_output=True, text=True, check=True, timeout=120)
         self._container = proc.stdout.strip()
         return self._container
 

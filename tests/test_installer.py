@@ -66,20 +66,14 @@ class TestInstallerWizard:
         data = json.loads(Path(path).read_text())
         assert "havfrys" in data["mcpServers"]
 
-    def test_run_init_wizard_select_claude(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        run_init_wizard(choice=1)
+    def test_run_init_wizard_creates_hav_md(self, tmp_path, capsys):
+        target = tmp_path / "my_project"
+        target.mkdir()
+        run_init_wizard(target_dir=str(target))
         out = capsys.readouterr().out
-        assert "Claude Code" in out
-        assert "Configured at" in out
-
-    def test_run_init_wizard_custom_json(self, capsys):
-        run_init_wizard(choice=10)
-        out = capsys.readouterr().out
-        assert "mcpServers" in out
-        assert "havfrys" in out
-
-    def test_run_init_wizard_skip(self, capsys):
-        run_init_wizard(choice=11)
-        out = capsys.readouterr().out
-        assert "Skipped MCP client configuration." in out
+        assert "Initialized" in out
+        assert "hav.md" in out
+        assert (target / ".havfrys" / "hav.md").exists()
+        hav_content = (target / ".havfrys" / "hav.md").read_text()
+        assert "# HAVFRYS DECISION LAYER" in hav_content
+        assert "Product Laws" in hav_content

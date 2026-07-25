@@ -1,33 +1,4 @@
-"""Orchestrator — the execution loop.
-
-Linear-first execution with micro-branching at uncertainty points.
-
-Algorithm:
-    while not done:
-        result = execute_linearly()
-        if success:
-            continue
-        if is_uncertainty_point(result):
-            compress context           # Law #1
-            branches = spawn(result)   # Invariant #2
-            execute_with_budgets()     # Invariant #3
-            kill_losers()              # Invariant #6
-            winner = select()
-            merge(winner)              # Invariant #7
-            continue
-        else:
-            retry_linearly()
-
-The 7 Invariants:
-    1. Linear execution is the default.
-    2. Branch only at uncertainty points.
-    3. Branches are tiny and short-lived.
-    4. Compress before reasoning.
-    5. Detect internal loops.
-    6. Kill branches aggressively.
-    7. Merge immediately after a winner is selected.
-"""
-
+"""Orchestrator — the execution loop."""
 from __future__ import annotations
 
 import os
@@ -65,13 +36,6 @@ class ExecutionReport:
 
 
 class Orchestrator:
-    """Execution orchestrator.
-
-    Drives linear execution step by step. When a step fails and the
-    uncertainty detector flags it, spawns micro-branches to explore
-    fixes in parallel. Kills losers, merges the winner, resumes linear.
-    """
-
     def __init__(
         self,
         task: str,
@@ -126,7 +90,7 @@ class Orchestrator:
 
             if exit_code != 0:
                 from havfrys.validator import extract_semantic_failures
-                failures_header = extract_semantic_failures(stdout or "" + "\n" + stderr or "")
+                failures_header = extract_semantic_failures((stdout or "") + "\n" + (stderr or ""))
                 if failures_header:
                     compressed_err = failures_header + compressed_err
 
@@ -189,7 +153,11 @@ class Orchestrator:
 
             # --- STEP 6: Execute branches (sequential for now) ---
             for branch in branches:
-                branch.execute()
+                try:
+                    branch.execute()
+                except Exception as exc:
+                    branch.result.status = "killed"
+                    branch.result.kill_reason = str(exc)
 
                 # Record summary for inspect()
                 self._report.branch_summaries.append(compressed_summary(branch))
@@ -197,7 +165,6 @@ class Orchestrator:
                 if branch.result.status == "killed":
                     self._report.branches_killed += 1
 
-                # Record in memory
                 if self.memory:
                     self.memory.record(StrategyOutcome(
                         strategy=branch.fix_label,
@@ -230,8 +197,8 @@ class Orchestrator:
                 for branch in branches:
                     branch.cleanup()
 
-                # Resume linear execution — run the original command again
-                # to verify the merge fixed the issue
+                self._previous_errors.clear()
+
                 continue
 
             # All branches failed — report and stop
@@ -249,6 +216,8 @@ class Orchestrator:
             self._report.token_reduction_pct = round(
                 100.0 * (1.0 - self._report.compressed_tokens / self._report.raw_tokens), 1
             )
+        else:
+            self._report.token_reduction_pct = 0.0
 
         return self._report
 
@@ -268,8 +237,7 @@ class Orchestrator:
         def _quality_score(b: MicroBranch) -> tuple[int, int, int]:
             diff_lines = b.result.diff_lines
             attempts = b.result.attempts_used
-            # Penalty for diff = 0 if expecting changes, but favor small targeted diffs
-            return (diff_lines if diff_lines > 0 else 9999, attempts, b.result.tokens_used)
+            return (diff_lines, attempts, b.result.tokens_used)
 
         survivors.sort(key=_quality_score)
         return survivors[0]
@@ -287,6 +255,7 @@ class Orchestrator:
                 capture_output=True,
                 text=True,
                 timeout=30,
+                preexec_fn=os.setsid,
             )
             if diff.returncode != 0:
                 return False
@@ -300,11 +269,11 @@ class Orchestrator:
                 capture_output=True,
                 text=True,
                 timeout=30,
+                preexec_fn=os.setsid,
             )
             if apply.returncode == 0:
                 return True
 
-            # 2nd Stage Fallback: Direct git apply without 3way index
             fallback = subprocess.run(
                 ["git", "apply", "--whitespace=nowarn", "-"],
                 input=diff.stdout,
@@ -312,6 +281,7 @@ class Orchestrator:
                 capture_output=True,
                 text=True,
                 timeout=30,
+                preexec_fn=os.setsid,
             )
             return fallback.returncode == 0
         except Exception:
@@ -356,10 +326,11 @@ class Orchestrator:
             try:
                 backend.start()
                 code, out, err = backend.execute_cli(cmd, cwd=None, env=None)
-                backend.stop()
                 return code, out, err
             except Exception as e:
                 return 1, "", f"Docker execution error: {e}"
+            finally:
+                backend.stop()
 
         try:
             proc = subprocess.run(
@@ -369,6 +340,7 @@ class Orchestrator:
                 capture_output=True,
                 text=True,
                 timeout=min(300, self.timeout),
+                preexec_fn=os.setsid,
             )
             return proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired:

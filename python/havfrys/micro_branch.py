@@ -83,6 +83,17 @@ class MicroBranch:
             stagnation_threshold=min(3, self.budget.max_attempts),
         )
 
+        # Prune stale worktrees from previous runs
+        try:
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self.source_dir,
+                capture_output=True,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
         # Create isolated worktree
         self.workdir = self._create_worktree()
         self._is_git_worktree = False
@@ -118,11 +129,10 @@ class MicroBranch:
             compressed_out = route_and_compress(stdout) if stdout else ""
             compressed_err = route_and_compress(stderr) if stderr else ""
 
-            # Estimate tokens (rough: ~4 chars per token)
             tokens_this_attempt = (len(compressed_out) + len(compressed_err)) // 4
+            tokens_this_attempt = int(tokens_this_attempt * 1.5)
             self.result.tokens_used += tokens_this_attempt
 
-            # Budget check: tokens
             if self.result.tokens_used > self.budget.max_tokens:
                 return self._kill(
                     f"Token budget exceeded: {self.result.tokens_used} > {self.budget.max_tokens}"
@@ -172,7 +182,6 @@ class MicroBranch:
         return self.result
 
     def cleanup(self) -> None:
-        """Remove the worktree."""
         try:
             if self.workdir and os.path.exists(self.workdir):
                 if self._is_git_worktree:
@@ -186,9 +195,27 @@ class MicroBranch:
                     shutil.rmtree(self.workdir, ignore_errors=True)
         except Exception:
             pass
+        finally:
+            try:
+                subprocess.run(
+                    ["git", "worktree", "prune"],
+                    cwd=self.source_dir,
+                    capture_output=True,
+                    timeout=5,
+                )
+            except Exception:
+                pass
+            try:
+                subprocess.run(
+                    ["git", "branch", "-D", f"havfrys/{self.id}"],
+                    cwd=self.source_dir,
+                    capture_output=True,
+                    timeout=5,
+                )
+            except Exception:
+                pass
 
     def _run_command(self, cmd: str) -> tuple[int, str, str]:
-        """Execute a shell command in the branch's worktree."""
         try:
             proc = subprocess.run(
                 cmd,
@@ -196,7 +223,8 @@ class MicroBranch:
                 cwd=self.workdir,
                 capture_output=True,
                 text=True,
-                timeout=min(60, self.budget.max_seconds),
+                timeout=min(60, int(self.budget.max_seconds)),
+                preexec_fn=os.setsid,
             )
             return proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired:

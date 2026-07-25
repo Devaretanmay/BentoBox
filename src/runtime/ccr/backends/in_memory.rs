@@ -31,7 +31,7 @@ impl InMemoryCcrStore {
     }
 
     fn evict_until_under_capacity(&self) {
-        let mut map = self.map.lock().expect("ccr map mutex poisoned");
+        let mut map = self.map.lock().unwrap_or_else(|e| e.into_inner());
         while map.len() >= self.capacity {
             let oldest_key = map
                 .iter()
@@ -58,7 +58,7 @@ impl InMemoryCcrStore {
     }
 
     pub fn put_with_version(&self, hash: &str, payload: &str, schema_version: u8) {
-        let mut map = self.map.lock().expect("ccr map mutex poisoned");
+        let mut map = self.map.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(entry) = map.get_mut(hash) {
             entry.payload = payload.to_string();
             entry.version = schema_version;
@@ -68,7 +68,7 @@ impl InMemoryCcrStore {
         if map.len() >= self.capacity {
             drop(map);
             self.evict_until_under_capacity();
-            map = self.map.lock().expect("ccr map mutex poisoned");
+            map = self.map.lock().unwrap_or_else(|e| e.into_inner());
         }
         let entry = Entry {
             payload: payload.to_string(),
@@ -83,7 +83,7 @@ impl InMemoryCcrStore {
     }
 
     pub fn get_with_version(&self, hash: &str) -> Option<(String, u8)> {
-        let mut map = self.map.lock().expect("ccr map mutex poisoned");
+        let mut map = self.map.lock().unwrap_or_else(|e| e.into_inner());
         match map.get(hash) {
             Some(entry) if entry.inserted.elapsed() <= self.ttl => {
                 Some((entry.payload.clone(), entry.version))
@@ -97,7 +97,7 @@ impl InMemoryCcrStore {
     }
 
     pub fn len(&self) -> usize {
-        self.map.lock().expect("ccr map mutex poisoned").len()
+        self.map.lock().unwrap_or_else(|e| e.into_inner()).len()
     }
 
     pub fn is_empty(&self) -> bool {

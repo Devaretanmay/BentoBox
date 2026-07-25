@@ -11,8 +11,14 @@ pub use engines::loop_detection::history::LoopVerdict;
 pub use engines::loop_detection::state::HavfrysState;
 
 pub fn verify(state: &mut HavfrysState, tool_slice: &[u8], args_slice: &[u8]) -> u8 {
-    let tool_str = std::str::from_utf8(tool_slice).unwrap_or("").to_string();
-    let args_str = std::str::from_utf8(args_slice).unwrap_or("").to_string();
+    let tool_str = match std::str::from_utf8(tool_slice) {
+        Ok(s) => s.to_string(),
+        Err(_) => return state.block_result(),
+    };
+    let args_str = match std::str::from_utf8(args_slice) {
+        Ok(s) => s.to_string(),
+        Err(_) => return state.block_result(),
+    };
 
     let max_repeats = state.get_effective_threshold(&tool_str);
 

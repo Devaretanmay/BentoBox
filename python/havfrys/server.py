@@ -31,6 +31,32 @@ def create_server() -> Any:
     mcp = FastMCP("HAVFRYS")
 
     @mcp.tool()
+    def exe(
+        task: str,
+        workdir: str = "",
+    ) -> str:
+        """Execute an engineering problem safely via HAVFRYS execution layer.
+
+        Args:
+            task: Engineering task or problem description in plain English or CLI command.
+            workdir: Optional working directory override.
+
+        Returns:
+            JSON with execution status, outcome summary, token reduction %, and next steps.
+        """
+        from havfrys.core import exe as _exe
+        result = _exe(task=task, workdir=workdir)
+        status_text = "completed successfully" if result.status in ("success", "cached") else "failed"
+        response: dict[str, Any] = {
+            "status": result.status,
+            "summary": f"Engineering task {status_text} in {result.execution_time_s:.2f}s.",
+            "output": result.output,
+            "error": result.error,
+            "token_reduction_pct": result.token_reduction_pct,
+        }
+        return json.dumps(response, indent=2)
+
+    @mcp.tool()
     def run(
         task: str,
         workdir: str = "",
@@ -84,6 +110,31 @@ def create_server() -> Any:
             if result.winning_fix:
                 response["winning_fix"] = result.winning_fix
 
+        return json.dumps(response, indent=2)
+
+    @mcp.tool()
+    def maintain(
+        target: str = ".",
+        workdir: str = "",
+    ) -> str:
+        """Run automated maintenance across repository dependencies, test suites, and project health.
+
+        Args:
+            target: Target workspace directory to maintain (default ".").
+            workdir: Optional working directory override.
+
+        Returns:
+            JSON with maintenance execution status and outcome summary.
+        """
+        from havfrys.core import maintain as _maintain
+        result = _maintain(target=target, workdir=workdir)
+        response = {
+            "status": result.status,
+            "summary": f"Repository maintenance {result.status} in {result.execution_time_s:.2f}s.",
+            "output": result.output,
+            "error": result.error,
+            "token_reduction_pct": result.token_reduction_pct,
+        }
         return json.dumps(response, indent=2)
 
     return mcp

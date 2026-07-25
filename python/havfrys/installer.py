@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-VERSION = "0.3.0"
+VERSION = "0.3.3"
 
 CLIENT_PROVIDERS = [
     "1. Claude Code / Desktop",
@@ -225,108 +225,119 @@ def _update_mcp_json_file(file_path: Path, server_name: str) -> tuple[bool, str]
         return False, str(e)
 
 
-def run_init_wizard(choice: Optional[int] = None, auto_all: bool = False) -> None:
-    """Run interactive or non-interactive havfrys init wizard with dynamic client auto-detection."""
-    from havfrys.ui import render_banner, render_section, symbol_bullet, BOLD, CYAN, GREEN, RESET
-    print(render_banner("MCP Client Configuration", VERSION))
+HAVFRYS_HAV_MD = """# HAVFRYS DECISION LAYER (hav.md)
 
-    detected = detect_installed_clients()
+## What is Havfrys?
 
-    installers = {
-        "Claude Code": install_claude_code,
-        "Gemini CLI": install_gemini,
-        "OpenCode": install_opencode,
-        "Cursor": install_cursor,
-        "VS Code": install_vscode,
-        "Windsurf": install_windsurf,
-        "Cline / Roo Code": install_cline,
-        "Continue": install_continue,
-        "Zed Editor": install_zed,
-    }
+HAVFRYS is an AI-native engineering execution and software maintenance runtime by HAVFRYS Labs.
+It provides two core primitives:
+1. `exe`: Solves engineering problems safely in isolated environments with micro-branching & validation.
+2. `maintain`: Software maintenance intelligence layer that monitors repository health, dependencies, and framework evolution over time (`.havfrys/maintenance_graph.json`).
 
-    if auto_all:
-        print(f"  {symbol_bullet()} Auto-configuring all {BOLD}{len(detected)}{RESET} detected AI coding client(s):\n")
-        for name, path in detected:
-            if name in installers:
-                ok, res_path = installers[name]()
-                _print_result(name, ok, res_path)
-        print(f"\n  {GREEN}{BOLD}Done!{RESET} All detected MCP client configurations active.\n")
+---
+
+## Product Laws
+
+- Users describe problems, never machinery.
+- Everything is adaptive unless there is a compelling reason not to be.
+- Engineering context determines execution strategy.
+- Configuration is a failure of inference.
+- If a human can infer something reliably, Havfrys should infer it too.
+
+---
+
+## Decision Tree
+
+                 User Task
+                      │
+                      ▼
+                AI Agent
+                      │
+                      ▼
+            Reads .havfrys/hav.md
+                      │
+                      ▼
+             Should Havfrys be used?
+                    /   \\
+                  No     Yes
+                  │       │
+            Native Tools  │
+                          ▼
+                  Engineering Task?
+                    /           \\
+                  Yes           Maintenance
+                  │                 │
+                  ▼                 ▼
+                 exe            maintain
+                  │                 │
+                  └────────┬────────┘
+                           │
+                  Can call each other
+                           │
+                           ▼
+                    Return Summary
+
+---
+
+## When to Use Havfrys
+
+Use `exe` for:
+- Framework migrations & repository modernization
+- Multi-file refactors & feature implementations
+- Failing test suite resolution
+- Resolving engineering uncertainty
+
+Use `maintain` for:
+- Repository health audits
+- Dependency upgrade verification
+- Ecosystem & breaking change analysis
+- Maintaining the repository evolution graph (`.havfrys/maintenance_graph.json`)
+
+Do NOT use Havfrys for:
+- Simple shell commands
+- Small one-line fixes
+- General text / code generation
+
+---
+
+## Preferred Workflows
+
+1. Always read `.havfrys/hav.md` before making execution decisions.
+2. For engineering problems -> call `exe(task)`.
+3. For software maintenance & repository health -> call `maintain(target)`.
+4. Allow `exe` and `maintain` to coordinate automatically.
+"""
+
+
+def run_init_wizard(choice: Optional[int] = None, auto_all: bool = False, target_dir: str = ".") -> None:
+    """Initialize HAVFRYS repository decision layer (.havfrys/hav.md)."""
+    from havfrys.ui import render_banner, symbol_ok, BOLD, CYAN, GREEN, DIM, RESET
+    print(render_banner("Workspace Initialization", VERSION))
+
+    target_path = Path(target_dir).resolve()
+    havfrys_dir = target_path / ".havfrys"
+    hav_file = havfrys_dir / "hav.md"
+
+    try:
+        havfrys_dir.mkdir(parents=True, exist_ok=True)
+        hav_file.write_text(HAVFRYS_HAV_MD, encoding="utf-8")
+        print(f"  {symbol_ok()} {BOLD}Initialized{RESET} {hav_file.relative_to(target_path) if hav_file.is_relative_to(target_path) else hav_file}\n")
+    except Exception as e:
+        print(f"  {RED}Failed to create .havfrys/hav.md: {e}{RESET}\n")
         return
 
-    if detected and choice is None:
-        print(f"Detected {len(detected)} installed AI coding client(s):\n")
-        for i, (client_name, path) in enumerate(detected, 1):
-            print(f"  {i}. {client_name} ({path})")
-        print()
-        try:
-            ans = input("Configure all detected clients automatically? [Y/n/select] ").strip().lower()
-            if ans in ("", "y", "yes", "a", "all"):
-                for client_name, _ in detected:
-                    if client_name in installers:
-                        ok, path = installers[client_name]()
-                        _print_result(client_name, ok, path)
-                return
-            elif ans.isdigit():
-                idx = int(ans) - 1
-                if 0 <= idx < len(detected):
-                    c_name = detected[idx][0]
-                    client_map = {
-                        "Claude Code": 1, "Gemini CLI": 2, "OpenCode": 3,
-                        "Cursor": 4, "VS Code": 5, "Windsurf": 6,
-                        "Cline / Roo Code": 7, "Continue": 8, "Zed Editor": 9
-                    }
-                    choice = client_map.get(c_name)
-        except (KeyboardInterrupt, EOFError):
-            choice = 11
+    prompt = (
+        "You are working in a Havfrys-enabled repository.\n\n"
+        "1. Ensure the Havfrys MCP server is configured (\"havfrys serve\").\n"
+        "2. Read and follow the decision rules in .havfrys/hav.md.\n"
+        "3. Use `exe` for engineering execution tasks.\n"
+        "4. Use `maintain` for maintenance and repository health tasks."
+    )
 
-    if choice is None:
-        print("How would you like to use HAVFRYS?\n")
-        for provider in CLIENT_PROVIDERS:
-            print(f"  {provider}")
-        print()
-        try:
-            user_input = input("Select an option [1-11]: ").strip()
-            choice = int(user_input) if user_input.isdigit() else 11
-        except (KeyboardInterrupt, EOFError):
-            choice = 11
-
-    if choice == 1:
-        ok, path = install_claude_code()
-        _print_result("Claude Code", ok, path)
-    elif choice == 2:
-        ok, path = install_gemini()
-        _print_result("Gemini CLI", ok, path)
-    elif choice == 3:
-        ok, path = install_opencode()
-        _print_result("OpenCode", ok, path)
-    elif choice == 4:
-        ok, path = install_cursor()
-        _print_result("Cursor", ok, path)
-    elif choice == 5:
-        ok, path = install_vscode()
-        _print_result("VS Code", ok, path)
-    elif choice == 6:
-        ok, path = install_windsurf()
-        _print_result("Windsurf", ok, path)
-    elif choice == 7:
-        ok, path = install_cline()
-        _print_result("Cline / Roo Code", ok, path)
-    elif choice == 8:
-        ok, path = install_continue()
-        _print_result("Continue", ok, path)
-    elif choice == 9:
-        ok, path = install_zed()
-        _print_result("Zed Editor", ok, path)
-    elif choice == 10:
-        print("\nCopy and paste this snippet into your MCP client configuration:\n")
-        snippet = {
-            "mcpServers": {
-                "havfrys": get_havfrys_mcp_config()
-            }
-        }
-        print(json.dumps(snippet, indent=2))
-    else:
-        print("\nSkipped MCP client configuration.")
+    print(f"{CYAN}┌─────────────────────────────────────────────────────────────┐{RESET}")
+    print(f"{CYAN}│{RESET}  {BOLD}AI Agent Prompt (Copy & Paste to your AI coding agent){RESET}   {CYAN}│{RESET}")
+    print(f"{CYAN}└─────────────────────────────────────────────────────────────┘{RESET}\n")
+    print(f"{DIM}{prompt}{RESET}\n")
 
 
 def run_doctor() -> None:
