@@ -1,12 +1,4 @@
-"""HAVFRYS Terminal UI & Aesthetics Engine.
-
-Provides high-grade terminal UI components inspired by modern CLI tools
-(Vercel, Modal, Claude Code, Supabase, Railway):
-- ANSI Color Tokens
-- Box Framing & Header Banners
-- Status Badges (✔, ✖, ℹ, ◆, ➜)
-- Key-Value Status Tables
-"""
+"""HAVFRYS Terminal UI — ANSI colors, banners, status symbols."""
 
 import sys
 import os

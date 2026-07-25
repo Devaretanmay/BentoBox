@@ -88,7 +88,7 @@ def test_6_zero_diff_stagnation_early_termination():
     v1 = detector.record(sig1)
     assert not v1.should_kill
 
-    # 2nd attempt: zero diff -> SHOULD KILL IMMEDIATELY (Threshold min(2, 3) = 2)
+    # 2nd attempt: zero diff -> kill immediately
     sig2 = AttemptSignature(index=2, exit_code=1, output_hash="h2", error_hash="e2", diff_lines=0, tokens_spent=50)
     v2 = detector.record(sig2)
     assert v2.should_kill

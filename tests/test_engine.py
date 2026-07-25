@@ -1,13 +1,4 @@
-"""Tests for HAVFRYS — Linear-First Runtime with Micro-Branching.
-
-Tests cover:
-1. Branch Loop Detector (oscillation, stagnation, compression loops)
-2. Uncertainty Detector (retry vs branch decision)
-3. Micro-Branch (budget enforcement, kill semantics)
-4. Orchestrator (linear path, uncertainty branching)
-5. Core integration (havfrys.run, havfrys.inspect)
-6. Engineering Memory (persistence, skip failed)
-"""
+"""Tests for HAVFRYS runtime."""
 
 import json
 import os

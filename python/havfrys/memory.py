@@ -1,10 +1,4 @@
-"""Engineering Memory — session-scoped record of what worked and what failed.
-
-Tracks strategy outcomes within and across sessions so HAVFRYS can:
-- Skip strategies that already failed for similar tasks
-- Prioritize strategies that scored well historically
-- Avoid re-exploring dead branches on havfrys.resume()
-"""
+"""Engineering Memory — session-scoped record of strategy outcomes for resume()."""
 
 from __future__ import annotations
 

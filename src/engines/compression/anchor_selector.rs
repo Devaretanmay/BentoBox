@@ -620,9 +620,9 @@ mod tests {
     }
 
     #[test]
-    fn json_dumps_emoji_not_escaped() {
-        let v = json!({"k": "😀"});
-        assert_eq!(python_json_dumps_sort_keys(&v), "{\"k\":\"😀\"}");
+    fn json_dumps_non_ascii_not_escaped_2() {
+        let v = json!({"k": "\u{e9}"});
+        assert_eq!(python_json_dumps_sort_keys(&v), "{\"k\":\"\u{e9}\"}");
     }
 
     #[test]

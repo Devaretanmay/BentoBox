@@ -1,19 +1,12 @@
-"""Context Resolution Layer — classifies the engineering HAVFRYS Context Resolution Layer.
-
-HAVFRYS is an engineering runtime for engineering problems, not just git repositories.
-The Context Resolution Layer inspects what the user has provided:
-- Empty workspace (greenfield / generation)
-- Single code script / file
-- Full software repository (Git or non-Git)
-- Docker project
-- Documentation / spec document
-"""
+"""Context Resolution Layer — classifies workspace into engineering context types."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
 from enum import Enum
+
+from havfrys.validator import _detect_test_commands
 
 
 class ContextType(str, Enum):
@@ -100,7 +93,6 @@ def scaffold_greenfield_workspace(workdir: str, goal: str) -> None:
     if not os.path.exists(workdir_abs):
         os.makedirs(workdir_abs, exist_ok=True)
 
-    # Check if empty
     existing = [f for f in os.listdir(workdir_abs) if not f.startswith(".")]
     if existing:
         return
