@@ -1,4 +1,4 @@
-"""analyse() primitive — deterministic repo structure scan with fingerprint cache."""
+"""Deterministic repository inspection: directory structure, manifests, build systems, dependency files, test configuration, language detection."""
 
 import hashlib
 import json

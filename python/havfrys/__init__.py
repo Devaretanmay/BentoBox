@@ -1,11 +1,19 @@
-"""HAVFRYS — Maintenance Infrastructure for AI-Built Software by HAVFRYS Labs.
+"""HAVFRYS — Engineering infrastructure for AI coding agents.
 
-Core primitives:
-    havfrys.exe("Fix failing tests")
-    havfrys.maintain()
+HAVFRYS provides two stateful environments:
+  - ExecutionSession: isolated Git worktree for safe engineering work
+  - MaintenanceSession: repository inspection and verification context
+
+The LLM owns reasoning, planning, and orchestration.
+HAVFRYS owns execution, isolation, persistence, observation, and verification execution.
 """
 
-from .core import havfrys, exe, maintain, resume, inspect, HavfrysResult
+from .session import ExecutionSession, MaintenanceSession, get_session
 
-__all__ = ["havfrys", "exe", "maintain", "resume", "inspect", "HavfrysResult"]
-__version__ = "0.3.5"
+__all__ = [
+    "ExecutionSession",
+    "MaintenanceSession",
+    "get_session",
+]
+
+__version__ = "0.4.0"

@@ -1,12 +1,8 @@
-"""Context Resolution Layer — classifies workspace into engineering context types."""
-
-from __future__ import annotations
+"""Environment initializer — classifies workspace into engineering context types."""
 
 import os
 from dataclasses import dataclass
 from enum import Enum
-
-from havfrys.validator import _detect_test_commands
 
 
 class ContextType(str, Enum):
@@ -25,12 +21,33 @@ class EngineeringContext:
     has_build_system: bool
     is_docker: bool
     files_count: int
-    primary_language: str = "unknown"
     summary: str = ""
 
 
+_TEST_MANIFESTS = [
+    ("pyproject.toml", "python -m pytest --tb=short -q"),
+    ("pytest.ini", "python -m pytest --tb=short -q"),
+    ("setup.cfg", "python -m pytest --tb=short -q"),
+    ("Cargo.toml", "cargo test"),
+    ("package.json", "npm test --if-present"),
+    ("go.mod", "go test ./..."),
+]
+
+_BUILD_MANIFESTS = {
+    "Cargo.toml", "pyproject.toml", "package.json",
+    "go.mod", "Makefile", "pom.xml",
+}
+
+
+def _detect_test_commands(workdir: str) -> list[str]:
+    commands = []
+    for manifest, cmd in _TEST_MANIFESTS:
+        if os.path.exists(os.path.join(workdir, manifest)) and cmd not in commands:
+            commands.append(cmd)
+    return commands
+
+
 def resolve_context(workdir: str, goal: str = "") -> EngineeringContext:
-    """Inspect the target directory and goal to resolve the Engineering Context."""
     workdir_abs = os.path.abspath(workdir or os.getcwd())
 
     if not os.path.exists(workdir_abs):
@@ -53,10 +70,7 @@ def resolve_context(workdir: str, goal: str = "") -> EngineeringContext:
         os.path.join(workdir_abs, "docker-compose.yml")
     )
 
-    build_manifests = {"Cargo.toml", "pyproject.toml", "package.json", "go.mod", "Makefile", "pom.xml"}
-    has_build_system = any(os.path.exists(os.path.join(workdir_abs, m)) for m in build_manifests)
-
-    from havfrys.validator import _detect_test_commands
+    has_build_system = any(os.path.exists(os.path.join(workdir_abs, m)) for m in _BUILD_MANIFESTS)
     test_cmds = _detect_test_commands(workdir_abs)
     has_test_suite = len(test_cmds) > 0
 
@@ -88,7 +102,6 @@ def resolve_context(workdir: str, goal: str = "") -> EngineeringContext:
 
 
 def scaffold_greenfield_workspace(workdir: str, goal: str) -> None:
-    """Scaffold baseline workspace file targets for greenfield tasks."""
     workdir_abs = os.path.abspath(workdir or os.getcwd())
     if not os.path.exists(workdir_abs):
         os.makedirs(workdir_abs, exist_ok=True)
@@ -103,7 +116,7 @@ def scaffold_greenfield_workspace(workdir: str, goal: str) -> None:
             f.write("fn main() {\n    println!(\"Hello from HAVFRYS\");\n}\n")
     elif any(w in goal_lower for w in ["go", "golang"]):
         with open(os.path.join(workdir_abs, "main.go"), "w", encoding="utf-8") as f:
-            f.write("package main\nimport \"fmt\"\nfunc main() {\n    fmt.Println(\"Hello from HAVFRYS\")\n}\n")
+            f.write('package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Hello from HAVFRYS")\n}\n')
     elif any(w in goal_lower for w in ["node", "express", "typescript", "ts", "javascript", "js"]):
         with open(os.path.join(workdir_abs, "index.js"), "w", encoding="utf-8") as f:
             f.write("// Scaffolded by HAVFRYS\nconsole.log('Hello from HAVFRYS');\n")

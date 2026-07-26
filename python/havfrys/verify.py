@@ -1,4 +1,4 @@
-"""verify() primitive — run verification suites, return structured results."""
+"""Execute verification suites, return structured results. LLM determines pass/fail."""
 
 import os
 import subprocess

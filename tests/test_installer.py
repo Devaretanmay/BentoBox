@@ -1,70 +1,12 @@
 """Tests for local-first havfrys init wizard and client installer module."""
 
-import json
-import os
 from pathlib import Path
 import pytest
 
-from havfrys.installer import (
-    get_havfrys_mcp_config,
-    install_claude_code,
-    install_cursor,
-    install_vscode,
-    install_opencode,
-    install_gemini,
-    install_windsurf,
-    install_cline,
-    install_continue,
-    install_zed,
-    run_init_wizard,
-)
+from havfrys.installer import run_init_wizard
 
 
 class TestInstallerWizard:
-
-    def test_get_havfrys_mcp_config_structure(self):
-        cfg = get_havfrys_mcp_config()
-        assert "command" in cfg
-        assert cfg["args"] == ["serve"]
-
-    def test_install_claude_code(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        ok, path = install_claude_code()
-        assert ok
-        assert os.path.exists(path)
-
-        data = json.loads(Path(path).read_text())
-        assert "mcpServers" in data
-        assert "havfrys" in data["mcpServers"]
-        assert data["mcpServers"]["havfrys"]["args"] == ["serve"]
-
-    def test_install_cursor(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        ok, path = install_cursor()
-        assert ok
-        data = json.loads(Path(path).read_text())
-        assert "havfrys" in data["mcpServers"]
-
-    def test_install_vscode(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        ok, path = install_vscode()
-        assert ok
-        data = json.loads(Path(path).read_text())
-        assert "havfrys" in data["mcpServers"]
-
-    def test_install_windsurf(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        ok, path = install_windsurf()
-        assert ok
-        data = json.loads(Path(path).read_text())
-        assert "havfrys" in data["mcpServers"]
-
-    def test_install_cline(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        ok, path = install_cline()
-        assert ok
-        data = json.loads(Path(path).read_text())
-        assert "havfrys" in data["mcpServers"]
 
     def test_run_init_wizard_creates_hav_md(self, tmp_path, capsys):
         target = tmp_path / "my_project"
@@ -77,3 +19,14 @@ class TestInstallerWizard:
         hav_content = (target / ".havfrys" / "HAVFRYS.md").read_text()
         assert "# HAVFRYS" in hav_content
         assert "Principles" in hav_content
+
+    def test_ensure_workspace_initialized(self, tmp_path):
+        from havfrys.installer import ensure_workspace_initialized
+
+        target = tmp_path / "auto_init_proj"
+        target.mkdir()
+        hav_file = ensure_workspace_initialized(str(target))
+        assert hav_file.exists()
+        assert (target / ".havfrys" / "HAVFRYS.md").exists()
+        content = hav_file.read_text()
+        assert "# HAVFRYS" in content
