@@ -18,3 +18,4 @@ build/
 # HAVFRYS local state
 .havfrys/
 .havfrys_cache.json
+.havfrys_source
