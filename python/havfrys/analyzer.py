@@ -22,6 +22,8 @@ class AnalyseResult:
     lint_command: str = ""
     deps: list = None
     docker: bool = False
+    is_git_repo: bool = False
+    files_count: int = 0
     workspace_type: str = ""
     subprojects: list = None
     structure: dict = None
@@ -157,9 +159,15 @@ def analyse(path: str = ".", depth: int = 3) -> AnalyseResult:
     if test_framework == "pytest":
         py = "python3"
         for venv_dir in (".venv", "venv", ".env", "env"):
+            # Unix
             candidate = os.path.join(base, venv_dir, "bin", "python")
             if os.path.exists(candidate):
                 py = candidate
+                break
+            # Windows
+            candidate_win = os.path.join(base, venv_dir, "Scripts", "python.exe")
+            if os.path.exists(candidate_win):
+                py = candidate_win
                 break
         test_command = f"{py} -m pytest --tb=short -q"
     elif test_framework == "cargo test":
@@ -210,6 +218,26 @@ def analyse(path: str = ".", depth: int = 3) -> AnalyseResult:
     else:
         workspace_type = "flat"
 
+    # Count tracked files (git) or all non-ignored files
+    files_count = 0
+    is_git = os.path.isdir(os.path.join(base, ".git"))
+    if is_git:
+        try:
+            import subprocess
+            r = subprocess.run(
+                ["git", "ls-files"],
+                cwd=base, capture_output=True, text=True, timeout=10,
+            )
+            if r.returncode == 0:
+                files_count = len([l for l in r.stdout.split("\n") if l.strip()])
+        except Exception:
+            pass
+    if files_count == 0:
+        # fallback: walk counting Python, JS, etc.
+        for root, _dirs, files in os.walk(base):
+            _dirs[:] = [d for d in _dirs if d not in _IGNORE_DIRS]
+            files_count += len(files)
+
     result = AnalyseResult(
         status="success",
         language=found_lang,
@@ -220,6 +248,8 @@ def analyse(path: str = ".", depth: int = 3) -> AnalyseResult:
         lint_command=lint_command,
         deps=deps,
         docker=has_docker,
+        is_git_repo=is_git,
+        files_count=files_count,
         workspace_type=workspace_type,
         subprojects=subprojects if subprojects else None,
         structure=structure,

@@ -29,22 +29,6 @@ pub fn sample_stdev(values: &[f64]) -> Option<f64> {
     sample_variance(values).map(f64::sqrt)
 }
 
-pub fn median(values: &[f64]) -> Option<f64> {
-    if values.is_empty() {
-        return None;
-    }
-    let mut sorted: Vec<f64> = values.to_vec();
-    sorted.sort_by(f64::total_cmp);
-    let n = sorted.len();
-    if n.is_multiple_of(2) {
-        let lo = sorted[n / 2 - 1];
-        let hi = sorted[n / 2];
-        Some((lo + hi) / 2.0)
-    } else {
-        Some(sorted[n / 2])
-    }
-}
-
 pub fn format_g(x: f64) -> String {
     if x.is_nan() {
         return "nan".to_string();
@@ -94,6 +78,22 @@ fn normalize_scientific_exp(s: &str) -> String {
     };
     let sign = if exp_num >= 0 { "+" } else { "-" };
     format!("{}e{}{:02}", mantissa_clean, sign, exp_num.abs())
+}
+
+pub fn median(values: &[f64]) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+    let mut sorted: Vec<f64> = values.to_vec();
+    sorted.sort_by(f64::total_cmp);
+    let n = sorted.len();
+    if n.is_multiple_of(2) {
+        let lo = sorted[n / 2 - 1];
+        let hi = sorted[n / 2];
+        Some((lo + hi) / 2.0)
+    } else {
+        Some(sorted[n / 2])
+    }
 }
 
 #[cfg(test)]

@@ -61,18 +61,6 @@ pub enum DataPattern {
     Generic,
 }
 
-impl DataPattern {
-    pub fn from_string(s: &str) -> DataPattern {
-        match s.to_lowercase().as_str() {
-            "search_results" => DataPattern::SearchResults,
-            "logs" => DataPattern::Logs,
-            "time_series" => DataPattern::TimeSeries,
-            "generic" => DataPattern::Generic,
-            _ => DataPattern::Generic,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AnchorStrategy {
     FrontHeavy,
@@ -277,10 +265,6 @@ pub fn python_json_dumps_sort_keys(value: &Value) -> String {
         }
     }
     serde_json::to_string(&sort_value(value)).unwrap()
-}
-
-pub fn python_safe_json_dumps(value: &Value) -> String {
-    serde_json::to_string(value).unwrap()
 }
 
 pub struct AnchorSelector {
@@ -685,24 +669,6 @@ mod tests {
         }
         .normalize();
         assert_eq!(w, AnchorWeights::default());
-    }
-
-    #[test]
-    fn pattern_from_str_known_values() {
-        assert_eq!(
-            DataPattern::from_string("search_results"),
-            DataPattern::SearchResults
-        );
-        assert_eq!(DataPattern::from_string("LOGS"), DataPattern::Logs);
-        assert_eq!(
-            DataPattern::from_string("time_series"),
-            DataPattern::TimeSeries
-        );
-    }
-
-    #[test]
-    fn pattern_from_str_unknown_falls_to_generic() {
-        assert_eq!(DataPattern::from_string("unknown"), DataPattern::Generic);
     }
 
     #[test]

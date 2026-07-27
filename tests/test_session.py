@@ -28,7 +28,6 @@ class TestExecutionSession:
         assert "pre_change" in snap_msg
 
         # Modify file in worktree
-        (session.worktree_path + "/app.py")
         with open(os.path.join(session.worktree_path, "app.py"), "w") as f:
             f.write("print('modified')\n")
 
@@ -40,7 +39,6 @@ class TestExecutionSession:
         assert "pre_change" in roll_msg
 
         # Apply & Exit
-        (session.worktree_path + "/new_file.txt")
         with open(os.path.join(session.worktree_path, "new_file.txt"), "w") as f:
             f.write("new file content\n")
 
@@ -65,9 +63,14 @@ class TestMaintenanceSession:
 
         analysis = session.analyse()
         assert "Python" in analysis
+        assert '"is_git_repo": true' in analysis or '"is_git_repo": false' in analysis
 
-        facts = session.facts()
-        assert facts["context_type"] is not None
+        # observe + knowledge persistence
+        msg = session.observe("test_key", "test_value")
+        assert "recorded" in msg
+        knowledge = session.knowledge()
+        assert "observations" in knowledge
+        assert knowledge["observations"]["test_key"]["value"] == "test_value"
 
         exit_msg = session.exit()
         assert "closed" in exit_msg

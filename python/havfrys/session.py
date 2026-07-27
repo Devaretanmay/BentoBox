@@ -93,7 +93,14 @@ class ExecutionSession:
             )
 
     def run(self, cmd: str) -> tuple[int, str, str, float]:
-        """Execute command in the isolated worktree."""
+        """Execute command in the isolated worktree.
+
+        Args:
+            cmd: Shell command to execute.
+
+        Returns:
+            (exit_code, stdout, stderr, elapsed_seconds)
+        """
         from havfrys._core import route_and_compress
         start = time.time()
 
@@ -107,8 +114,15 @@ class ExecutionSession:
         )
         elapsed = time.time() - start
 
-        out_compressed = route_and_compress(proc.stdout) if proc.stdout else ""
-        err_compressed = route_and_compress(proc.stderr) if proc.stderr else ""
+        # Compress large outputs automatically (threshold ~5KB).
+        should_compress = (len(proc.stdout or "") > 5120 or len(proc.stderr or "") > 5120)
+
+        if should_compress:
+            out_compressed = route_and_compress(proc.stdout) if proc.stdout else ""
+            err_compressed = route_and_compress(proc.stderr) if proc.stderr else ""
+        else:
+            out_compressed = proc.stdout or ""
+            err_compressed = proc.stderr or ""
 
         self.state.operations.append({
             "type": "run",
@@ -162,16 +176,29 @@ class ExecutionSession:
                 subprocess.run(["git", "update-ref", ref_name, commit_sha], cwd=self.target_dir, capture_output=True)
                 self.state.snapshots[name] = ref_name
                 self.state.operations.append({"type": "snapshot", "name": name, "ref": ref_name, "commit": commit_sha})
+                _append_global_snapshot(self.target_dir, self.session_id, name, ref_name, commit_sha)
                 self.save()
                 return f"Snapshot '{name}' saved to ref {ref_name} ({commit_sha[:7]})"
         return f"Failed to create snapshot '{name}'"
 
     def rollback(self, name: str) -> str:
-        """Restore worktree to a named snapshot."""
-        if name not in self.state.snapshots:
-            return f"Error: Snapshot '{name}' not found. Available: {list(self.state.snapshots.keys())}"
-        
-        ref = self.state.snapshots[name]
+        """Restore worktree to a named snapshot.
+
+        Supports:
+          - Local session snapshots (plain name)
+          - Cross-session snapshots via "session_id/name" syntax
+          - Automatic global index lookup if not found locally
+        """
+        ref = self.state.snapshots.get(name)
+        if not ref:
+            # Fallback: search global snapshot index
+            snapshots = list_snapshots(self.target_dir)
+            for snap in snapshots:
+                if name == snap["name"] or name == f"{snap['session_id']}/{snap['name']}":
+                    ref = snap["ref"]
+                    break
+        if not ref:
+            return f"Error: Snapshot '{name}' not found. Use list_snapshots() to see all available."
         res = subprocess.run(
             ["git", "reset", "--hard", ref],
             cwd=self.worktree_path,
@@ -192,19 +219,31 @@ class ExecutionSession:
         if not diff_text.strip():
             return "No changes in session worktree to apply."
 
-        # Apply diff to main target_dir
-        patch_proc = subprocess.Popen(["git", "apply", "--check"], cwd=self.target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        _, err = patch_proc.communicate(input=diff_text)
+        # Dry-run check first
+        check_res = subprocess.run(
+            ["git", "apply", "--check"],
+            cwd=self.target_dir,
+            input=diff_text,
+            capture_output=True,
+            text=True,
+        )
+        if check_res.returncode != 0:
+            return f"Patch does not apply cleanly:\n{check_res.stderr.strip()}"
 
-        patch_apply = subprocess.Popen(["git", "apply"], cwd=self.target_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        out, err = patch_apply.communicate(input=diff_text)
-
-        if patch_apply.returncode == 0:
+        # Apply patch
+        apply_res = subprocess.run(
+            ["git", "apply"],
+            cwd=self.target_dir,
+            input=diff_text,
+            capture_output=True,
+            text=True,
+        )
+        if apply_res.returncode == 0:
             self.state.operations.append({"type": "apply", "status": "success"})
             self.save()
             return "Successfully applied session worktree changes to main repository."
         else:
-            return f"Failed to apply patch cleanly: {err or 'conflict'}"
+            return f"Failed to apply patch cleanly: {apply_res.stderr.strip() or 'conflict'}"
 
     def exit(self) -> str:
         """Tear down worktree and close session."""
@@ -223,6 +262,9 @@ class ExecutionSession:
         state_file = os.path.join(self.session_dir, "state.json")
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(asdict(self.state), f, indent=2)
+        # Validate that state was written successfully
+        if not os.path.exists(state_file) or os.path.getsize(state_file) == 0:
+            raise RuntimeError(f"Failed to persist Execution session state to {state_file}")
 
 
 class MaintenanceSession:
@@ -247,8 +289,78 @@ class MaintenanceSession:
         _register_active_session(self.target_dir, self.session_id, "maintenance")
         _SESSION_INSTANCES[self.session_id] = self
 
+    # ------------------------------------------------------------------
+    # Knowledge persistence
+    # ------------------------------------------------------------------
+    _OBSERVATIONS_DIR = "observations"
+
+    def _observations_file(self) -> str:
+        return os.path.join(self.session_dir, self._OBSERVATIONS_DIR, "knowledge.json")
+
+    def observe(self, key: str, value: Any) -> str:
+        """Store a named observation that persists for the session lifetime.
+
+        Observations accumulate and are returned by ``knowledge()``.
+        This is how maintenance builds a model of the repository over
+        multiple calls.
+        """
+        obs_file = self._observations_file()
+        os.makedirs(os.path.dirname(obs_file), exist_ok=True)
+        data: dict[str, Any] = {}
+        if os.path.exists(obs_file):
+            try:
+                with open(obs_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        data[key] = {"value": value, "timestamp": time.time()}
+        with open(obs_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        self.state.operations.append({"type": "observe", "key": key})
+        self.save()
+        return f"Observation '{key}' recorded."
+
+    def knowledge(self) -> dict[str, Any]:
+        """Return all accumulated observations for this session.
+
+        Includes both explicit observations and session metadata.
+        """
+        obs_file = self._observations_file()
+        observations: dict[str, Any] = {}
+        if os.path.exists(obs_file):
+            try:
+                with open(obs_file, "r", encoding="utf-8") as f:
+                    observations = json.load(f)
+            except Exception:
+                pass
+        return {
+            "session_id": self.session_id,
+            "observations": observations,
+            "operations": len(self.state.operations),
+        }
+
+    def create_execution(self, goal: str = "") -> Any:
+        """Spawn a child execution session from this maintenance session.
+
+        The execution session uses the same target directory and can be
+        used to implement fixes that maintenance discovered.  Returns
+        an ``ExecutionSession`` ready for ``run()`` / ``execute()`` /
+        ``snapshot()`` / ``apply()``.
+
+        This is how maintenance orchestrates execution.
+        """
+        import havfrys.session as _s  # deferred to avoid circular import
+        exe = _s.create_session(session_type="execution", workdir=self.target_dir)
+        self.observe("spawned_execution", {
+            "session_id": exe.session_id,
+            "goal": goal,
+        })
+        return exe
+
     def analyse(self) -> str:
-        """Deterministic repository inspection: directory structure, manifests, build systems, dependency files, test configuration, language detection."""
+        """Deterministic repository inspection: language, build system,
+        test framework, directory structure.
+        """
         from .analyzer import analyse
         res = analyse(path=self.target_dir)
         return json.dumps({
@@ -256,6 +368,10 @@ class MaintenanceSession:
             "framework": res.framework,
             "build_system": res.build_system,
             "test_framework": res.test_framework,
+            "test_command": res.test_command,
+            "docker": res.docker,
+            "is_git_repo": res.is_git_repo,
+            "files_count": res.files_count,
             "structure": res.structure,
             "subprojects": res.subprojects,
         }, indent=2)
@@ -283,19 +399,6 @@ class MaintenanceSession:
                 pass
         return {"nodes": [], "edges": [], "summary": "No historical maintenance graph found"}
 
-    def facts(self) -> dict[str, Any]:
-        from .context import resolve_context
-        ctx = resolve_context(self.target_dir)
-        return {
-            "context_type": ctx.context_type,
-            "files_count": ctx.files_count,
-            "is_git_repo": ctx.is_git_repo,
-            "has_test_suite": ctx.has_test_suite,
-            "has_build_system": ctx.has_build_system,
-            "is_docker": ctx.is_docker,
-            "summary": ctx.summary,
-        }
-
     def exit(self) -> str:
         self.state.active = False
         self.save()
@@ -307,6 +410,72 @@ class MaintenanceSession:
         state_file = os.path.join(self.session_dir, "state.json")
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(asdict(self.state), f, indent=2)
+        # Validate that state was written successfully
+        if not os.path.exists(state_file) or os.path.getsize(state_file) == 0:
+            raise RuntimeError(f"Failed to persist Maintenance session state to {state_file}")
+
+
+# Global Snapshot Index — cross-session persistent registry
+_SNAPSHOT_INDEX_FILE = os.path.join(".havfrys", "runtime", "snapshots_index.json")
+
+
+def _global_snapshot_index_path(target_dir: str) -> str:
+    """Path to the cross-session snapshot registry."""
+    return os.path.join(os.path.abspath(target_dir), _SNAPSHOT_INDEX_FILE)
+
+
+def _append_global_snapshot(
+    target_dir: str,
+    session_id: str,
+    name: str,
+    ref: str,
+    commit: str,
+) -> None:
+    """Append a snapshot to the global registry (visible across sessions)."""
+    index_file = _global_snapshot_index_path(target_dir)
+    os.makedirs(os.path.dirname(index_file), exist_ok=True)
+    index: list[dict[str, Any]] = []
+    if os.path.exists(index_file):
+        try:
+            with open(index_file, "r", encoding="utf-8") as f:
+                index = json.load(f)
+        except Exception:
+            pass
+    entry = {
+        "session_id": session_id,
+        "name": name,
+        "ref": ref,
+        "commit": commit,
+        "created_at": time.time(),
+    }
+    # Replace if same session_id/name pair exists
+    for i, snap in enumerate(index):
+        if snap.get("session_id") == session_id and snap.get("name") == name:
+            index[i] = entry
+            break
+    else:
+        index.append(entry)
+    with open(index_file, "w", encoding="utf-8") as f:
+        json.dump(index, f, indent=2)
+
+
+def list_snapshots(target_dir: str = ".") -> list[dict[str, Any]]:
+    """List all snapshots across all sessions from the global index.
+
+    Args:
+        target_dir: Repository root (default ".").
+
+    Returns:
+        List of {session_id, name, ref, commit, created_at} dicts.
+    """
+    index_file = _global_snapshot_index_path(target_dir)
+    if os.path.exists(index_file):
+        try:
+            with open(index_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
 
 
 # Active Session Registry Helpers
@@ -333,6 +502,9 @@ def get_active_session_id(workdir: str = "", session_type: str = "execution") ->
 
 
 def get_session(session_id: str = "", workdir: str = "", session_type: str = "execution") -> Any:
+    """Look up an existing session by ID or active session for workdir.
+    Falls back to auto-creating a new session if none found (legacy path).
+    """
     sid = session_id or get_active_session_id(workdir, session_type)
     if sid and sid in _SESSION_INSTANCES:
         return _SESSION_INSTANCES[sid]
@@ -343,3 +515,41 @@ def get_session(session_id: str = "", workdir: str = "", session_type: str = "ex
         return ExecutionSession(workdir=target)
     else:
         return MaintenanceSession(workdir=target)
+
+
+def create_session(session_type: str = "execution", workdir: str = ".") -> Any:
+    """Explicitly create a new session.
+
+    Args:
+        session_type: "execution" (or "exe") for isolated Git worktree,
+                      "maintenance" (or "maintain") for inspection.
+        workdir: Target repository path.
+
+    Returns:
+        ExecutionSession or MaintenanceSession instance.
+    """
+    type_map = {
+        "execution": "execution",
+        "exe": "execution",
+        "maintenance": "maintenance",
+        "maintain": "maintenance",
+    }
+    resolved = type_map.get(session_type)
+    if not resolved:
+        raise ValueError(
+            f"Unknown session type: {session_type}. "
+            "Use 'execution'/'exe' or 'maintenance'/'maintain'."
+        )
+    target = os.path.abspath(workdir)
+    if resolved == "execution":
+        return ExecutionSession(workdir=target)
+    else:
+        return MaintenanceSession(workdir=target)
+
+
+def close_session(session_id: str) -> str:
+    """Close a session by ID. Tears down worktree, persists state, cleans up."""
+    session = _SESSION_INSTANCES.get(session_id)
+    if not session:
+        return f"Error: No active session with ID '{session_id}'."
+    return session.exit()

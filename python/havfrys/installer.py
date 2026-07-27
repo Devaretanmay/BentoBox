@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 
-VERSION = "0.4.0"
+VERSION = "0.6.0"
 
 
 def _is_valid_client_path(p: Path) -> bool:
@@ -87,25 +87,42 @@ HAVFRYS_HAV_MD = """# HAVFRYS
 
 > HAVFRYS is engineering infrastructure, not an agent. It exposes deterministic primitives that the LLM orchestrates.
 
+## Sessions
+
+HAVFRYS is built around Sessions — isolated execution contexts.
+
+Two session types:
+- **exe (execution)**: Isolated Git worktree. Run commands, edit, snapshot, rollback, apply.
+- **maintain (maintenance)**: Repository inspection. Analyse, verify, inspect history.
+
 ## Available Tools
 
-The HAVFRYS MCP server exposes these 8 tools:
+**Session Lifecycle**
+- **create_session** — Create an isolated session (type="exe" or "maintain")
+- **session_close** — Close a session, cleanup worktree, persist state
 
-- **analyse** — Deterministic repo structure scan (language, framework, build system, test framework)
-- **worktree** — Create/discard isolated git worktrees for safe experimentation
-- **run** — Execute shell commands with automatic output compression
-- **verify** — Run verification checks (tests, lint, types) with structured results
-- **diff** — Show changes in a worktree vs source before merging
-- **snapshot** — Save/restore repository state via git refs
-- **detect_loop** — Self-diagnose oscillation patterns in your own reasoning
+**Execution Operations**
+- **session_run** — Execute shell commands with automatic output compression
+- **session_diff** — Show uncommitted changes in worktree
+- **session_snapshot** — Save worktree state as a named Git ref
+- **session_rollback** — Restore worktree to a named snapshot
+- **session_apply** — Apply worktree changes to main repository
+
+**Maintenance Operations**
+- **session_analyse** — Deterministic repo structure scan (language, framework, build, test)
+- **session_verify** — Run test suite with structured pass/fail results
+- **session_observe** — Store a named observation (builds knowledge over time)
+- **session_knowledge** — Retrieve all accumulated observations
+- **session_history** — Read persistent maintenance event history
 
 ## How to Use
 
-1. Analyse the repository to understand its structure.
-2. Create a worktree to experiment safely.
-3. Run commands and verify results inside the worktree.
-4. Inspect diffs before merging.
-5. Merge only when verification passes.
+1. create_session(type="maintain") → session_analyse to understand repo.
+2. create_session(type="exe") → use execute(goal) for intent-driven work.
+3. session_snapshot before risky changes.
+4. session_diff to inspect before applying.
+5. session_apply only when verification passes.
+6. session_close when done.
 
 The LLM makes all engineering decisions. HAVFRYS executes deterministically.
 No LLM calls, no hidden reasoning, no automatic branching inside HAVFRYS.
@@ -115,7 +132,7 @@ No LLM calls, no hidden reasoning, no automatic branching inside HAVFRYS.
 - Users describe problems, never machinery.
 - Adapt to repository context.
 - Never experiment on the user's working tree.
-- Validate before applying.
+- Validate before applying."
 """
 
 
@@ -139,7 +156,13 @@ def run_init_wizard(choice: Optional[int] = None, auto_all: bool = False, target
         "You are working in a HAVFRYS-enabled repository.\n\n"
         "HAVFRYS is not an agent. It is engineering infrastructure — deterministic primitives you call.\n"
         "You make all decisions; HAVFRYS executes.\n\n"
-        "Available: analyse, worktree, run, verify, diff, snapshot, detect_loop\n"
+        "Available sessions:\n"
+        "  create_session(type='exe')      — isolated worktree for changes\n"
+        "  create_session(type='maintain') — inspect & verify repo\n"
+        "  session_close(session_id)       — teardown when done\n\n"
+        "Execution ops: session_run, session_snapshot, session_diff, session_rollback, session_apply\n"
+        "  execute(goal) works without a session — plan → run → verify → apply in one call\n"
+        "Maintenance ops: session_analyse, session_verify, session_observe, session_knowledge, session_history\n"
     )
 
     print(f"{CYAN}┌─────────────────────────────────────────────────────────────┐{RESET}")

@@ -15,7 +15,6 @@ mod outliers;
 mod planning;
 mod statistics;
 mod stats_math;
-mod traits;
 mod types;
 
 pub use analyzer::SmartAnalyzer;
@@ -36,7 +35,7 @@ pub use outliers::{
 pub use planning::{item_has_preserve_field_match, map_to_anchor_pattern, SmartCrusherPlanner};
 pub use statistics::{calculate_string_entropy, detect_sequential_pattern, is_uuid_format};
 pub use stats_math::{format_g, mean, median, sample_stdev, sample_variance};
-pub use traits::Scorer;
+pub use crate::engines::compression::bm25::RelevanceScorer as Scorer;
 pub use types::{
     ArrayAnalysis, CompressionPlan, CompressionStrategy, CrushResult, CrushabilityAnalysis,
     FieldStats,

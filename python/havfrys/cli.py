@@ -22,17 +22,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_exe(args: argparse.Namespace) -> int:
-    from havfrys.session import ExecutionSession
+    from havfrys.session import create_session
     workdir = args.workdir or "."
-    session = ExecutionSession(workdir=workdir)
+    session = create_session(session_type="execution", workdir=workdir)
     print(f"Execution session {session.session_id} active in worktree: {session.worktree_path}")
     return 0
 
 
 def cmd_maintain(args: argparse.Namespace) -> int:
-    from havfrys.session import MaintenanceSession
+    from havfrys.session import create_session
     workdir = args.workdir or args.target or "."
-    session = MaintenanceSession(workdir=workdir)
+    session = create_session(session_type="maintenance", workdir=workdir)
     print(f"Maintenance session {session.session_id} active for: {session.target_dir}")
     return 0
 

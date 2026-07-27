@@ -138,7 +138,17 @@ impl DiffCompressor {
             stats.ccr_skipped_reason = Some("input below min_lines_for_ccr".into());
             stats.processing_duration_us = start.elapsed().as_micros() as u64;
             return (
-                pass_through_result(content, original_line_count),
+                DiffCompressionResult {
+                    compressed: content.to_string(),
+                    original_line_count,
+                    compressed_line_count: original_line_count,
+                    files_affected: 0,
+                    additions: 0,
+                    deletions: 0,
+                    hunks_kept: 0,
+                    hunks_removed: 0,
+                    cache_key: None,
+                },
                 emit_span_and_return(stats),
             );
         }
@@ -161,7 +171,17 @@ impl DiffCompressor {
             stats.ccr_skipped_reason = Some("no diff sections parsed".into());
             stats.processing_duration_us = start.elapsed().as_micros() as u64;
             return (
-                pass_through_result(content, original_line_count),
+                DiffCompressionResult {
+                    compressed: content.to_string(),
+                    original_line_count,
+                    compressed_line_count: original_line_count,
+                    files_affected: 0,
+                    additions: 0,
+                    deletions: 0,
+                    hunks_kept: 0,
+                    hunks_removed: 0,
+                    cache_key: None,
+                },
                 emit_span_and_return(stats),
             );
         }
@@ -269,7 +289,7 @@ impl DiffCompressor {
             total_deletions,
             hunks_removed_total,
         );
-        let compressed_line_count = count_split_lines(&compressed_output);
+        let compressed_line_count = compressed_output.split('\n').count();
 
         let savings_threshold = self.config.min_compression_ratio_for_ccr;
         let mut cache_key: Option<String> = None;
@@ -792,24 +812,6 @@ fn format_output(
     out_lines.join("\n")
 }
 
-fn pass_through_result(content: &str, line_count: usize) -> DiffCompressionResult {
-    DiffCompressionResult {
-        compressed: content.to_string(),
-        original_line_count: line_count,
-        compressed_line_count: line_count,
-        files_affected: 0,
-        additions: 0,
-        deletions: 0,
-        hunks_kept: 0,
-        hunks_removed: 0,
-        cache_key: None,
-    }
-}
-
-fn count_split_lines(s: &str) -> usize {
-    s.split('\n').count()
-}
-
 fn emit_span_and_return(stats: DiffCompressorStats) -> DiffCompressorStats {
     tracing::info!(
         target: "diff_compressor",
@@ -862,11 +864,11 @@ mod tests {
 
     #[test]
     fn count_split_lines_matches_python_split_n() {
-        assert_eq!(count_split_lines(""), 1);
-        assert_eq!(count_split_lines("a"), 1);
-        assert_eq!(count_split_lines("a\n"), 2);
-        assert_eq!(count_split_lines("a\nb"), 2);
-        assert_eq!(count_split_lines("\n"), 2);
+        assert_eq!("".split('\n').count(), 1);
+        assert_eq!("a".split('\n').count(), 1);
+        assert_eq!("a\n".split('\n').count(), 2);
+        assert_eq!("a\nb".split('\n').count(), 2);
+        assert_eq!("\n".split('\n').count(), 2);
     }
 
     #[test]

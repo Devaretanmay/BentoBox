@@ -1,6 +1,7 @@
 """Execute verification suites, return structured results. LLM determines pass/fail."""
 
 import os
+import shutil
 import subprocess
 import time
 import uuid
@@ -47,9 +48,19 @@ def _discover_test_command(target: str) -> str:
 
 def _resolve_python(workdir: str) -> str:
     for venv_dir in (".venv", "venv", ".env", "env"):
+        # Unix
         candidate = os.path.join(workdir, venv_dir, "bin", "python")
         if os.path.exists(candidate):
             return candidate
+        # Windows
+        candidate_win = os.path.join(workdir, venv_dir, "Scripts", "python.exe")
+        if os.path.exists(candidate_win):
+            return candidate_win
+    # Fallback: use available python command
+    for name in ("python3", "python"):
+        found = shutil.which(name)
+        if found:
+            return found
     return ""
 
 
@@ -101,7 +112,7 @@ def verify(
                 proc = subprocess.run(
                     cmd, shell=True, cwd=run_dir,
                     capture_output=True, text=True,
-                    timeout=300, preexec_fn=os.setsid,
+                    timeout=300, start_new_session=True,
                 )
             except subprocess.TimeoutExpired:
                 elapsed = int((time.time() - start) * 1000)

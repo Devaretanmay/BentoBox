@@ -175,7 +175,7 @@ impl SmartCrusher {
 
         let (crushed, info) = self.process_value(&parsed, 0, query_context, bias);
 
-        let result = crate::engines::compression::anchor_selector::python_safe_json_dumps(&crushed);
+        let result = serde_json::to_string(&crushed).unwrap();
         let was_modified = result != content.trim();
         (result, was_modified, info)
     }
