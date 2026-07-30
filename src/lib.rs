@@ -1,3 +1,8 @@
+// Many items in the compression engine and cache store are consumed
+// indirectly through the Python FFI (route_and_compress), so the Rust
+// compiler cannot see all call sites.  Suppress warnings for this crate.
+#![allow(dead_code, unused_imports)]
+
 /// BentoBox Rust Core — sandbox enforcement + output compression.
 ///
 /// Provides kernel-level sandboxing via Landlock (Linux) and Seatbelt (macOS)
