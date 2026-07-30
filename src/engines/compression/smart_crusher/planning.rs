@@ -4,10 +4,10 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use super::analyzer::SmartAnalyzer;
 use super::anchors::{extract_query_anchors, item_matches_anchors};
-use super::config::SmartCrusherConfig;
+use super::SmartCrusherConfig;
 use super::field_detect::detect_score_field_statistically;
-use super::hashing::hash_field_name;
-use super::constraints::must_keep;
+use super::hash_field_name;
+use super::must_keep;
 use super::orchestration::prioritize_indices;
 use super::types::{ArrayAnalysis, CompressionPlan, CompressionStrategy, FieldStats};
 use crate::engines::compression::anchor_selector::{AnchorSelector, DataPattern};

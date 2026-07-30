@@ -8,7 +8,7 @@ use super::compaction::{
     classify_cell, emit_opaque_ccr_marker, try_parse_json_container, CellClass, ClassifyConfig,
     CompactConfig, Compaction, CompactionStage,
 };
-use super::config::SmartCrusherConfig;
+use super::SmartCrusherConfig;
 
 use super::crushers::{compute_k_split, crush_number_array, crush_object, crush_string_array};
 use super::planning::SmartCrusherPlanner;
@@ -358,11 +358,11 @@ impl SmartCrusher {
             let canonical = canonical_array_json(items);
             let h = hash_canonical(&canonical);
             let marker = serde_json::to_string(&serde_json::json!({
-                "_havfrys_pager": {
+                "_bentobox_pager": {
                     "hash": h,
                     "total_items": items.len(),
                     "valid_indices": format!("{}..{}", self.config.preview_count, items.len().saturating_sub(1)),
-                    "instruction": format!("Call havfrys_expand('{}', index) to retrieve specific rows", h)
+                    "instruction": format!("Call bentobox_expand('{}', index) to retrieve specific rows", h)
                 }
             })).unwrap_or_default();
             if let Some(store) = &self.ccr_store {
@@ -452,11 +452,11 @@ impl SmartCrusher {
             let canonical = canonical_array_json(items);
             let h = hash_canonical(&canonical);
             let marker = serde_json::to_string(&serde_json::json!({
-                "_havfrys_pager": {
+                "_bentobox_pager": {
                     "hash": h,
                     "total_items": items.len(),
                     "valid_indices": format!("{}..{}", result.len(), items.len().saturating_sub(1)),
-                    "instruction": format!("Call havfrys_expand('{}', index) to retrieve specific rows", h)
+                    "instruction": format!("Call bentobox_expand('{}', index) to retrieve specific rows", h)
                 }
             })).unwrap_or_default();
             if let Some(store) = &self.ccr_store {
@@ -1003,7 +1003,7 @@ mod tests {
         let h = result.ccr_hash.expect("ccr_hash populated on drop");
         assert_eq!(h.len(), 12);
         assert!(
-            result.dropped_summary.contains("_havfrys_pager"),
+            result.dropped_summary.contains("_bentobox_pager"),
             "got: {}",
             result.dropped_summary
         );
@@ -1190,7 +1190,7 @@ mod tests {
         assert!(result.items.len() < items.len(), "lossy path didn't fire");
         assert!(result.ccr_hash.is_some(), "default should produce a hash");
         assert!(
-            result.dropped_summary.contains("_havfrys_pager"),
+            result.dropped_summary.contains("_bentobox_pager"),
             "default should produce a marker: {:?}",
             result.dropped_summary
         );

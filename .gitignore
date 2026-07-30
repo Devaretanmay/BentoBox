@@ -14,7 +14,5 @@ build/
 .pytest_cache/
 .venv/
 
-# HAVFRYS local state
-.havfrys/
-.havfrys_cache.json
-.havfrys_source
+# BentoBox transient state
+.bentoworks/

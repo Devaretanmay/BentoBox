@@ -1,96 +1,63 @@
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
-#![allow(clippy::missing_safety_doc)]
-#![allow(unsafe_op_in_unsafe_fn)]
+/// BentoBox Rust Core — sandbox enforcement + output compression.
+///
+/// Provides kernel-level sandboxing via Landlock (Linux) and Seatbelt (macOS)
+/// plus content-aware compression for AI agent output streams.
 
-pub mod compress;
-pub mod engines;
-pub mod runtime;
+use pyo3::prelude::*;
+use pyo3::exceptions::PyValueError;
 
-pub use engines::loop_detection::history;
-pub use engines::loop_detection::history::LoopVerdict;
-pub use engines::loop_detection::state::HavfrysState;
+mod compress;
+mod runtime;
+mod engines;
+mod sandbox;
 
-pub fn verify(state: &mut HavfrysState, tool_slice: &[u8], args_slice: &[u8]) -> u8 {
-    let tool_str = match std::str::from_utf8(tool_slice) {
-        Ok(s) => s.to_string(),
-        Err(_) => return state.block_result(),
-    };
-    let args_str = match std::str::from_utf8(args_slice) {
-        Ok(s) => s.to_string(),
-        Err(_) => return state.block_result(),
-    };
+// =========================================================================
+// Sandbox API — called from Python's Box.enter()
+// =========================================================================
 
-    let max_repeats = state.get_effective_threshold(&tool_str);
-
-    match state.history.check_loop(
-        &tool_str,
-        &args_str,
-        state.ignore_args,
-        max_repeats,
-        state.history_window,
-    ) {
-        history::LoopVerdict::Allow => {}
-        history::LoopVerdict::WarnOscillation(msg) => state.set_warning(&msg),
-        history::LoopVerdict::BlockExactMatch(msg)
-        | history::LoopVerdict::BlockOscillation(msg) => {
-            state.set_error(&msg);
-            return state.block_result();
+/// Apply kernel sandbox, restricting the process tree to `worktree_path`.
+/// The caller should check `sandbox_available()` first.
+#[pyfunction]
+fn sandbox_apply(worktree_path: &str, block_network: bool) -> PyResult<bool> {
+    match sandbox::apply(worktree_path, block_network) {
+        Ok(()) => Ok(true),
+        Err(e) => {
+            if !sandbox::check_supported() {
+                Ok(false)
+            } else {
+                Err(PyValueError::new_err(
+                    format!("Sandbox application failed: {}", e),
+                ))
+            }
         }
     }
-
-    if let Err(msg) = state.engine.validate(&args_str) {
-        state.set_error(msg);
-        return state.block_result();
-    }
-
-    0
 }
 
-use pyo3::exceptions::PyValueError;
-use pyo3::prelude::*;
-
-#[pyclass(name = "LoopEngine")]
-pub struct PyLoopEngine {
-    state: HavfrysState,
+/// Explain why a path or network address would be blocked by the sandbox.
+/// Pure diagnostic — does not query the OS sandbox state.
+#[pyfunction]
+fn sandbox_why(path: &str, worktree_path: &str, block_network: bool) -> String {
+    sandbox::why(path, worktree_path, block_network)
 }
 
-#[pymethods]
-impl PyLoopEngine {
-    #[new]
-    fn new(yaml_config: &str) -> PyResult<Self> {
-        let state = HavfrysState::new(yaml_config)
-            .map_err(|e| PyValueError::new_err(format!("Failed to parse config: {}", e)))?;
-        Ok(Self { state })
-    }
-
-    fn verify(&mut self, tool_name: &str, tool_args_json: &str) -> u8 {
-        verify(
-            &mut self.state,
-            tool_name.as_bytes(),
-            tool_args_json.as_bytes(),
-        )
-    }
+/// Check whether kernel sandboxing is available on this platform.
+/// Returns a dict with supported (bool), platform (str), details (str).
+#[pyfunction]
+fn sandbox_check_supported() -> PyResult<std::collections::HashMap<String, String>> {
+    let info = sandbox::get_info();
+    let mut result = std::collections::HashMap::new();
+    result.insert("supported".to_string(), info.supported.to_string());
+    result.insert("platform".to_string(), info.platform);
+    result.insert("details".to_string(), info.details);
+    Ok(result)
 }
 
-#[pyclass(name = "CheckpointEngine")]
-pub struct PyCheckpointEngine;
-
-#[pymethods]
-impl PyCheckpointEngine {
-    #[new]
-    fn new() -> Self {
-        Self
-    }
-
-    fn hash_state(&self, state_json: &str) -> String {
-        crate::runtime::ccr::compute_key(state_json.as_bytes())
-    }
-}
 
 #[pymodule]
-fn _core(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<PyLoopEngine>()?;
-    m.add_class::<PyCheckpointEngine>()?;
-    compress::register_module(m)?;
+fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(sandbox_apply, m)?)?;
+    m.add_function(wrap_pyfunction!(sandbox_why, m)?)?;
+    m.add_function(wrap_pyfunction!(sandbox_check_supported, m)?)?;
+    m.add_function(wrap_pyfunction!(compress::route_and_compress, m)?)?;
     Ok(())
 }

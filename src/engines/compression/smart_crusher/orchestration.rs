@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::collections::{BTreeSet, HashSet};
 
-use super::config::SmartCrusherConfig;
+use super::SmartCrusherConfig;
 use super::outliers::{detect_error_items_for_preservation, detect_structural_outliers};
 use super::types::{ArrayAnalysis, FieldStats};
 use crate::engines::compression::anchor_selector::compute_item_hash;

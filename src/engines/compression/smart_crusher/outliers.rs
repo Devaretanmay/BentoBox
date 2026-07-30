@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-use super::error_keywords::ERROR_KEYWORDS;
+use super::ERROR_KEYWORDS;
 
 pub fn detect_structural_outliers(items: &[Value]) -> Vec<usize> {
     if items.len() < 5 {

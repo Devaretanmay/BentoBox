@@ -1,8 +1,8 @@
 use serde_json::{Map, Value};
 use std::collections::{BTreeSet, HashSet};
 
-use super::config::SmartCrusherConfig;
-use super::error_keywords::ERROR_KEYWORDS;
+use super::SmartCrusherConfig;
+use super::ERROR_KEYWORDS;
 use super::stats_math::{format_g, mean, median, sample_stdev};
 use crate::engines::compression::adaptive_sizer::compute_optimal_k;
 
