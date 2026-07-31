@@ -60,7 +60,7 @@ def cmd_why(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="bentoworks")
-    parser.add_argument("--version", action="version", version="bentoworks 0.9.0")
+    parser.add_argument("--version", action="version", version="bentoworks 0.9.1")
 
     sub = parser.add_subparsers(dest="command")
 

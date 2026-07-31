@@ -16,3 +16,11 @@ build/
 
 # BentoBox transient state
 .bentoworks/
+
+# Language SDK artifacts
+sdk/typescript/node_modules/
+sdk/typescript/*.node
+sdk/typescript/native/target/
+sdk/typescript/native/Cargo.lock
+sdk/go/bin/
+sdk/go/*.test

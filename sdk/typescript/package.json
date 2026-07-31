@@ -1,0 +1,65 @@
+{
+  "name": "@bentobox/sdk",
+  "version": "0.9.0",
+  "description": "TypeScript SDK for the BentoBox kernel sandbox — kernel-enforced isolation, output compression, and the compartment runtime for AI agents and automation",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "build": "napi build --platform --release --cargo-cwd ./native .",
+    "build:target": "napi build --platform --release --cargo-cwd ./native .",
+    "test": "node test/smoke.mjs",
+    "prepack": "npm run build:target"
+  },
+  "napi": {
+    "name": "bentoworks-native",
+    "triples": {
+      "defaults": true
+    },
+    "binaryName": "bentoworks-native"
+  },
+  "optionalDependencies": {
+    "@bentobox/sdk-darwin-arm64": "0.9.0",
+    "@bentobox/sdk-darwin-x64": "0.9.0",
+    "@bentobox/sdk-darwin-universal": "0.9.0",
+    "@bentobox/sdk-linux-x64-gnu": "0.9.0",
+    "@bentobox/sdk-linux-x64-musl": "0.9.0",
+    "@bentobox/sdk-linux-arm64-gnu": "0.9.0",
+    "@bentobox/sdk-linux-arm64-musl": "0.9.0",
+    "@bentobox/sdk-win32-x64-msvc": "0.9.0",
+    "@bentobox/sdk-win32-arm64-msvc": "0.9.0",
+    "@bentobox/sdk-freebsd-x64": "0.9.0"
+  },
+  "engines": {
+    "node": ">= 16.0.0"
+  },
+  "keywords": [
+    "bentobox",
+    "sandbox",
+    "kernel",
+    "isolation",
+    "security",
+    "landlock",
+    "seatbelt",
+    "compression",
+    "ai",
+    "agent",
+    "compartment"
+  ],
+  "license": "BUSL-1.1",
+  "author": "BentoBox Labs (Devaretanmay) <tanmaydevare@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Devaretanmay/BentoBox.git"
+  },
+  "homepage": "https://github.com/Devaretanmay/BentoBox#readme",
+  "bugs": {
+    "url": "https://github.com/Devaretanmay/BentoBox/issues"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  }
+}

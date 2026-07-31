@@ -1,6 +1,6 @@
 [package]
 name = "bentoworks-core"
-version = "0.4.1"
+version = "0.9.1"
 edition = "2021"
 license = "BUSL-1.1"
 description = "BentoBox — kernel-level sandbox with compartmentalized isolated execution (Rust core)"
@@ -12,10 +12,16 @@ categories = ["development-tools", "command-line-utilities"]
 
 [lib]
 name = "bentoworks_core"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib", "staticlib"]
+
+[features]
+default = []
+# Python extension module (enabled by maturin). Plain `cargo build`
+# without this feature produces a clean FFI cdylib for Go/TS SDKs.
+pyo3-binding = ["dep:pyo3", "pyo3/extension-module", "pyo3/abi3-py38"]
 
 [dependencies]
-pyo3 = { version = "0.29", features = ["extension-module", "abi3-py38"] }
+pyo3 = { version = "0.29", features = ["abi3-py38"], optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.150" }
 regex = "1"
@@ -31,5 +37,6 @@ landlock = "0.4"
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
-strip = true
+# debuginfo only — strip=symbols would remove the symbol table and
+# break cgo static linking against the Go SDK's .a archive.
+strip = "debuginfo"
