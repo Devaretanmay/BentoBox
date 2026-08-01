@@ -41,39 +41,19 @@ pub struct FieldStats {
     pub change_points: Vec<usize>,
 
     pub avg_length: Option<f64>,
-    pub top_values: Vec<(String, usize)>,
 }
 
 #[derive(Debug, Clone)]
 pub struct CrushabilityAnalysis {
     pub crushable: bool,
-    pub confidence: f64,
     pub reason: String,
-    pub signals_present: Vec<String>,
-    pub signals_absent: Vec<String>,
-
-    pub has_id_field: bool,
-    pub id_uniqueness: f64,
-    pub avg_string_uniqueness: f64,
-    pub has_score_field: bool,
-    pub error_item_count: usize,
-    pub anomaly_count: usize,
 }
 
 impl CrushabilityAnalysis {
-    pub fn skip(reason: impl Into<String>, confidence: f64) -> Self {
+    pub fn skip(reason: impl Into<String>) -> Self {
         CrushabilityAnalysis {
             crushable: false,
-            confidence,
             reason: reason.into(),
-            signals_present: Vec::new(),
-            signals_absent: Vec::new(),
-            has_id_field: false,
-            id_uniqueness: 0.0,
-            avg_string_uniqueness: 0.0,
-            has_score_field: false,
-            error_item_count: 0,
-            anomaly_count: 0,
         }
     }
 }
@@ -94,7 +74,6 @@ pub struct CompressionPlan {
     pub strategy: CompressionStrategy,
     pub keep_indices: Vec<usize>,
     pub constant_fields: BTreeMap<String, Value>,
-    pub summary_ranges: Vec<(usize, usize, Value)>,
     pub cluster_field: Option<String>,
     pub sort_field: Option<String>,
     pub keep_count: usize,
@@ -106,7 +85,6 @@ impl Default for CompressionPlan {
             strategy: CompressionStrategy::None,
             keep_indices: Vec::new(),
             constant_fields: BTreeMap::new(),
-            summary_ranges: Vec::new(),
             cluster_field: None,
             sort_field: None,
             keep_count: 10,
@@ -150,9 +128,8 @@ mod tests {
 
     #[test]
     fn crushability_skip_helper() {
-        let r = CrushabilityAnalysis::skip("too small", 1.0);
+        let r = CrushabilityAnalysis::skip("too small");
         assert!(!r.crushable);
-        assert_eq!(r.confidence, 1.0);
         assert_eq!(r.reason, "too small");
     }
 

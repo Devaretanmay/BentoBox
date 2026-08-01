@@ -1,29 +1,17 @@
-/// Linux Landlock LSM sandbox implementation
-///
-/// Implements kernel-enforced filesystem and network access control
-/// using Landlock LSM (Linux 5.13+). Uses a capability-based approach
-/// adapted to BentoBox's worktree-centric model.
-///
-/// Design principles:
-/// - BentoBox knows the exact worktree path, so rules are simpler
-/// - We always allow read on standard system paths (/usr, /lib, etc.)
-/// - We always allow read-write on standard temp directories
-/// - Network blocking is optional (configurable per session)
+// Linux Landlock LSM sandbox (kernel 5.13+). Rules are simpler than a
+// general LSM because the worktree path is known up front: read on system
+// paths, read-write on temp dirs, optional network blocking.
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use super::SandboxInfo;
 
-// ---------------------------------------------------------------------------
-// Landlock Rust bindings via raw syscalls + the `landlock` helper crate
-// ---------------------------------------------------------------------------
-
 use landlock::{
     ABI, AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, Ruleset,
 };
 
-/// System paths that agents always need read-execute access to.
+// System paths: read-execute. Temp dirs: read-write. Devices: basic I/O.
 const SYSTEM_READ_PATHS: &[&str] = &[
     "/usr",
     "/lib",
@@ -35,14 +23,12 @@ const SYSTEM_READ_PATHS: &[&str] = &[
     "/nix",
 ];
 
-/// Standard temp directories that agents need read-write access to.
 const TEMP_WRITE_PATHS: &[&str] = &[
     "/tmp",
     "/var/tmp",
     "/dev/shm",
 ];
 
-/// Device files needed for basic I/O.
 const DEVICE_PATHS: &[&str] = &[
     "/dev/null",
     "/dev/urandom",
@@ -56,10 +42,8 @@ const DEVICE_PATHS: &[&str] = &[
     "/dev/ptmx",
 ];
 
-/// Cache for ABI detection result.
 static CACHED_ABI: OnceLock<Result<ABI, String>> = OnceLock::new();
 
-/// Probes the highest Landlock ABI version supported.
 fn detect_abi() -> Result<ABI, String> {
     if let Some(result) = CACHED_ABI.get() {
         return result.clone();
@@ -97,31 +81,22 @@ fn detect_abi() -> Result<ABI, String> {
     Err(msg)
 }
 
-/// Check basic filesystem access availability (ABI V1 minimum).
 fn has_basic_fs() -> bool {
     detect_abi().is_ok()
 }
 
-/// Check whether TCP network filtering is available (ABI V4+).
 fn has_network() -> bool {
     detect_abi()
         .map(|abi| !AccessNet::from_all(abi).is_empty())
         .unwrap_or(false)
 }
 
-/// Check whether execute restriction is available (ABI V3+).
 fn has_execute() -> bool {
     detect_abi()
         .map(|abi| matches!(abi, ABI::V3 | ABI::V4 | ABI::V5 | ABI::V6))
         .unwrap_or(false)
 }
 
-/// Build and apply the Landlock ruleset.
-///
-/// Steps:
-/// 1. Create a ruleset that handles our desired access rights
-/// 2. Add path-beneath rules for each allowed path
-/// 3. Restrict the process (irreversible)
 pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), String> {
     let abi = detect_abi()?;
     let worktree = Path::new(worktree_path);
@@ -225,61 +200,20 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
     Ok(())
 }
 
-/// Apply a stacked execute-restriction layer.
-///
-/// After `apply()`, this restricts `execve` to binaries under the
-/// given paths. Requires Landlock ABI V3+.
-pub(super) fn restrict_execute(allowed_paths: &[String]) -> Result<(), String> {
-    let abi = detect_abi()?;
-
-    if !has_execute() {
-        return Err("Execute restriction requires Landlock ABI V3+".to_string());
-    }
-
-    let mut ruleset_builder = Ruleset::default()
-        .set_compatibility(CompatLevel::BestEffort)
-        .handle_access(AccessFs::Execute)
-        .map_err(|e| format!("Failed to handle execute access: {}", e))?;
-
-    let mut ruleset = ruleset_builder
-        .create()
-        .map_err(|e| format!("Failed to create execute ruleset: {}", e))?;
-
-    for path_str in allowed_paths {
-        let path = Path::new(path_str);
-        if path.exists() {
-            let path_beneath = PathBeneath::new(
-                PathFd::new(path),
-                AccessFs::Execute,
-            )
-            .map_err(|e| format!("Invalid execute path '{}': {}", path_str, e))?;
-            let _ = ruleset.add_rule(path_beneath);
-        }
-    }
-
-    ruleset
-        .restrict_self()
-        .map_err(|e| format!("Failed to apply execute restriction: {}", e))?;
-
-    Ok(())
-}
-
-/// Diagnostic: explain whether `path` is allowed or blocked by the Landlock rules.
 pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> String {
     use std::path::Path;
     let p = Path::new(path);
 
-    // Network check
     if path.starts_with("tcp:") || path.starts_with("udp:") || path.starts_with("http") {
         if block_network && check_supported() && has_network() {
             return concat!(
-                "BLOCKED — Network is disabled (block_network=true).\n",
+                "BLOCKED: Network is disabled (block_network=true).\n",
                 "Only localhost TCP and Unix sockets are allowed.\n",
                 "Tip: Set block_network=False in BentoBoxConfig to allow network access.",
             ).to_string();
         }
         return format!(
-            "ALLOWED — Network access is permitted (block_network={}).",
+            "ALLOWED: Network access is permitted (block_network={}).",
             if block_network { "true, but Landlock network V4+ not available" } else { "false" }
         );
     }
@@ -295,58 +229,52 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
     let wt = Path::new(worktree_path).canonicalize().unwrap_or_else(|_| Path::new(worktree_path).to_path_buf());
     let wt_str = wt.to_string_lossy();
 
-    // Worktree check
     if abs_str.starts_with(&*wt_str) && (abs_str.len() == wt_str.len() || abs_str[wt_str.len()..].starts_with('/')) {
         return format!(
-            "ALLOWED — Inside worktree path.\nPath: {}\nWorktree: {}\nFull read-write-execute access.",
+            "ALLOWED: Inside worktree path.\nPath: {}\nWorktree: {}\nFull read-write-execute access.",
             path, worktree_path
         );
     }
 
-    // System paths (read-only)
     for sys_path in SYSTEM_READ_PATHS {
         if abs_str.starts_with(sys_path) && Path::new(sys_path).exists() {
             return format!(
-                "ALLOWED — System path (read-only).\nPath: {}\nRead-only access to '{}/' for system binaries.",
+                "ALLOWED: System path (read-only).\nPath: {}\nRead-only access to '{}/' for system binaries.",
                 path, sys_path
             );
         }
     }
 
-    // Temp paths (read-write)
     for tmp_path in TEMP_WRITE_PATHS {
         if abs_str.starts_with(tmp_path) && Path::new(tmp_path).exists() {
             return format!(
-                "ALLOWED — Temp directory (read-write).\nPath: {}\nRead-write access to '{}/'.",
+                "ALLOWED: Temp directory (read-write).\nPath: {}\nRead-write access to '{}/'.",
                 path, tmp_path
             );
         }
     }
 
-    // Device paths (read-write)
     for dev_path in DEVICE_PATHS {
         if abs_str.starts_with(dev_path) && Path::new(dev_path).exists() {
             return format!(
-                "ALLOWED — Device path (read-write).\nPath: {}",
+                "ALLOWED: Device path (read-write).\nPath: {}",
                 path
             );
         }
     }
 
     format!(
-        "BLOCKED — Path is outside all allowed Landlock rules.\nPath: {}\nWorktree: {}\n\nAllowed paths:\n  • Worktree (read-write-execute)\n  • /usr, /lib, /lib64, /bin, /sbin, /etc, /opt, /nix (read-only)\n  • /tmp, /var/tmp, /dev/shm (read-write)\n  • /dev/null, /dev/urandom, /dev/random, /dev/zero, /dev/fd, /dev/stdin, /dev/stdout, /dev/stderr (read-write)\n  • Network: {}",
+        "BLOCKED: Path is outside all allowed Landlock rules.\nPath: {}\nWorktree: {}\n\nAllowed paths:\n  - Worktree (read-write-execute)\n  - /usr, /lib, /lib64, /bin, /sbin, /etc, /opt, /nix (read-only)\n  - /tmp, /var/tmp, /dev/shm (read-write)\n  - /dev/null, /dev/urandom, /dev/random, /dev/zero, /dev/fd, /dev/stdin, /dev/stdout, /dev/stderr (read-write)\n  - Network: {}",
         path,
         worktree_path,
         if block_network { "localhost-only (Landlock V4+)" } else { "Full access" }
     )
 }
 
-/// Check whether Landlock is supported.
 pub(super) fn check_supported() -> bool {
     has_basic_fs()
 }
 
-/// Get detailed Landlock support information.
 pub(super) fn get_info() -> SandboxInfo {
     match detect_abi() {
         Ok(abi) => {
@@ -356,7 +284,7 @@ pub(super) fn get_info() -> SandboxInfo {
                 supported: true,
                 platform: "linux".to_string(),
                 details: format!(
-                    "Landlock ABI {:?} — features: {} — network filtering: {}",
+                    "Landlock ABI {:?} - features: {} - network filtering: {}",
                     abi,
                     features.join(", "),
                     if network { "yes" } else { "no (requires V4+)" }

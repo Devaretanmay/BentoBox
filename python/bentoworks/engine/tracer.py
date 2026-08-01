@@ -1,8 +1,4 @@
-"""Execution trace — makes the BentoBox lifecycle visible so developers
-can verify every phase fires correctly during development.
-
-Enabled via ``BENTOWORKS_TRACE=1`` or ``verbose=True`` on ``BentoBox()``.
-"""
+"""Execution trace - makes the BentoBox lifecycle visible for development."""
 
 import os
 import sys
@@ -55,7 +51,7 @@ class Tracer:
     def header(self, request: str) -> None:
         if not self.verbose:
             return
-        sep = "═" * 55
+        sep = "=" * 55
         ts = time.strftime("%H:%M:%S")
         lines = [
             "",
@@ -71,7 +67,7 @@ class Tracer:
     def footer(self, status: str, elapsed_total: float) -> None:
         if not self.verbose:
             return
-        sep = "═" * 55
+        sep = "=" * 55
         status_color = "green" if status == "success" else "red"
         lines = [
             f"  {_colorize(sep, 'cyan')}",
@@ -88,41 +84,41 @@ class Tracer:
 
         if event == "box.created":
             path = data.get("path", "")
-            return f"{prefix}  {_colorize('✓', 'green')} Box Created          {_colorize(path, 'dim')}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Box Created         {_colorize(path, 'dim')}"
 
         if event == "box.entered":
             sandbox = data.get("sandbox_applied", False)
             sb = _colorize("sandbox on", "green") if sandbox else _colorize("sandbox off", "yellow")
-            return f"{prefix}  {_colorize('✓', 'green')} Box Entered          {sb}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Box Entered         {sb}"
 
         if event == "box.destroyed":
-            return f"{prefix}  {_colorize('✓', 'green')} Box Destroyed"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Box Destroyed"
 
         if event == "lid.insulated":
             profile = data.get("profile", "")
             modules = data.get("modules", 0)
-            return f"{prefix}  {_colorize('✓', 'green')} Lid Insulated        profile={profile}, modules={modules}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Lid Insulated       profile={profile}, modules={modules}"
 
         if event == "lid.released":
-            return f"{prefix}  {_colorize('✓', 'green')} Lid Released"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Lid Released"
 
         if event == "task_profile":
             profile = data.get("profile", "code")
-            return f"{prefix}  {_colorize('✓', 'yellow')} Task Profile         {_colorize('→', 'dim')} {profile}"
+            return f"{prefix}  {_colorize('[ok]', 'yellow')} Task Profile        {_colorize('->', 'dim')} {profile}"
 
         if event == "compartment_start":
             name = data.get("name", "")
-            return f"{prefix}  {_colorize('▶', 'cyan')} Compartment          {name}"
+            return f"{prefix}  {_colorize('[>]', 'cyan')} Compartment          {name}"
 
         if event == "compartment_done":
             name = data.get("name", "")
             elapsed_c = data.get("elapsed", 0)
-            return f"{prefix}    {_colorize('✓', 'green')} {name}  {_colorize(f'({elapsed_c:.2f}s)', 'dim')}"
+            return f"{prefix}    {_colorize('[ok]', 'green')} {name}  {_colorize(f'({elapsed_c:.2f}s)', 'dim')}"
 
         if event == "compartment_failed":
             name = data.get("name", "")
             error = data.get("error", "")
-            return f"{prefix}    {_colorize('✗', 'red')} {name}  {error}"
+            return f"{prefix}    {_colorize('[x]', 'red')} {name}  {error}"
 
         return None
 

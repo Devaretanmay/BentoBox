@@ -36,7 +36,7 @@ assert.ok(bentobox.runtimeCanRoute(configs, 'a', 'b') === true, 'a->b allowed')
 assert.throws(() => bentobox.runtimeCanRoute(configs, 'zzz', 'b'), 'unknown compartment throws')
 console.log('runtimeCanRoute: ok')
 
-// Opaque handle — parses configs once, routes many times.
+// Opaque handle - parses configs once, routes many times.
 // Uses its own configs (with a registered `c`) so denial + runOrder
 // assertions exercise real whitelist/order semantics.
 const handleConfigs = JSON.stringify({

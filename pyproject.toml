@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "bentoworks"
 version = "0.9.1"
-description = "BentoBox — kernel-level sandbox with compartmentalized isolated execution for any coding agent."
+description = "BentoBox - kernel-level sandbox with compartmentalized isolated execution for any coding agent."
 requires-python = ">=3.10"
 license = { text = "BUSL-1.1" }
 keywords = ["ai-agents", "developer-tools", "sandbox", "isolation", "runtime"]
@@ -38,5 +38,8 @@ module-name = "bentoworks._core"
 bentoworks = "bentoworks.cli:main"
 
 [tool.pytest.ini_options]
-pythonpath = ["python"]
+# Tests import the installed bentoworks package, not the source tree.
+# (The source tree intentionally contains no compiled _core.*.so; the native
+# module ships inside the wheel, so importing source here would silently lose
+# the sandbox/compression core.)
 testpaths = ["tests"]

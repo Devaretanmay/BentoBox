@@ -1,8 +1,4 @@
-"""SandboxEnforcer — Python-level per-compartment permission enforcement.
-
-Wraps builtins.open, os, subprocess, and shutil to check the active
-CompartmentConfig before allowing any I/O or subprocess operation.
-"""
+"""SandboxEnforcer - Python-level per-compartment permission enforcement."""
 
 import builtins
 import logging
@@ -25,11 +21,7 @@ def _check(policy: dict, require: list[str]) -> None:
 
 
 class SandboxEnforcer:
-    """Context manager that patches I/O functions to enforce a sandbox policy.
-
-    Each function is saved **before** patching so wrappers always have
-    the real original, never the wrapper. Patches are restored on exit.
-    """
+    """Context manager that patches I/O functions to enforce a sandbox policy."""
 
     def __init__(self, policy: dict):
         self._policy = dict(policy)
@@ -99,30 +91,21 @@ class SandboxEnforcer:
         self._originals[key] = original
 
 
-# Wrapper factories capture the ORIGINAL function at creation time so
-# call-time look-up is never needed — preventing infinite recursion.
+# Wrappers capture the ORIGINAL function at creation time to prevent recursion.
 
 
-# ── Command blocklist ──────────────────────────────────────────────────────
-# Commands that are blocked regardless of fs_exec permission.
+# Commands blocked regardless of fs_exec permission.
 DANGEROUS_COMMANDS: set[str] = {
-    # System destruction
     "mkfs", "mkfs.ext4", "mkfs.btrfs", "mkfs.xfs", "mkfs.fat", "mkswap",
     "fdisk", "parted", "partprobe", "gdisk", "sfdisk",
     "dd",
-    # Privilege escalation
     "sudo", "su", "doas", "pkexec", "visudo",
-    # System control
     "shutdown", "reboot", "poweroff", "halt", "init", "systemctl",
     "telinit", "runlevel",
-    # User / permission changes
     "passwd", "chpasswd", "usermod", "groupmod", "useradd", "userdel",
     "adduser", "deluser", "addgroup", "delgroup",
-    # Kernel control
     "kexec", "modprobe", "insmod", "rmmod", "depmod",
-    # Firewall / network config
     "iptables", "ip6tables", "ufw", "firewall-cmd",
-    # Container escape
     "docker", "podman", "nerdctl", "ctr",
 }
 

@@ -1,4 +1,4 @@
-"""CompressionModule — behaviour module that auto-compresses compartment output via the Rust engine."""
+"""CompressionModule - behaviour module that auto-compresses compartment output via the Rust engine."""
 
 import json
 import logging
@@ -23,15 +23,10 @@ def _get_core():
 
 @register
 class CompressionModule(BehaviourModule):
-    """Auto-compresses compartment output using the Rust compression engine.
-
-    Hooks into ``compartment_done``.  Dict results are serialized to JSON
-    first; only strings >= 512 bytes are sent to the engine.
-    """
+    """Auto-compresses compartment output using the Rust compression engine."""
 
     name = "compression"
     engine = "optimisation"
-    profiles = ["*"]
 
     def load(self, ctx) -> None:
         self._stats: dict[str, dict] = {}
@@ -87,7 +82,7 @@ class CompressionModule(BehaviourModule):
             "ratio": ratio,
         }
         _logger.info(
-            "Compressed '%s': %d → %d bytes (%.1f%% saved)",
+            "Compressed '%s': %d -> %d bytes (%.1f%% saved)",
             name, len(raw), len(compressed), ratio,
         )
         return compressed

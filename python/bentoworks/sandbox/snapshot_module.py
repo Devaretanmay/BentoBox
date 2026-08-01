@@ -1,6 +1,3 @@
-"""SnapshotModule — behaviour module that snapshots the workdir before each
-compartment and restores it if the compartment fails."""
-
 import logging
 import os
 from typing import Any, Optional
@@ -13,16 +10,10 @@ _logger = logging.getLogger("bentoworks.snapshot")
 
 @register
 class SnapshotModule(BehaviourModule):
-    """Snapshots the workdir before each compartment runs.
-
-    On ``compartment_done`` the snapshot is discarded.  On
-    ``compartment_failed`` the snapshot is restored, undoing any
-    modifications the compartment made to the workdir.
-    """
+    """Snapshots the workdir before each compartment runs."""
 
     name = "snapshot"
     engine = "preparation"
-    profiles = ["*"]
 
     def load(self, ctx) -> None:
         self._workdir = ctx.workdir

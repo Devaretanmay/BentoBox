@@ -1,15 +1,16 @@
 # BentoBox SDKs
 
-BentoBox's Rust core (`bentoworks-core`) is the single source of truth for
-kernel sandboxing and output compression. Every language SDK is a thin
-wrapper over that core, mirroring Nono's `core → C ABI → per-language SDK`
-architecture.
+**One Rust core, three thin language wrappers.**
+
+BentoBox implements kernel sandboxing, output compression, and the
+compartment runtime once in Rust. Every language SDK is a thin wrapper over
+that core, following a `core -> C ABI -> per-language SDK` layout:
 
 ```
 bentoworks-core (Rust)
- ├── C ABI        (include/bentobox.h)   → Go SDK (cgo), C, any FFI
- ├── pyo3 module  (bentoworks._core)     → Python SDK (published on PyPI)
- └── napi crate   (sdk/typescript/native) → TypeScript SDK (Node addon)
+ |-- C ABI        (include/bentobox.h)   -> Go SDK (cgo), C, any FFI
+ |-- pyo3 module  (bentoworks._core)     -> Python SDK (published on PyPI)
+ `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
 
 ## The stable C ABI
@@ -41,7 +42,7 @@ cargo build --release
 This produces `target/release/libbentoworks_core.a` (Go static linking),
 `.dylib`/`.so`, and the rlib used by the napi crate.
 
-## Go SDK — `sdk/go/`
+## Go SDK: `sdk/go/`
 
 ```bash
 cd sdk/go
@@ -51,14 +52,14 @@ make test      # builds core, runs go vet + go test
 ```go
 import "github.com/Devaretanmay/BentoBox/sdk/go" // package bentobox
 
-v := bentobox.Version()                 // "0.9.0"
+v := bentobox.Version()                 // "0.9.1"
 ok := bentobox.SandboxSupported()       // true on macOS/Linux
 compressed, _ := bentobox.Compress(text)
 reason, _ := bentobox.SandboxWhy("/etc/passwd", "/tmp/work", true)
 err := bentobox.SandboxApply("/path/to/work", true) // irreversible!
 ```
 
-## TypeScript SDK — `sdk/typescript/`
+## TypeScript SDK: `sdk/typescript/`
 
 ```bash
 cd sdk/typescript
@@ -68,15 +69,23 @@ npm test
 ```
 
 ```ts
-import { version, sandboxSupported, compress, sandboxWhy } from '@bentobox/sdk'
+import * as bentobox from '@bentobox/sdk'
 
-version()                    // "0.9.0"
-sandboxSupported()           // true
-const out = compress(text)
-const why = sandboxWhy('/etc/passwd', '/tmp/work', true)
+bentobox.version()                    // "0.9.1"
+bentobox.sandboxSupported()           // true
+const out = bentobox.compress(text)
+const why = bentobox.sandboxWhy('/etc/passwd', '/tmp/work', true)
+
+// Compartment runtime handle (parse once, route many).
+// configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }
+// edgesJSON: '[['a','b']]'
+const rt = new bentobox.Runtime(configs, edgesJSON)
+rt.canRoute('a', 'b')        // true
+rt.runOrder()                // ['a', 'b', ...]
+rt.names()                   // ['a', 'b', ...]
 ```
 
-## Python SDK — `python/bentoworks/`
+## Python SDK: `python/bentoworks/`
 
 Published on PyPI as `bentoworks`:
 
@@ -90,9 +99,12 @@ from bentoworks import BentoBox
 
 ## Notes
 
-- `bentobox_sandbox_apply` is **irreversible** for the process lifetime —
-  no SDK test calls it; it is exercised only through the Python
+- `bentobox_sandbox_apply` is **irreversible** for the process lifetime.
+  No SDK test calls it; it is exercised only through the Python
   `Box.enter(sandbox=...)` path.
+- The TypeScript SDK's `Runtime` handle (and the Rust core's `names()`
+  method) is exercised by `npm test`; the Go `Runtime` handle is exercised
+  by `go test`.
 - The crate version (`Cargo.toml`) and the Python package version
-  (`pyproject.toml`) are kept in lockstep at `0.9.0` so
+  (`pyproject.toml`) are kept in lockstep at `0.9.1` so
   `bentobox_version()` is consistent across all SDKs.

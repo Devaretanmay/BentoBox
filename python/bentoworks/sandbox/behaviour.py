@@ -1,5 +1,3 @@
-"""Behaviour modules — runtime plugins loaded by the Lid for insulation."""
-
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import Any
@@ -7,7 +5,6 @@ from typing import Any
 
 @dataclass
 class BehaviourContext:
-    """State shared across all loaded behaviour modules for one box run."""
     box_id: str
     box_dir: str
     workdir: str
@@ -19,7 +16,6 @@ class BehaviourModule(ABC):
     """Base class for runtime plugins. Each module hooks into one engine phase."""
     name: str = ""
     engine: str = ""
-    profiles: list[str] = ["*"]
 
     def load(self, ctx: BehaviourContext) -> None:
         pass
@@ -44,7 +40,6 @@ def discover() -> dict[str, type[BehaviourModule]]:
 
 
 class Engine:
-    """Groups modules by execution phase (preparation, optimisation, etc.)."""
     def __init__(self, name: str):
         self.name = name
         self.modules: list[BehaviourModule] = []

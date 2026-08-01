@@ -1,4 +1,4 @@
-"""CompartmentRuntime — manages lifecycle, message routing, and per-compartment policy enforcement."""
+"""CompartmentRuntime - manages lifecycle, message routing, and per-compartment policy enforcement."""
 
 import logging
 import time
@@ -24,11 +24,7 @@ _logger = logging.getLogger("bentoworks.runtime")
 
 
 class CompartmentContext:
-    """What a compartment receives when it runs — messages and shared state.
-
-    This is deliberately minimal. The compartment doesn't know about
-    Box, Lid, or the runtime itself. It only sees what it needs.
-    """
+    """What a compartment receives when it runs - messages and shared state."""
 
     def __init__(
         self,
@@ -38,7 +34,6 @@ class CompartmentContext:
         box_dir: str,
         messages: list[Message],
         state: dict,
-        _box: Any = None,
         _lid: Any = None,
     ):
         self.name = name
@@ -47,11 +42,10 @@ class CompartmentContext:
         self.box_dir = box_dir
         self.messages = messages
         self.state = state
-        self._box = _box
         self._lid = _lid
 
     def send(self, to: str, data: Any, type: str = "data") -> None:
-        """Convenience — runtime routes this to the target compartment."""
+        """Convenience - runtime routes this to the target compartment."""
         if self._lid:
             self._lid.dispatch("compartment_send", from_=self.name, to=to, data=data, type=type)
         self.state.setdefault("_outbox", []).append(
@@ -66,18 +60,7 @@ class CompartmentContext:
 
 
 class CompartmentRuntime:
-    """Coordinates compartment lifecycles and enforces per-compartment policies.
-
-    This is the replacement for the old ``ExecutionEngine``. Unlike that
-    engine, this runtime has **no opinion** about what compartments do.
-    It only knows how to:
-
-    * Register compartments
-    * Define message paths (edges)
-    * Execute compartments, applying each one's policy to the Box
-    * Route messages between compartments
-    * Collect results
-    """
+    """Coordinates compartment lifecycles and enforces per-compartment policies."""
 
     def __init__(self):
         self._compartments: dict[str, Compartment] = {}
@@ -173,11 +156,7 @@ class CompartmentRuntime:
             if box is not None:
                 box.apply_policy(cfg)
 
-            # Shared state separate from results prevents internal keys from
-            # leaking into compartment output.
-
-            # compartments can exchange cross-cutting data (config, flags,
-            # accumulated outputs) without polluting the result keys.
+            # Shared state stays separate so internal keys never leak into results.
             ctx = CompartmentContext(
                 name=name,
                 config=cfg,
@@ -185,7 +164,6 @@ class CompartmentRuntime:
                 box_dir=box_dir,
                 messages=comp.receive(),
                 state=self._shared_state,
-                _box=box,
                 _lid=lid,
             )
 
@@ -205,12 +183,10 @@ class CompartmentRuntime:
             try:
                 result = comp.run(ctx)
 
-                # Collect any messages sent via ctx.send()
                 if ctx.state.get("_outbox"):
                     for msg in ctx.state.pop("_outbox"):
                         self._enqueue(msg)
 
-                # Collect outbox from Compartment.send()
                 for msg in comp.drain_outbox():
                     self._enqueue(msg)
 
@@ -240,4 +216,4 @@ class CompartmentRuntime:
             _logger.warning("Dropping message to unknown compartment '%s'", msg.to)
             return
         self._message_queue.setdefault(msg.to, []).append(msg)
-        _logger.debug("Routed message: %s → %s  type=%s", msg.from_, msg.to, msg.type)
+        _logger.debug("Routed message: %s -> %s  type=%s", msg.from_, msg.to, msg.type)

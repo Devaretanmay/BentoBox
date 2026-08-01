@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 pub const DEFAULT_CAPACITY: usize = 1000;
 pub const DEFAULT_TTL: Duration = Duration::from_secs(1800);
 
-/// Deterministic 24-char blake3-based key for content-addressable caching.
+// 24-char blake3 key for content-addressable caching.
 pub fn compute_key(payload: &[u8]) -> String {
     let h = blake3::hash(payload);
     let hex = h.to_hex();

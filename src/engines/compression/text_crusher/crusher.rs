@@ -20,11 +20,6 @@ const KEYWORDS: [&str; 10] = [
 #[derive(Debug, Clone)]
 pub struct TextCrusherResult {
     pub compressed: String,
-    pub original_tokens: usize,
-    pub compressed_tokens: usize,
-    pub compression_ratio: f64,
-    pub kept_segments: usize,
-    pub total_segments: usize,
 }
 
 pub struct TextCrusher {
@@ -46,15 +41,9 @@ impl TextCrusher {
         }
     }
 
-    fn passthrough(content: &str, n_segments: usize) -> TextCrusherResult {
-        let toks = content.split_whitespace().count();
+    fn passthrough(content: &str, _n_segments: usize) -> TextCrusherResult {
         TextCrusherResult {
             compressed: content.to_string(),
-            original_tokens: toks,
-            compressed_tokens: toks,
-            compression_ratio: 1.0,
-            kept_segments: n_segments,
-            total_segments: n_segments,
         }
     }
 
@@ -136,20 +125,7 @@ impl TextCrusher {
             .map(|i| segments[i].as_str())
             .collect::<Vec<_>>()
             .join("\n");
-        let orig_tok = content.split_whitespace().count();
-        let comp_tok = compressed.split_whitespace().count();
-        TextCrusherResult {
-            compression_ratio: if orig_tok > 0 {
-                comp_tok as f64 / orig_tok as f64
-            } else {
-                1.0
-            },
-            compressed,
-            original_tokens: orig_tok,
-            compressed_tokens: comp_tok,
-            kept_segments: kept_count,
-            total_segments: n,
-        }
+        TextCrusherResult { compressed }
     }
 }
 
@@ -267,7 +243,7 @@ mod tests {
     fn extractive_and_compresses() {
         let content = doc(40);
         let r = TextCrusher::default().compress(&content, "", Some(0.3));
-        assert!(r.compressed_tokens < r.original_tokens);
+        assert!(r.compressed.split_whitespace().count() < content.split_whitespace().count());
         let orig: HashSet<&str> = content.split_whitespace().collect();
         assert!(r.compressed.split_whitespace().all(|w| orig.contains(w)));
     }
@@ -285,6 +261,6 @@ mod tests {
     #[test]
     fn passthrough_when_small() {
         let r = TextCrusher::default().compress("one. two. three.", "", None);
-        assert_eq!(r.compression_ratio, 1.0);
+        assert_eq!(r.compressed, "one. two. three.");
     }
 }

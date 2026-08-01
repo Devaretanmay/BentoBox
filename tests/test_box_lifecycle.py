@@ -1,4 +1,4 @@
-"""Box lifecycle tests — standalone, no AI imports."""
+"""Box lifecycle tests - standalone, no AI imports."""
 
 import os
 import shutil
@@ -23,7 +23,7 @@ class TestBoxLifecycle(unittest.TestCase):
         from bentoworks.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         self.assertFalse(os.path.exists(b.box_dir))
-        b.enter(block_network=False)
+        b.enter(block_network=False, sandbox=False)
         self.assertEqual(b.state, "running")
         self.assertTrue(os.path.isdir(b.box_dir))
         b.exit()
@@ -31,7 +31,7 @@ class TestBoxLifecycle(unittest.TestCase):
     def test_exit_destroys_workspace(self):
         from bentoworks.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
-        b.enter(block_network=False)
+        b.enter(block_network=False, sandbox=False)
         box_dir = b.box_dir
         b.exit()
         self.assertEqual(b.state, "destroyed")
@@ -40,7 +40,7 @@ class TestBoxLifecycle(unittest.TestCase):
     def test_double_exit_raises(self):
         from bentoworks.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
-        b.enter(block_network=False)
+        b.enter(block_network=False, sandbox=False)
         b.exit()
         with self.assertRaises(RuntimeError):
             b.exit()
@@ -48,8 +48,8 @@ class TestBoxLifecycle(unittest.TestCase):
     def test_enter_after_exit_raises(self):
         from bentoworks.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
-        b.enter(block_network=False)
+        b.enter(block_network=False, sandbox=False)
         b.exit()
         with self.assertRaises(RuntimeError):
-            b.enter()
+            b.enter(sandbox=False)
 

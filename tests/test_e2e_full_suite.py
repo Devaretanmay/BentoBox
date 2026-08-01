@@ -1,15 +1,4 @@
-"""Full E2E test suite for compartment-centric BentoBox.
-
-Covers:
-  Test 1 — Single Compartment (Hello World)
-  Test 2 — Policy Isolation (different permissions per compartment)
-  Test 3 — Multi-compartment Pipeline (message passing)
-  Test 4 — Long Workflow (stability over multiple runs)
-  Test 5 — Failure Recovery (errors, cleanup, box health)
-  Test 6 — No Agent Behavior (runtime works without AI)
-  Test 7 — Parallel Sessions (independence)
-  Test 8 — Self-Dogfooding (BentoBox improving itself)
-"""
+"""Full E2E test suite for compartment-centric BentoBox."""
 
 import os
 import shutil
@@ -22,9 +11,6 @@ from bentoworks import BentoBox, BentoBoxConfig
 from bentoworks.compartments import Compartment, CompartmentConfig, CompartmentRuntime
 from bentoworks.sandbox.task_profile import classify
 from bentoworks.engine.tracer import Tracer
-
-
-# ─── Helpers ────────────────────────────────────────────────────────────────
 
 def _make_repo(path: str):
     os.makedirs(path, exist_ok=True)
@@ -44,7 +30,6 @@ def _make_repo(path: str):
                         "GIT_COMMITTER_NAME": "Test",
                         "GIT_COMMITTER_EMAIL": "test@test.com"})
 
-
 def _comp(name: str, data: dict, perms: list[str] = None):
     """Create a compartment that returns a fixed result."""
     def fn(ctx):
@@ -54,7 +39,6 @@ def _comp(name: str, data: dict, perms: list[str] = None):
         config=CompartmentConfig(permissions=perms or ["fs_read"]),
     )
 
-
 def _stateful_comp(name: str, fn):
     """Create a compartment with custom logic."""
     return Compartment(
@@ -62,11 +46,8 @@ def _stateful_comp(name: str, fn):
         config=CompartmentConfig(permissions=["fs_read"]),
     )
 
-
-# ─── Test 1: Single Compartment (Hello World) ────────────────────────────
-
 class TestSingleCompartment(unittest.TestCase):
-    """Test 1 — The simplest possible execution. Verify every lifecycle phase."""
+    """Test 1 - The simplest possible execution. Verify every lifecycle phase."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test1_{uuid.uuid4().hex[:8]}"
@@ -76,7 +57,7 @@ class TestSingleCompartment(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_basic_lifecycle_executes(self):
-        """Box → Lid → Compartment → Cleanup → Destroy."""
+        """Box, Lid, Compartment, Cleanup, Destroy."""
         box = BentoBox(workdir=self.tmpdir)
         self.assertEqual(box._box.state, "created")
 
@@ -122,11 +103,8 @@ class TestSingleCompartment(unittest.TestCase):
 
         self.assertGreater(len(tracer._entries), 0)
 
-
-# ─── Test 2: Policy Isolation ─────────────────────────────────────────────
-
 class TestPolicyIsolation(unittest.TestCase):
-    """Test 2 — Each compartment has its own permission set."""
+    """Test 2 - Each compartment has its own permission set."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test2_{uuid.uuid4().hex[:8]}"
@@ -184,16 +162,13 @@ class TestPolicyIsolation(unittest.TestCase):
         self.assertEqual(tracked[1].get("timeout_s"), 120)
 
     def test_task_profile_classification(self):
-        """'Fix' → 'debugging', 'Refactor' → 'code', 'Explore' → 'research'."""
+        """'Fix' maps to 'debugging', 'Refactor' to 'code', 'Explore' to 'research'."""
         self.assertEqual(classify("Fix this bug"), "debugging")
         self.assertEqual(classify("Refactor the auth module"), "code")
         self.assertEqual(classify("Explore the codebase"), "research")
 
-
-# ─── Test 3: Multi-compartment Pipeline ──────────────────────────────────
-
 class TestMultiCompartmentPipeline(unittest.TestCase):
-    """Test 3 — Compartments compose into pipelines via message passing."""
+    """Test 3 - Compartments compose into pipelines via message passing."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test3_{uuid.uuid4().hex[:8]}"
@@ -203,7 +178,7 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_three_compartment_pipeline(self):
-        """A → B → C should execute in order."""
+        """A, B, C should execute in order."""
         def a(ctx):
             ctx.send("b", {"from": "a"})
             return {"step": "a_done"}
@@ -246,11 +221,8 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
 
         self.assertEqual(order, ["alpha", "beta", "gamma"])
 
-
-# ─── Test 4: Long Workflow ──────────────────────────────────────────────
-
 class TestLongWorkflow(unittest.TestCase):
-    """Test 4 — Box stability, Lid adaptation over time."""
+    """Test 4 - Box stability, Lid adaptation over time."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test4_{uuid.uuid4().hex[:8]}"
@@ -292,11 +264,8 @@ class TestLongWorkflow(unittest.TestCase):
             self.assertEqual(result.status, "success")
             self.assertEqual(result.compartments_completed, [name])
 
-
-# ─── Test 5: Failure Recovery ────────────────────────────────────────────
-
 class TestFailureRecovery(unittest.TestCase):
-    """Test 5 — Compartment errors, box health after failure, cleanup."""
+    """Test 5 - Compartment errors, box health after failure, cleanup."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test5_{uuid.uuid4().hex[:8]}"
@@ -350,11 +319,8 @@ class TestFailureRecovery(unittest.TestCase):
         self.assertEqual(box._box.state, "destroyed")
         self.assertIsNone(box._lid._ctx)
 
-
-# ─── Test 6: No Agent Behavior ───────────────────────────────────────────
-
 class TestNoAgentBehavior(unittest.TestCase):
-    """Test 6 — The runtime works identically without any AI agent."""
+    """Test 6 - The runtime works identically without any AI agent."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test6_{uuid.uuid4().hex[:8]}"
@@ -382,11 +348,8 @@ class TestNoAgentBehavior(unittest.TestCase):
         self.assertEqual(type(a), type(b))
         self.assertEqual(a.status, b.status)
 
-
-# ─── Test 7: Parallel Sessions ──────────────────────────────────────────
-
 class TestParallelSessions(unittest.TestCase):
-    """Test 7 — Multiple independent BentoBoxes should coexist."""
+    """Test 7 - Multiple independent BentoBoxes should coexist."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test7_{uuid.uuid4().hex[:8]}"
@@ -428,7 +391,7 @@ class TestParallelSessions(unittest.TestCase):
         self.assertEqual(b._box.state, "destroyed")
 
     def test_three_boxes_branch_like_structure(self):
-        """Simulate branching: Main → Session A, B, C."""
+        """Simulate branching: Main, then sessions A, B, C."""
         main = BentoBox(workdir=self.tmpdir)
         branches = [BentoBox(workdir=self.tmpdir) for _ in range(3)]
 
@@ -445,11 +408,8 @@ class TestParallelSessions(unittest.TestCase):
             bx._box.exit()
             self.assertEqual(bx._box.state, "destroyed")
 
-
-# ─── Test 8: Self-Dogfooding ────────────────────────────────────────────
-
 class TestSelfDogfooding(unittest.TestCase):
-    """Test 8 — BentoBox can analyze and improve its own codebase."""
+    """Test 8 - BentoBox can analyze and improve its own codebase."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test8_{uuid.uuid4().hex[:8]}"
@@ -519,7 +479,6 @@ class TestSelfDogfooding(unittest.TestCase):
         result = box.run()
         self.assertEqual(result.status, "success")
         self.assertEqual(result.output.get("reflect", {}).get("profile"), "testing")
-
 
 if __name__ == "__main__":
     unittest.main()

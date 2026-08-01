@@ -16,24 +16,11 @@ pub struct CompactionStage {
 }
 
 impl CompactionStage {
-    pub fn default_csv_schema() -> Self {
-        Self {
-            config: CompactConfig::default(),
-            formatter: Box::new(CsvSchemaFormatter::new()),
-        }
-    }
-
     pub fn csv_schema(config: CompactConfig) -> Self {
         Self {
             config,
             formatter: Box::new(CsvSchemaFormatter::new()),
         }
-    }
-
-    pub fn run(&self, items: &[serde_json::Value]) -> (Compaction, String) {
-        let c = compact(items, &self.config);
-        let rendered = self.formatter.format(&c);
-        (c, rendered)
     }
 
     pub fn run_with_store(

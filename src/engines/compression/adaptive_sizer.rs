@@ -338,7 +338,7 @@ mod tests {
     fn validate_zlib_bumps_k_when_subset_undercompresses() {
         let items: [&str; 20] = ["the quick brown fox jumps over the lazy dog"; 20];
         let result = validate_with_zlib(&items, 5, 100, 0.15);
-        assert_eq!(result, 6, "expected 1.2× bump from 5 to 6");
+        assert_eq!(result, 6, "expected 1.2x bump from 5 to 6");
     }
 
     #[test]
@@ -382,7 +382,7 @@ mod tests {
         let items: Vec<String> = (0..20).map(|i| format!("item {}", i)).collect();
         let refs: Vec<&str> = items.iter().map(|s| s.as_str()).collect();
         let k = compute_optimal_k(&refs, 1.0, 3, Some(10));
-        assert!(k <= 10, "k={} should be ≤ max_k=10", k);
+        assert!(k <= 10, "k={} should be <= max_k=10", k);
     }
 
     #[test]
@@ -401,13 +401,13 @@ mod tests {
         let k_high = compute_optimal_k(&refs, 1.5, 3, None);
         assert!(
             k_low <= k_mid,
-            "bias 0.7 → {} should be ≤ bias 1.0 → {}",
+            "bias 0.7 -> {} should be <= bias 1.0 -> {}",
             k_low,
             k_mid
         );
         assert!(
             k_mid <= k_high,
-            "bias 1.0 → {} should be ≤ bias 1.5 → {}",
+            "bias 1.0 -> {} should be <= bias 1.5 -> {}",
             k_mid,
             k_high
         );

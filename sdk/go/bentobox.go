@@ -1,10 +1,4 @@
-// Package bentobox is the Go SDK for the BentoBox kernel sandbox.
-//
-// It wraps the stable C ABI of the BentoBox Rust core (bentoworks-core)
-// through cgo. The native library is linked statically from
-// ../../target/release/libbentoworks_core.a — build it first with:
-//
-//	cargo build --release   (from the repository root)
+// Package bentobox wraps the Rust core's C ABI via cgo.
 package bentobox
 
 /*
@@ -20,7 +14,7 @@ import (
 	"unsafe"
 )
 
-// Version returns the version of the native core library.
+// Version returns the core library version.
 func Version() string {
 	ptr := C.bentobox_version()
 	if ptr == nil {
@@ -35,9 +29,7 @@ func SandboxSupported() bool {
 	return C.bentobox_sandbox_supported() == 1
 }
 
-// SandboxApply applies the kernel sandbox to the current process tree,
-// restricting access to worktreePath (plus system essentials).
-// This is irreversible for the lifetime of the process.
+// SandboxApply restricts the process tree to worktreePath; irreversible.
 func SandboxApply(worktreePath string, blockNetwork bool) error {
 	cPath := C.CString(worktreePath)
 	defer C.free(unsafe.Pointer(cPath))
@@ -55,8 +47,7 @@ func SandboxApply(worktreePath string, blockNetwork bool) error {
 	return lastError()
 }
 
-// SandboxWhy explains why path (file or tcp:/udp: address) would be
-// blocked by the sandbox rules for worktreePath.
+// SandboxWhy explains why path would be blocked by the sandbox rules for worktreePath.
 func SandboxWhy(path, worktreePath string, blockNetwork bool) (string, error) {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
@@ -74,7 +65,7 @@ func SandboxWhy(path, worktreePath string, blockNetwork bool) (string, error) {
 	return C.GoString(ptr), nil
 }
 
-// Compress runs content through the BentoBox smart crusher.
+// Compress runs content through the smart crusher compression engine.
 func Compress(content string) (string, error) {
 	cContent := C.CString(content)
 	defer C.free(unsafe.Pointer(cContent))

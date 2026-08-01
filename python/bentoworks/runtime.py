@@ -1,18 +1,3 @@
-"""Runtime internals — for advanced users and framework developers.
-
-Normal usage::
-
-    from bentoworks import BentoBox
-
-    box = BentoBox()
-    box.add(Compartment(name="task", fn=my_fn))
-    result = box.run()
-
-Advanced usage::
-
-    from bentoworks.runtime import Box, Lid, CompartmentRuntime, Compartment
-"""
-
 from .sandbox.box import Box, BoxConfig
 from .sandbox.lid import Lid, LidConfig
 from .sandbox.behaviour import BehaviourModule, BehaviourContext, Engine

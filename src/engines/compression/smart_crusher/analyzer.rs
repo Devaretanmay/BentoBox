@@ -101,7 +101,6 @@ impl SmartAnalyzer {
                 variance: None,
                 change_points: Vec::new(),
                 avg_length: None,
-                top_values: Vec::new(),
             };
         }
 
@@ -146,7 +145,7 @@ impl SmartAnalyzer {
             variance: None,
             change_points: Vec::new(),
             avg_length: None,
-            top_values: Vec::new(),
+
         };
 
         match field_type.as_str() {
@@ -188,7 +187,7 @@ impl SmartAnalyzer {
                 if !strs.is_empty() {
                     let lens: Vec<f64> = strs.iter().map(|s| s.chars().count() as f64).collect();
                     stats.avg_length = mean(&lens);
-                    stats.top_values = top_n_by_count(&strs, 5);
+
                 }
             }
             _ => {}
@@ -324,7 +323,6 @@ impl SmartAnalyzer {
         use super::outliers::{detect_error_items_for_preservation, detect_structural_outliers};
 
         let mut signals_present: Vec<String> = Vec::new();
-        let mut signals_absent: Vec<String> = Vec::new();
 
         let mut id_field_name: Option<String> = None;
         let mut id_uniqueness: f64 = 0.0;
@@ -344,25 +342,18 @@ impl SmartAnalyzer {
         }
         let has_id_field = id_field_name.is_some() && id_confidence >= 0.7;
 
-        let mut has_score_field = false;
         for (name, stats) in field_stats {
             let (is_score, confidence) = detect_score_field_statistically(stats, items);
             if is_score {
-                has_score_field = true;
                 signals_present.push(format!("score_field:{}(conf={:.2})", name, confidence));
                 break;
             }
-        }
-        if !has_score_field {
-            signals_absent.push("score_field".to_string());
         }
 
         let outlier_indices = detect_structural_outliers(items);
         let structural_outlier_count = outlier_indices.len();
         if structural_outlier_count > 0 {
             signals_present.push(format!("structural_outliers:{}", structural_outlier_count));
-        } else {
-            signals_absent.push("structural_outliers".to_string());
         }
 
         let error_keyword_indices = detect_error_items_for_preservation(items, None);
@@ -370,8 +361,6 @@ impl SmartAnalyzer {
         if keyword_error_count > 0 && structural_outlier_count == 0 {
             signals_present.push(format!("error_keywords:{}", keyword_error_count));
         }
-
-        let error_count = structural_outlier_count.max(keyword_error_count);
 
         let mut anomaly_indices: BTreeSet<usize> = BTreeSet::new();
         for stats in field_stats.values() {
@@ -406,8 +395,6 @@ impl SmartAnalyzer {
         let anomaly_count = anomaly_indices.len();
         if anomaly_count > 0 {
             signals_present.push(format!("anomalies:{}", anomaly_count));
-        } else {
-            signals_absent.push("anomalies".to_string());
         }
 
         let id_name_ref = id_field_name.as_deref();
@@ -446,86 +433,32 @@ impl SmartAnalyzer {
 
         let has_any_signal = !signals_present.is_empty();
 
-        let make = |crushable: bool,
-                    confidence: f64,
-                    reason: &str,
-                    signals_present: Vec<String>,
-                    signals_absent: Vec<String>|
-         -> CrushabilityAnalysis {
-            CrushabilityAnalysis {
-                crushable,
-                confidence,
-                reason: reason.to_string(),
-                signals_present,
-                signals_absent,
-                has_id_field,
-                id_uniqueness,
-                avg_string_uniqueness,
-                has_score_field,
-                error_item_count: error_count,
-                anomaly_count,
-            }
+        let make = |crushable: bool, reason: &str| CrushabilityAnalysis {
+            crushable,
+            reason: reason.to_string(),
         };
 
         if non_id_content_uniqueness < 0.1 && has_id_field {
-            let mut sp = signals_present.clone();
-            sp.push("repetitive_content".to_string());
-            return make(
-                true,
-                0.85,
-                "repetitive_content_with_ids",
-                sp,
-                signals_absent,
-            );
+            return make(true, "repetitive_content_with_ids");
         }
 
         if max_uniqueness < 0.3 {
-            return make(
-                true,
-                0.9,
-                "low_uniqueness_safe_to_sample",
-                signals_present,
-                signals_absent,
-            );
+            return make(true, "low_uniqueness_safe_to_sample");
         }
 
         if has_id_field && max_uniqueness > 0.8 && !has_any_signal {
-            return make(
-                false,
-                0.85,
-                "unique_entities_no_signal",
-                signals_present,
-                signals_absent,
-            );
+            return make(false, "unique_entities_no_signal");
         }
 
         if max_uniqueness > 0.8 && has_any_signal {
-            return make(
-                true,
-                0.7,
-                "unique_entities_with_signal",
-                signals_present,
-                signals_absent,
-            );
+            return make(true, "unique_entities_with_signal");
         }
 
         if !has_any_signal {
-            return make(
-                false,
-                0.6,
-                "medium_uniqueness_no_signal",
-                signals_present,
-                signals_absent,
-            );
+            return make(false, "medium_uniqueness_no_signal");
         }
 
-        make(
-            true,
-            0.5,
-            "medium_uniqueness_with_signal",
-            signals_present,
-            signals_absent,
-        )
+        make(true, "medium_uniqueness_with_signal")
     }
 
     pub fn select_strategy(
@@ -612,28 +545,6 @@ fn python_repr(v: &Value) -> String {
         Value::String(s) => s.clone(),
         _ => v.to_string(),
     }
-}
-
-fn top_n_by_count(strs: &[&str], n: usize) -> Vec<(String, usize)> {
-    use std::collections::HashMap;
-
-    let mut order: Vec<&str> = Vec::new();
-    let mut counts: HashMap<&str, usize> = HashMap::new();
-    for &s in strs {
-        if !counts.contains_key(s) {
-            order.push(s);
-        }
-        *counts.entry(s).or_insert(0) += 1;
-    }
-
-    let mut pairs: Vec<(&&str, usize)> = order.iter().map(|k| (k, counts[k])).collect();
-    pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
-
-    pairs
-        .into_iter()
-        .take(n)
-        .map(|(k, c)| ((*k).to_string(), c))
-        .collect()
 }
 
 fn is_iso_datetime(s: &str) -> bool {
@@ -764,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn analyze_field_string_avg_length_and_top_values() {
+    fn analyze_field_string_avg_length() {
         let items = vec![
             json!({"s": "ok"}),
             json!({"s": "ok"}),
@@ -775,9 +686,6 @@ mod tests {
         let s = analyzer().analyze_field("s", &items);
         assert_eq!(s.field_type, "string");
         assert_eq!(s.avg_length, Some(2.8));
-        assert_eq!(s.top_values[0], ("ok".to_string(), 3));
-        assert_eq!(s.top_values[1].1, 1);
-        assert_eq!(s.top_values[2].1, 1);
     }
 
     #[test]
@@ -936,7 +844,7 @@ mod tests {
     #[test]
     fn select_strategy_skip_when_not_crushable() {
         let fs = BTreeMap::new();
-        let crush = CrushabilityAnalysis::skip("nope", 0.9);
+        let crush = CrushabilityAnalysis::skip("nope");
         let s = analyzer().select_strategy(&fs, "generic", 100, Some(&crush));
         assert_eq!(s, CompressionStrategy::Skip);
     }
@@ -982,8 +890,7 @@ mod tests {
                     variance: None,
                     change_points: Vec::new(),
                     avg_length: None,
-                    top_values: Vec::new(),
-                },
+                    },
             );
         }
         let r = analyzer().estimate_reduction(&fs, CompressionStrategy::ClusterSample, 10);
@@ -1009,7 +916,6 @@ mod tests {
                 variance: Some(841.66),
                 change_points: Vec::new(),
                 avg_length: None,
-                top_values: Vec::new(),
             },
         );
         let r = analyzer().estimate_reduction(&fs, CompressionStrategy::SmartSample, 100);
@@ -1039,14 +945,5 @@ mod tests {
         assert_eq!(python_repr(&json!(false)), "False");
         assert_eq!(python_repr(&json!(42)), "42");
         assert_eq!(python_repr(&json!("hello")), "hello");
-    }
-
-    #[test]
-    fn top_n_first_occurrence_tie_break() {
-        let strs = vec!["a", "b", "a", "b", "c"];
-        let top = top_n_by_count(&strs, 5);
-        assert_eq!(top[0].0, "a");
-        assert_eq!(top[1].0, "b");
-        assert_eq!(top[2].0, "c");
     }
 }

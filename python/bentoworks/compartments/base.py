@@ -1,9 +1,4 @@
-"""Compartment — the fundamental execution unit inside a BentoBox.
-
-Each compartment owns its own policy (``CompartmentConfig``), runs
-independently, and communicates with other compartments through typed
-``Message`` objects routed by the ``CompartmentRuntime``.
-"""
+"""Compartment - the fundamental execution unit inside a BentoBox."""
 
 from typing import Any, Callable, Optional
 
@@ -12,26 +7,7 @@ from .message import Message
 
 
 class Compartment:
-    """A named unit of isolated execution with its own permissions and behaviour.
-
-    Two usage patterns:
-
-    1. **Function wrapper**::
-
-        def fetch_data(ctx):
-            return http_get("https://api.example.com")
-
-        comp = Compartment(name="fetcher", fn=fetch_data,
-                           config=CompartmentConfig(permissions=["network"]))
-
-    2. **Subclass** (for stateful or complex logic)::
-
-        class SecurityScan(Compartment):
-            config = CompartmentConfig(permissions=["fs_read", "network"])
-
-            def run(self, ctx):
-                ...
-    """
+    """A named unit of isolated execution with its own permissions and behaviour."""
 
     config: CompartmentConfig = CompartmentConfig()
 
@@ -53,7 +29,6 @@ class Compartment:
         self._inbox: list[Message] = []
         self._outbox: list[Message] = []
 
-    # ── Lifecycle ───────────────────────────────────────────────────────
 
     def deliver(self, msg: Message) -> None:
         self._inbox.append(msg)
@@ -70,7 +45,6 @@ class Compartment:
             "Either subclass it or pass a callable as fn=."
         )
 
-    # ── Message passing ─────────────────────────────────────────────────
 
     def send(self, to: str, data: Any, type: str = "data") -> None:
         """Queue a message for another compartment."""

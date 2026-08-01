@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use regex::Regex;
-use serde_json::{json, Map, Value};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ContentType {
@@ -14,38 +14,22 @@ pub enum ContentType {
     PlainText,
 }
 
-impl ContentType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ContentType::JsonArray => "json_array",
-            ContentType::SourceCode => "source_code",
-            ContentType::SearchResults => "search",
-            ContentType::BuildOutput => "build",
-            ContentType::GitDiff => "diff",
-            ContentType::Html => "html",
-            ContentType::PlainText => "text",
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct DetectionResult {
     pub content_type: ContentType,
     pub confidence: f64,
-    pub metadata: Map<String, Value>,
 }
 
 impl DetectionResult {
-    fn new(content_type: ContentType, confidence: f64, metadata: Map<String, Value>) -> Self {
+    fn new(content_type: ContentType, confidence: f64) -> Self {
         Self {
             content_type,
             confidence,
-            metadata,
         }
     }
 
     fn plain_text(confidence: f64) -> Self {
-        Self::new(ContentType::PlainText, confidence, Map::new())
+        Self::new(ContentType::PlainText, confidence)
     }
 }
 
@@ -182,18 +166,6 @@ pub fn detect_content_type(content: &str) -> DetectionResult {
     DetectionResult::plain_text(0.5)
 }
 
-pub fn is_json_array_of_dicts(content: &str) -> bool {
-    let result = detect_content_type(content);
-    if result.content_type != ContentType::JsonArray {
-        return false;
-    }
-    result
-        .metadata
-        .get("is_dict_array")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false)
-}
-
 fn try_detect_json(content: &str) -> Option<DetectionResult> {
     let trimmed = content.trim();
     if !trimmed.starts_with('[') {
@@ -201,20 +173,9 @@ fn try_detect_json(content: &str) -> Option<DetectionResult> {
     }
     let parsed: Value = serde_json::from_str(trimmed).ok()?;
     let arr = parsed.as_array()?;
-    let item_count = arr.len();
     let is_dict_array = !arr.is_empty() && arr.iter().all(|v| v.is_object());
     let confidence = if is_dict_array { 1.0 } else { 0.8 };
-    Some(DetectionResult::new(
-        ContentType::JsonArray,
-        confidence,
-        json!({
-            "item_count": item_count,
-            "is_dict_array": is_dict_array,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::JsonArray, confidence))
 }
 
 fn try_detect_diff(content: &str) -> Option<DetectionResult> {
@@ -233,17 +194,7 @@ fn try_detect_diff(content: &str) -> Option<DetectionResult> {
     }
     let confidence =
         (0.5 + (header_matches as f64) * 0.2 + (change_matches as f64) * 0.05).min(1.0);
-    Some(DetectionResult::new(
-        ContentType::GitDiff,
-        confidence,
-        json!({
-            "header_matches": header_matches,
-            "change_lines": change_matches,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::GitDiff, confidence))
 }
 
 fn try_detect_html(content: &str) -> Option<DetectionResult> {
@@ -286,18 +237,7 @@ fn try_detect_html(content: &str) -> Option<DetectionResult> {
     if confidence < 0.5 {
         return None;
     }
-    Some(DetectionResult::new(
-        ContentType::Html,
-        confidence,
-        json!({
-            "has_doctype": has_doctype,
-            "has_html_tag": has_html_tag,
-            "structural_tags": structural_matches,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::Html, confidence))
 }
 
 fn try_detect_search(content: &str) -> Option<DetectionResult> {
@@ -323,17 +263,7 @@ fn try_detect_search(content: &str) -> Option<DetectionResult> {
         return None;
     }
     let confidence = (0.4 + ratio * 0.6).min(1.0);
-    Some(DetectionResult::new(
-        ContentType::SearchResults,
-        confidence,
-        json!({
-            "matching_lines": matching_lines,
-            "total_lines": non_empty_lines,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::SearchResults, confidence))
 }
 
 fn try_detect_log(content: &str) -> Option<DetectionResult> {
@@ -366,18 +296,7 @@ fn try_detect_log(content: &str) -> Option<DetectionResult> {
         return None;
     }
     let confidence = (0.3 + ratio * 0.5 + (error_matches as f64) * 0.05).min(1.0);
-    Some(DetectionResult::new(
-        ContentType::BuildOutput,
-        confidence,
-        json!({
-            "pattern_matches": pattern_matches,
-            "error_matches": error_matches,
-            "total_lines": non_empty_lines,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::BuildOutput, confidence))
 }
 
 fn try_detect_code(content: &str) -> Option<DetectionResult> {
@@ -406,27 +325,18 @@ fn try_detect_code(content: &str) -> Option<DetectionResult> {
         return None;
     }
     let max_score = language_scores.iter().map(|x| x.1).max().unwrap_or(0);
-    let (best_lang, best_score) = *language_scores
+    let best_score = language_scores
         .iter()
         .find(|x| x.1 == max_score)
-        .expect("language_scores non-empty");
+        .expect("language_scores non-empty")
+        .1;
     if best_score < 3 {
         return None;
     }
     let non_empty_lines = lines.iter().filter(|l| !l.trim().is_empty()).count() as u32;
     let ratio = best_score as f64 / non_empty_lines.max(1) as f64;
     let confidence = (0.4 + ratio * 0.4 + (best_score as f64) * 0.02).min(1.0);
-    Some(DetectionResult::new(
-        ContentType::SourceCode,
-        confidence,
-        json!({
-            "language": best_lang,
-            "pattern_matches": best_score,
-        })
-        .as_object()
-        .cloned()
-        .unwrap(),
-    ))
+    Some(DetectionResult::new(ContentType::SourceCode, confidence))
 }
 
 #[cfg(test)]
@@ -452,11 +362,6 @@ mod tests {
         let r = detect_content_type(r#"[{"id": 1}, {"id": 2}]"#);
         assert_eq!(r.content_type, ContentType::JsonArray);
         assert_eq!(r.confidence, 1.0);
-        assert_eq!(
-            r.metadata.get("is_dict_array").unwrap().as_bool(),
-            Some(true)
-        );
-        assert_eq!(r.metadata.get("item_count").unwrap().as_u64(), Some(2));
     }
 
     #[test]
@@ -464,10 +369,6 @@ mod tests {
         let r = detect_content_type(r#"[1, 2, 3]"#);
         assert_eq!(r.content_type, ContentType::JsonArray);
         assert_eq!(r.confidence, 0.8);
-        assert_eq!(
-            r.metadata.get("is_dict_array").unwrap().as_bool(),
-            Some(false)
-        );
     }
 
     #[test]
@@ -475,10 +376,6 @@ mod tests {
         let r = detect_content_type("[]");
         assert_eq!(r.content_type, ContentType::JsonArray);
         assert_eq!(r.confidence, 0.8);
-        assert_eq!(
-            r.metadata.get("is_dict_array").unwrap().as_bool(),
-            Some(false)
-        );
     }
 
     #[test]
@@ -563,7 +460,6 @@ if __name__ == '__main__':
 ";
         let r = detect_content_type(content);
         assert_eq!(r.content_type, ContentType::SourceCode);
-        assert_eq!(r.metadata.get("language").unwrap().as_str(), Some("python"));
     }
 
     #[test]
@@ -588,7 +484,6 @@ impl Foo {
 ";
         let r = detect_content_type(content);
         assert_eq!(r.content_type, ContentType::SourceCode);
-        assert_eq!(r.metadata.get("language").unwrap().as_str(), Some("rust"));
     }
 
     #[test]
@@ -610,7 +505,6 @@ func helper() {}
 ";
         let r = detect_content_type(content);
         assert_eq!(r.content_type, ContentType::SourceCode);
-        assert_eq!(r.metadata.get("language").unwrap().as_str(), Some("go"));
     }
 
     #[test]
@@ -622,23 +516,17 @@ func helper() {}
     }
 
     #[test]
-    fn is_json_array_of_dicts_true_path() {
-        assert!(is_json_array_of_dicts(r#"[{"a": 1}, {"a": 2}]"#));
+    fn json_array_of_dicts_true_path() {
+        let r = detect_content_type(r#"[{"a": 1}, {"a": 2}]"#);
+        assert_eq!(r.content_type, ContentType::JsonArray);
+        assert_eq!(r.confidence, 1.0);
     }
 
     #[test]
-    fn is_json_array_of_dicts_scalars_returns_false() {
-        assert!(!is_json_array_of_dicts(r#"[1, 2, 3]"#));
-    }
-
-    #[test]
-    fn is_json_array_of_dicts_object_returns_false() {
-        assert!(!is_json_array_of_dicts(r#"{"a": 1}"#));
-    }
-
-    #[test]
-    fn is_json_array_of_dicts_empty_returns_false() {
-        assert!(!is_json_array_of_dicts("[]"));
+    fn json_array_of_scalars_not_dict_array() {
+        let r = detect_content_type(r#"[1, 2, 3]"#);
+        assert_eq!(r.content_type, ContentType::JsonArray);
+        assert_eq!(r.confidence, 0.8);
     }
 
     #[test]
@@ -652,16 +540,5 @@ func helper() {}
     fn html_below_threshold_falls_through() {
         let r = detect_content_type("<div>hello</div>");
         assert_ne!(r.content_type, ContentType::Html);
-    }
-
-    #[test]
-    fn content_type_string_tags_match_python() {
-        assert_eq!(ContentType::JsonArray.as_str(), "json_array");
-        assert_eq!(ContentType::SourceCode.as_str(), "source_code");
-        assert_eq!(ContentType::SearchResults.as_str(), "search");
-        assert_eq!(ContentType::BuildOutput.as_str(), "build");
-        assert_eq!(ContentType::GitDiff.as_str(), "diff");
-        assert_eq!(ContentType::Html.as_str(), "html");
-        assert_eq!(ContentType::PlainText.as_str(), "text");
     }
 }

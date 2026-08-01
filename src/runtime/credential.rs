@@ -1,10 +1,3 @@
-/// Credential proxy logic — route matching, path rewriting, env credential
-/// resolution, and hop-by-hop header filtering.
-///
-/// Ported from `python/bentoworks/sandbox/proxy.py`. Only the *decision*
-/// logic lives here (pure, cross-SDK). The HTTP server transport stays in
-/// each SDK's host language.
-
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
@@ -17,17 +10,12 @@ const HOP_BY_HOP: &[&str] = &[
 /// A single credential-injection rule.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RouteConfig {
-    /// Path prefix to match, e.g. `/openai`.
     pub prefix: String,
-    /// Base URL to forward to, e.g. `https://api.openai.com`.
     pub upstream: String,
-    /// HTTP header name to inject, e.g. `Authorization`.
     #[serde(default = "default_header", deserialize_with = "de_default_header")]
     pub header: String,
-    /// Header value template with `{credential}` placeholder.
     #[serde(default = "default_format", deserialize_with = "de_default_format")]
     pub format: String,
-    /// How to resolve the credential — currently `env:VAR_NAME`.
     #[serde(default)]
     pub credential_source: String,
 }
@@ -40,9 +28,7 @@ fn default_format() -> String {
     "Bearer {credential}".to_string()
 }
 
-/// Go/TS SDKs always emit string fields (empty when unset), so an empty
-/// string must fall back to the default — otherwise `header: ""` would
-/// override `Authorization`.
+// Empty strings from Go/TS fall back to the defaults.
 fn de_default_header<'de, D>(d: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
@@ -60,7 +46,6 @@ where
 }
 
 impl RouteConfig {
-    /// Resolve the credential value from its source.
     pub fn resolve_credential(&self) -> String {
         if let Some(var_name) = self.credential_source.strip_prefix("env:") {
             std::env::var(var_name).unwrap_or_default()
@@ -69,12 +54,10 @@ impl RouteConfig {
         }
     }
 
-    /// True if `path` starts with this route's prefix.
     pub fn matches(&self, path: &str) -> bool {
         path.starts_with(&self.prefix)
     }
 
-    /// Strip the prefix and prepend the upstream base URL.
     pub fn rewrite_path(&self, path: &str) -> String {
         let relative = &path[self.prefix.len()..];
         let relative = if relative.starts_with('/') {
@@ -85,14 +68,12 @@ impl RouteConfig {
         format!("{}{}", self.upstream.trim_end_matches('/'), relative)
     }
 
-    /// Render the header value with the credential substituted.
     pub fn header_value(&self, credential: &str) -> String {
         self.format.replace("{credential}", credential)
     }
 }
 
-/// Remove hop-by-hop headers; optionally strip `host` (when forwarding to a
-/// rewritten upstream URL the host must come from the upstream, not the client).
+// Strip hop-by-hop headers; drop `host` when rewriting to a new upstream.
 pub fn clean_headers(headers: &HashMap<String, String>, strip_host: bool) -> HashMap<String, String> {
     headers
         .iter()

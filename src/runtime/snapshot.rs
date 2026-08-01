@@ -1,18 +1,14 @@
-/// SnapshotManager — hash-based filesystem snapshot for rollback on failure.
-///
-/// Ported from `python/bentoworks/sandbox/snapshot.py`. On `snapshot()`,
-/// every file under `workdir` (excluding common build/vendor dirs) is copied
-/// to `snapshot_dir` and its blake3 hash recorded in a manifest. On
-/// `restore()`, only files whose hash differs are copied back.
+// Hash-based filesystem snapshot for rollback: snapshot() copies every file
+// under `workdir` (minus build/vendor dirs) to `snapshot_dir` and records its
+// blake3 hash; restore() copies back only files whose hash changed.
 
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Manifest filename stored inside the snapshot directory.
 pub const MANIFEST: &str = "_manifest.json";
 
-/// Top-level directory names never snapshotted.
+// Top-level directory names never snapshotted.
 const DEFAULT_EXCLUDE: &[&str] = &[
     ".git", ".venv", "venv", "env", "node_modules",
     "__pycache__", ".pytest_cache", ".mypy_cache",
@@ -22,8 +18,7 @@ const DEFAULT_EXCLUDE: &[&str] = &[
 
 const CHUNK: usize = 65_536;
 
-/// blake3 hash of a file, hex-truncated to 16 chars (matches Python's
-/// `blake3_128` fallback semantics for manifest stability).
+// blake3 hash, hex-truncated to 16 chars (matches Python manifest format).
 fn file_hash(path: &Path) -> std::io::Result<String> {
     let mut hasher = blake3::Hasher::new();
     let mut buf = vec![0u8; CHUNK];
@@ -39,7 +34,6 @@ fn file_hash(path: &Path) -> std::io::Result<String> {
     Ok(hex[..16].to_string())
 }
 
-/// Walk `dir`, calling `visit` with each file and its path relative to `base`.
 fn walk_files(dir: &Path, base: &Path, exclude: &HashSet<String>, visit: &mut impl FnMut(&Path, &Path)) {
     let Ok(entries) = fs::read_dir(dir) else { return };
     for entry in entries.flatten() {
@@ -57,7 +51,6 @@ fn walk_files(dir: &Path, base: &Path, exclude: &HashSet<String>, visit: &mut im
     }
 }
 
-/// Hash-based filesystem snapshot for rollback.
 pub struct SnapshotManager {
     workdir: PathBuf,
     snapshot_dir: PathBuf,
@@ -77,7 +70,6 @@ impl SnapshotManager {
         }
     }
 
-    /// Snapshot every non-excluded file under workdir. Returns file count.
     pub fn snapshot(&self) -> Result<usize, String> {
         if self.snapshot_dir.is_dir() {
             fs::remove_dir_all(&self.snapshot_dir).map_err(|e| e.to_string())?;
@@ -100,7 +92,6 @@ impl SnapshotManager {
         Ok(count)
     }
 
-    /// Restore files whose hash differs from the manifest. Returns count restored.
     pub fn restore(&self) -> Result<usize, String> {
         let manifest_path = self.snapshot_dir.join(MANIFEST);
         if !manifest_path.is_file() {
@@ -115,10 +106,9 @@ impl SnapshotManager {
             let current_path = self.workdir.join(rel);
             let expected_hash = expected.as_str().unwrap_or_default().to_string();
 
-            // Skip if the current file already matches the snapshot.
             let needs_restore = match file_hash(&current_path) {
                 Ok(h) => h != expected_hash,
-                Err(_) => true, // missing or unreadable → restore
+                Err(_) => true, // missing or unreadable: restore
             };
             if !needs_restore {
                 continue;
@@ -138,7 +128,6 @@ impl SnapshotManager {
         Ok(count)
     }
 
-    /// Remove the snapshot directory.
     pub fn cleanup(&self) -> Result<(), String> {
         if self.snapshot_dir.is_dir() {
             fs::remove_dir_all(&self.snapshot_dir).map_err(|e| e.to_string())?;

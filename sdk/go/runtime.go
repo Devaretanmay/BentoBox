@@ -14,7 +14,7 @@ import (
 	"unsafe"
 )
 
-// CompartmentConfig mirrors the Rust CompartmentConfig.
+// CompartmentConfig declares a compartment's permissions, resource limits, and communication whitelists.
 type CompartmentConfig struct {
 	Name             string   `json:"name"`
 	Description      string   `json:"description"`
@@ -27,7 +27,7 @@ type CompartmentConfig struct {
 	AllowOutboundTo  []string `json:"allow_outbound_to"`
 }
 
-// RouteConfig mirrors the Rust credential RouteConfig.
+// RouteConfig defines a single credential injection rule.
 type RouteConfig struct {
 	Prefix           string `json:"prefix"`
 	Upstream         string `json:"upstream"`
@@ -36,8 +36,7 @@ type RouteConfig struct {
 	CredentialSource string `json:"credential_source"`
 }
 
-// CheckPermission enforces a policy against required permissions.
-// Returns true if allowed, false if denied. An error indicates invalid input.
+// CheckPermission reports whether policy satisfies the required permissions.
 func CheckPermission(policy CompartmentConfig, required ...string) (bool, error) {
 	policyJSON, err := json.Marshal(policy)
 	if err != nil {
@@ -57,7 +56,7 @@ func CheckPermission(policy CompartmentConfig, required ...string) (bool, error)
 	case 1:
 		return true, nil
 	case 0:
-		return false, nil // denied — the bool is the signal
+		return false, nil // denied - the bool is the signal
 	case -2:
 		return false, errors.New("bentobox: panic in check_permission")
 	default:
@@ -65,8 +64,7 @@ func CheckPermission(policy CompartmentConfig, required ...string) (bool, error)
 	}
 }
 
-// CheckCommand checks a command string against the dangerous-command blocklist.
-// Returns true if allowed, false if blocked. An error indicates a panic.
+// CheckCommand reports whether cmd is allowed by the dangerous-command blocklist.
 func CheckCommand(cmd string) (bool, error) {
 	cCmd := C.CString(cmd)
 	defer C.free(unsafe.Pointer(cCmd))
@@ -75,14 +73,13 @@ func CheckCommand(cmd string) (bool, error) {
 	case 1:
 		return true, nil
 	case 0:
-		return false, nil // blocked — the bool is the signal
+		return false, nil // blocked - the bool is the signal
 	default:
 		return false, errors.New("bentobox: panic in check_command")
 	}
 }
 
-// Snapshot snapshots workdir into snapshotDir, excluding the given top-level
-// dirs (empty = use the default exclusions). Returns the file count.
+// Snapshot records workdir into snapshotDir, excluding the named top-level dirs.
 func Snapshot(workdir, snapshotDir string, exclude []string) (int, error) {
 	cWork := C.CString(workdir)
 	defer C.free(unsafe.Pointer(cWork))
@@ -106,8 +103,7 @@ func Snapshot(workdir, snapshotDir string, exclude []string) (int, error) {
 	return int(rc), nil
 }
 
-// Restore rolls back files whose hash differs from the snapshot.
-// Returns the number of files restored.
+// Restore copies changed files from snapshotDir back into workdir.
 func Restore(workdir, snapshotDir string) (int, error) {
 	cWork := C.CString(workdir)
 	defer C.free(unsafe.Pointer(cWork))
@@ -120,7 +116,7 @@ func Restore(workdir, snapshotDir string) (int, error) {
 	return int(rc), nil
 }
 
-// ValidateRuntime validates compartment configs and edges.
+// ValidateRuntime reports whether configs and edges form a valid compartment graph.
 func ValidateRuntime(configs []CompartmentConfig, edges [][2]string) (bool, error) {
 	cfgJSON, err := json.Marshal(map[string]any{"configs": configs})
 	if err != nil {
@@ -140,14 +136,13 @@ func ValidateRuntime(configs []CompartmentConfig, edges [][2]string) (bool, erro
 	case 1:
 		return true, nil
 	case 0:
-		return false, nil // invalid — the bool is the signal
+		return false, nil // invalid - the bool is the signal
 	default:
 		return false, errors.New("bentobox: panic in validate_runtime")
 	}
 }
 
-// CanRoute checks whether a message from → to is permitted.
-// Returns true if allowed, false if denied, error if a compartment is unknown.
+// CanRoute reports whether a message from -> to is permitted by the configs.
 func CanRoute(configs []CompartmentConfig, from, to string) (bool, error) {
 	cfgJSON, err := json.Marshal(map[string]any{"configs": configs})
 	if err != nil {
@@ -165,14 +160,13 @@ func CanRoute(configs []CompartmentConfig, from, to string) (bool, error) {
 	case 1:
 		return true, nil
 	case 0:
-		return false, nil // denied by whitelist — the bool is the signal
+		return false, nil // denied by whitelist - the bool is the signal
 	default:
 		return false, lastError() // unknown compartment, bad JSON, or panic
 	}
 }
 
-// CredentialRewrite matches a request path against routes and returns the
-// rewritten upstream URL, or "" if no route matched.
+// CredentialRewrite rewrites path through the matching route, or "" if none match.
 func CredentialRewrite(routes []RouteConfig, path string) (string, error) {
 	rJSON, err := json.Marshal(routes)
 	if err != nil {
@@ -195,7 +189,7 @@ func CredentialRewrite(routes []RouteConfig, path string) (string, error) {
 	return C.GoString(ptr), nil
 }
 
-// CredentialResolve resolves a credential source like "env:OPENAI_API_KEY".
+// CredentialResolve resolves a credential source such as env:VAR.
 func CredentialResolve(source string) string {
 	cSrc := C.CString(source)
 	defer C.free(unsafe.Pointer(cSrc))
@@ -216,19 +210,13 @@ func lastErrorMsg() string {
 	return C.GoString(ptr)
 }
 
-// Runtime is an opaque, pre-built compartment runtime.
-//
-// Configs and edges are parsed once at construction, so hot-path
-// CanRoute/RunOrder calls do not re-parse JSON. The native handle is
-// internally mutex-protected, so one Runtime may be shared across
-// goroutines. Call Free exactly once, after all goroutines have finished.
+// Runtime is an opaque, pre-built compartment runtime. The native handle is
+// mutex-protected (safe across goroutines); call Free exactly once.
 type Runtime struct {
 	handle unsafe.Pointer
 }
 
-// NewRuntime builds a compartment Runtime from configs and edges.
-// A nil edges slice means no edges (NULL passed to the C ABI — marshaling
-// nil would produce the JSON `null`, which the core rejects).
+// NewRuntime builds an opaque runtime handle from configs and edges.
 func NewRuntime(configs []CompartmentConfig, edges [][2]string) (*Runtime, error) {
 	cfgJSON, err := json.Marshal(map[string]any{"configs": configs})
 	if err != nil {
@@ -254,8 +242,7 @@ func NewRuntime(configs []CompartmentConfig, edges [][2]string) (*Runtime, error
 	return &Runtime{handle: h}, nil
 }
 
-// CanRoute checks whether a message from → to is permitted by this runtime.
-// Returns true if allowed, false if denied, error if a compartment is unknown.
+// CanRoute reports whether a message from -> to is permitted by this runtime.
 func (r *Runtime) CanRoute(from, to string) (bool, error) {
 	cFrom := C.CString(from)
 	defer C.free(unsafe.Pointer(cFrom))
@@ -267,14 +254,13 @@ func (r *Runtime) CanRoute(from, to string) (bool, error) {
 	case 1:
 		return true, nil
 	case 0:
-		return false, nil // denied by whitelist — the bool is the signal
+		return false, nil // denied by whitelist - the bool is the signal
 	default:
 		return false, lastError() // unknown compartment, bad handle, or panic
 	}
 }
 
-// RunOrder returns the execution order as compartment names, optionally
-// starting at entry ("" = from the start).
+// RunOrder returns the compartment execution order starting at entry.
 func (r *Runtime) RunOrder(entry string) ([]string, error) {
 	var cEntry *C.char
 	if entry != "" {
@@ -294,7 +280,7 @@ func (r *Runtime) RunOrder(entry string) ([]string, error) {
 	return names, nil
 }
 
-// Free releases the native runtime handle. The Runtime must not be used after.
+// Free releases the native handle. Call exactly once when done.
 func (r *Runtime) Free() {
 	if r.handle != nil {
 		C.bentobox_runtime_free(r.handle)

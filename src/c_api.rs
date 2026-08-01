@@ -3,10 +3,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 use std::sync::Mutex;
 
-/// Last error message for `bentobox_last_error()`.
-///
-/// Process-global (not thread-local) because Go goroutines and the napi
-/// thread pool can migrate between OS threads between two cgo/FFI calls.
+// Last error for `bentobox_last_error()` (process-global, not thread-local).
 static LAST_ERROR: Mutex<String> = Mutex::new(String::new());
 
 fn set_error(msg: impl Into<String>) {
@@ -15,7 +12,6 @@ fn set_error(msg: impl Into<String>) {
     }
 }
 
-/// Convert a borrowed C string to a Rust String, recording an error on failure.
 fn cstr_to_string(ptr: *const c_char) -> Result<String, String> {
     if ptr.is_null() {
         return Err("null pointer passed to C ABI".to_string());
@@ -26,9 +22,6 @@ fn cstr_to_string(ptr: *const c_char) -> Result<String, String> {
         .map_err(|_| "C string was not valid UTF-8".to_string())
 }
 
-/// Allocate a C string owned by the caller; free with `bentobox_free`.
-/// Returns NULL (and records an error) if `s` contains an interior NUL byte,
-/// so callers never receive a silently truncated result.
 unsafe fn alloc_string(s: String) -> *mut c_char {
     match CString::new(s) {
         Ok(c) => c.into_raw(),
@@ -39,24 +32,19 @@ unsafe fn alloc_string(s: String) -> *mut c_char {
     }
 }
 
-/// Version of the core library.
-///
-/// Caller must free the result with `bentobox_free`.
+// All returned strings are caller-owned; free with `bentobox_free`.
 #[no_mangle]
 pub extern "C" fn bentobox_version() -> *mut c_char {
     unsafe { alloc_string(env!("CARGO_PKG_VERSION").to_string()) }
 }
 
-/// 1 if kernel sandboxing is supported on this platform, 0 otherwise.
+// 1 if kernel sandboxing is supported, 0 otherwise.
 #[no_mangle]
 pub extern "C" fn bentobox_sandbox_supported() -> i32 {
     i32::from(crate::sandbox::check_supported())
 }
 
-/// Apply the sandbox, restricting the current process tree to `worktree_path`.
-///
-/// Returns 0 on success, -1 on sandbox failure, -2 on panic.
-/// Check `bentobox_last_error()` for details.
+// 0 on success, -1 on sandbox failure, -2 on panic.
 #[no_mangle]
 pub extern "C" fn bentobox_sandbox_apply(worktree_path: *const c_char, block_network: i32) -> i32 {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
@@ -76,10 +64,6 @@ pub extern "C" fn bentobox_sandbox_apply(worktree_path: *const c_char, block_net
     }
 }
 
-/// Explain why `path` (file or `tcp:`/`udp:` address) would be blocked by the
-/// sandbox rules for `worktree_path`.
-///
-/// Returns an allocated string (free with `bentobox_free`) or NULL on error.
 #[no_mangle]
 pub extern "C" fn bentobox_sandbox_why(
     path: *const c_char,
@@ -104,9 +88,6 @@ pub extern "C" fn bentobox_sandbox_why(
     }
 }
 
-/// Compress `content` through the smart crusher.
-///
-/// Returns an allocated string (free with `bentobox_free`) or NULL on error.
 #[no_mangle]
 pub extern "C" fn bentobox_compress(content: *const c_char) -> *mut c_char {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<String, String> {
@@ -126,14 +107,17 @@ pub extern "C" fn bentobox_compress(content: *const c_char) -> *mut c_char {
     }
 }
 
-/// Get the last error message as an allocated string (free with `bentobox_free`).
 #[no_mangle]
 pub extern "C" fn bentobox_last_error() -> *mut c_char {
     let msg = LAST_ERROR.lock().map(|e| e.clone()).unwrap_or_default();
     unsafe { alloc_string(msg) }
 }
 
-/// Free a string returned by this API.
+/// Frees a string allocated by the C ABI.
+///
+/// # Safety
+///
+/// `ptr` must be a non-null pointer returned by `bentobox_*` that has not been freed yet.
 #[no_mangle]
 pub unsafe extern "C" fn bentobox_free(ptr: *mut c_char) {
     if !ptr.is_null() {
@@ -141,12 +125,7 @@ pub unsafe extern "C" fn bentobox_free(ptr: *mut c_char) {
     }
 }
 
-// =========================================================================
-// Compartment runtime — enforcer, snapshots, credentials, coordination
-// =========================================================================
-
-/// Enforce a policy JSON `{"permissions": [...]}` against required permissions.
-/// Returns 1 (allowed) / 0 (denied) / -1 (invalid input). Check `bentobox_last_error()`.
+// 1 (allowed) / 0 (denied) / -1 (invalid input).
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_check_permission(
     policy_json: *const c_char,
@@ -155,8 +134,6 @@ pub extern "C" fn bentobox_runtime_check_permission(
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<bool, String> {
         let policy = parse_json::<serde_json::Value>(cstr_to_string(policy_json)?)?;
         let required: Vec<String> = parse_json(cstr_to_string(required_json)?)?;
-        // check_permission_json only errors on a genuine denial, so a false
-        // result means "denied"; JSON parse failures already surfaced above.
         crate::runtime::enforcer::check_permission_json(&policy, &required)
             .map(|_| true)
             .or_else(|e| {
@@ -178,8 +155,7 @@ pub extern "C" fn bentobox_runtime_check_permission(
     }
 }
 
-/// Check a command string against the dangerous-command blocklist.
-/// Returns 1 (allowed) / 0 (blocked) — check `bentobox_last_error()` for the reason.
+// 1 (allowed) / 0 (blocked).
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_check_command(cmd: *const c_char) -> i32 {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
@@ -199,8 +175,7 @@ pub extern "C" fn bentobox_runtime_check_command(cmd: *const c_char) -> i32 {
     }
 }
 
-/// Create a filesystem snapshot of `workdir` into `snapshot_dir`.
-/// Returns the number of files snapshotted, or -1/-2 on failure.
+// File count on success, -1/-2 on failure.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_snapshot(
     workdir: *const c_char,
@@ -236,8 +211,6 @@ pub extern "C" fn bentobox_runtime_snapshot(
     }
 }
 
-/// Restore files from `snapshot_dir` back into `workdir`.
-/// Returns the number of files restored, or -1 on failure.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_restore(
     workdir: *const c_char,
@@ -262,8 +235,7 @@ pub extern "C" fn bentobox_runtime_restore(
     }
 }
 
-/// Build a compartment Runtime from JSON and validate all compartments + edges.
-/// Returns 1 if valid, 0 if invalid (reason in `bentobox_last_error()`).
+// 1 if valid, 0 if invalid.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_validate(configs_json: *const c_char, edges_json: *const c_char) -> i32 {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
@@ -290,9 +262,7 @@ pub extern "C" fn bentobox_runtime_validate(configs_json: *const c_char, edges_j
     }
 }
 
-/// Validate that a message from `from` to `to` is permitted.
-/// Returns 1 if allowed, 0 if denied by a whitelist, -1 if a compartment
-/// is unknown or input is invalid. Reason is available via `bentobox_last_error()`.
+// 1 if allowed, 0 if denied by a whitelist, -1 if a compartment is unknown.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_can_route(
     configs_json: *const c_char,
@@ -304,7 +274,6 @@ pub extern "C" fn bentobox_runtime_can_route(
         let from = cstr_to_string(from)?;
         let to = cstr_to_string(to)?;
         let runtime = build_runtime(&configs, "[]")?;
-        // Unknown compartment names are input errors (-1), not denials (0).
         if runtime.config(&from).is_none() || runtime.config(&to).is_none() {
             return Ok(-1);
         }
@@ -338,9 +307,6 @@ pub extern "C" fn bentobox_runtime_can_route(
     }
 }
 
-/// Match a request path against credential routes JSON and, on a match,
-/// return the rewritten upstream URL as an allocated string
-/// (free with `bentobox_free`). Returns NULL if no route matches or on error.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_credential_rewrite(
     routes_json: *const c_char,
@@ -358,8 +324,6 @@ pub extern "C" fn bentobox_runtime_credential_rewrite(
     }));
     match result {
         Ok(Ok(Some(url))) => unsafe { alloc_string(url) },
-        // Clear any stale error so callers can distinguish "no match"
-        // (NULL + empty last_error) from a real failure (NULL + message).
         Ok(Ok(None)) => {
             set_error("");
             ptr::null_mut()
@@ -375,9 +339,6 @@ pub extern "C" fn bentobox_runtime_credential_rewrite(
     }
 }
 
-/// Resolve a credential source like `env:OPENAI_API_KEY`.
-/// Returns the resolved value as an allocated string (free with `bentobox_free`)
-/// or NULL if the source is unknown.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_credential_resolve(source: *const c_char) -> *mut c_char {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<String, String> {
@@ -401,19 +362,8 @@ pub extern "C" fn bentobox_runtime_credential_resolve(source: *const c_char) -> 
     }
 }
 
-// =========================================================================
-// Opaque runtime handle — parse configs once, route many times
-// =========================================================================
-
-/// Build a compartment Runtime from configs JSON + edges JSON and return an
-/// opaque handle. The handle parses the configs once; subsequent
-/// `bentobox_runtime_handle_*` calls reuse it (O(1) per message instead of
-/// re-parsing JSON every time). Free with `bentobox_runtime_free`.
-/// Returns NULL on error; check `bentobox_last_error()`.
-///
-/// Thread-safe: the Runtime is wrapped in a `Mutex`, so one handle may be
-/// shared across threads/goroutines. Free it exactly once, after all
-/// threads have finished with it.
+// Opaque handle; configs parsed once. Mutex-protected (thread-safe), but
+// free exactly once after all threads are done.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_new(
     configs_json: *const c_char,
@@ -443,9 +393,11 @@ pub extern "C" fn bentobox_runtime_new(
     }
 }
 
-/// Destroy a runtime handle created by `bentobox_runtime_new`.
-/// Passing NULL is a no-op. Must not be called while other threads are
-/// still using the handle.
+/// Frees a runtime handle created by `bentobox_runtime_new`.
+///
+/// # Safety
+///
+/// `handle` must be a non-null pointer from `bentobox_runtime_new`, freed exactly once.
 #[no_mangle]
 pub unsafe extern "C" fn bentobox_runtime_free(handle: *mut c_void) {
     if !handle.is_null() {
@@ -454,9 +406,7 @@ pub unsafe extern "C" fn bentobox_runtime_free(handle: *mut c_void) {
     }
 }
 
-/// Route a message through a runtime handle.
-/// Returns 1 if allowed, 0 if denied by a whitelist, -1 if a compartment
-/// is unknown or the handle is NULL, -2 on panic.
+// 1 if allowed, 0 if denied, -1 if unknown compartment or NULL handle, -2 on panic.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_handle_can_route(
     handle: *mut c_void,
@@ -474,7 +424,6 @@ pub extern "C" fn bentobox_runtime_handle_can_route(
             .map_err(|_| "runtime handle mutex poisoned".to_string())?;
         let from = cstr_to_string(from)?;
         let to = cstr_to_string(to)?;
-        // Unknown compartment names are input errors (-1), not denials (0).
         if runtime.config(&from).is_none() || runtime.config(&to).is_none() {
             return Ok(-1);
         }
@@ -508,9 +457,7 @@ pub extern "C" fn bentobox_runtime_handle_can_route(
     }
 }
 
-/// Resolve the execution order through a runtime handle as a JSON array of
-/// compartment names, optionally starting at `entry` (NULL = from the start).
-/// Returns an allocated string (free with `bentobox_free`) or NULL on error.
+// JSON array of compartment names, optionally starting at `entry`.
 #[no_mangle]
 pub extern "C" fn bentobox_runtime_handle_run_order(
     handle: *mut c_void,
@@ -548,6 +495,32 @@ pub extern "C" fn bentobox_runtime_handle_run_order(
 
 fn parse_json<T: serde::de::DeserializeOwned>(input: String) -> Result<T, String> {
     serde_json::from_str(&input).map_err(|e| format!("invalid JSON: {e}"))
+}
+
+fn build_runtime(configs: &str, edges: &str) -> Result<crate::runtime::compartments::Runtime, String> {
+    #[derive(serde::Deserialize)]
+    struct Spec {
+        #[serde(default)]
+        configs: Vec<crate::runtime::compartments::CompartmentConfig>,
+    }
+    #[derive(serde::Deserialize)]
+    struct Edge {
+        #[serde(default)]
+        from: String,
+        #[serde(default)]
+        to: String,
+    }
+
+    let spec: Spec = parse_json(configs.to_string())?;
+    let edges_raw: Vec<Edge> = parse_json(edges.to_string())?;
+    let mut rt = crate::runtime::compartments::Runtime::new();
+    for cfg in spec.configs {
+        rt.add(cfg)?;
+    }
+    for e in edges_raw {
+        rt.edge(&e.from, &e.to)?;
+    }
+    Ok(rt)
 }
 
 #[cfg(test)]
@@ -638,32 +611,6 @@ mod tests {
 
         unsafe { bentobox_runtime_free(handle) };
     }
-}
-
-fn build_runtime(configs: &str, edges: &str) -> Result<crate::runtime::compartments::Runtime, String> {
-    #[derive(serde::Deserialize)]
-    struct Spec {
-        #[serde(default)]
-        configs: Vec<crate::runtime::compartments::CompartmentConfig>,
-    }
-    #[derive(serde::Deserialize)]
-    struct Edge {
-        #[serde(default)]
-        from: String,
-        #[serde(default)]
-        to: String,
-    }
-
-    let spec: Spec = parse_json(configs.to_string())?;
-    let edges_raw: Vec<Edge> = parse_json(edges.to_string())?;
-    let mut rt = crate::runtime::compartments::Runtime::new();
-    for cfg in spec.configs {
-        rt.add(cfg)?;
-    }
-    for e in edges_raw {
-        rt.edge(&e.from, &e.to)?;
-    }
-    Ok(rt)
 }
 
 

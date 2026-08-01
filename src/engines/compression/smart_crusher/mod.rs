@@ -32,7 +32,6 @@ pub use outliers::{
 pub use planning::{item_has_preserve_field_match, map_to_anchor_pattern, SmartCrusherPlanner};
 pub use statistics::{calculate_string_entropy, detect_sequential_pattern, is_uuid_format};
 pub use stats_math::{format_g, mean, median, sample_stdev, sample_variance};
-pub use crate::engines::compression::bm25::RelevanceScorer as Scorer;
 
 use std::collections::BTreeSet;
 

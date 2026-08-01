@@ -13,17 +13,11 @@ pub trait Formatter: Send + Sync {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct JsonFormatter {
-    pub pretty: bool,
-}
+pub struct JsonFormatter;
 
 impl JsonFormatter {
     pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn pretty(mut self) -> Self {
-        self.pretty = true;
-        self
+        Self
     }
 }
 
@@ -34,11 +28,7 @@ impl Formatter for JsonFormatter {
 
     fn format(&self, c: &Compaction) -> String {
         let v = compaction_to_json(c);
-        if self.pretty {
-            serde_json::to_string_pretty(&v).unwrap_or_default()
-        } else {
-            serde_json::to_string(&v).unwrap_or_default()
-        }
+        serde_json::to_string(&v).unwrap_or_default()
     }
 }
 
@@ -134,17 +124,11 @@ fn opaque_kind_str(k: &OpaqueKind) -> String {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct CsvSchemaFormatter {
-    pub include_drop_summary: bool,
-}
+pub struct CsvSchemaFormatter;
 
 impl CsvSchemaFormatter {
     pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn with_drop_summary(mut self) -> Self {
-        self.include_drop_summary = true;
-        self
+        Self
     }
 }
 
@@ -155,37 +139,31 @@ impl Formatter for CsvSchemaFormatter {
 
     fn format(&self, c: &Compaction) -> String {
         let mut out = String::new();
-        write_compaction(&mut out, c, self);
+        write_compaction(&mut out, c);
         out
     }
 }
 
-fn write_compaction(out: &mut String, c: &Compaction, fmt: &CsvSchemaFormatter) {
+fn write_compaction(out: &mut String, c: &Compaction) {
     match c {
         Compaction::Table {
             schema,
             rows,
-            original_count,
+            original_count: _,
         } => {
-            write_table(out, schema, rows, *original_count, fmt);
+            write_table(out, schema, rows);
         }
         Compaction::Buckets {
             discriminator,
             buckets,
-            original_count,
+            original_count: _,
         } => {
             out.push_str("__buckets:");
             out.push_str(discriminator);
-            if fmt.include_drop_summary {
-                let kept: usize = buckets.iter().map(|b| b.rows.len()).sum();
-                if kept < *original_count {
-                    out.push_str(&format!(" __dropped:{}", original_count - kept));
-                }
-            }
             out.push('\n');
             for b in buckets {
                 out.push_str(&format!("__key:{}\n", json_scalar_to_csv(&b.key)));
-                write_table(out, &b.schema, &b.rows, b.rows.len(), fmt);
+                write_table(out, &b.schema, &b.rows);
             }
         }
         Compaction::OpaqueRef {
@@ -201,13 +179,7 @@ fn write_compaction(out: &mut String, c: &Compaction, fmt: &CsvSchemaFormatter) 
     }
 }
 
-fn write_table(
-    out: &mut String,
-    schema: &Schema,
-    rows: &[Row],
-    original_count: usize,
-    fmt: &CsvSchemaFormatter,
-) {
+fn write_table(out: &mut String, schema: &Schema, rows: &[Row]) {
     out.push('[');
     out.push_str(&rows.len().to_string());
     out.push_str("]{");
@@ -224,9 +196,6 @@ fn write_table(
         .collect();
     out.push_str(&col_decl.join(","));
     out.push('}');
-    if fmt.include_drop_summary && rows.len() < original_count {
-        out.push_str(&format!(" __dropped:{}", original_count - rows.len()));
-    }
     out.push('\n');
 
     for row in rows {
@@ -461,10 +430,8 @@ mod tests {
             rows,
             original_count: 5,
         };
-        let with_summary = CsvSchemaFormatter::new().with_drop_summary().format(&c);
-        assert!(with_summary.contains("__dropped:3"));
-        let without = CsvSchemaFormatter::new().format(&c);
-        assert!(!without.contains("__dropped"));
+        let out = CsvSchemaFormatter::new().format(&c);
+        assert!(!out.contains("__dropped"));
     }
 
     #[test]
@@ -515,7 +482,7 @@ mod tests {
         let raw_json = serde_json::to_string(&Value::Array(items.clone())).unwrap();
         assert!(
             csv_out.len() * 10 < raw_json.len() * 7,
-            "csv {} bytes vs raw json {} bytes — expected >30% reduction",
+            "csv {} bytes vs raw json {} bytes - expected >30% reduction",
             csv_out.len(),
             raw_json.len()
         );

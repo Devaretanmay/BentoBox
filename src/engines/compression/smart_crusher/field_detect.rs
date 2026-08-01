@@ -144,7 +144,7 @@ mod tests {
             variance: None,
             change_points: Vec::new(),
             avg_length: None,
-            top_values: Vec::new(),
+
         }
     }
 

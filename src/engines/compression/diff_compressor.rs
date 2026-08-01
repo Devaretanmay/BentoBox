@@ -103,10 +103,6 @@ impl DiffCompressor {
         Self { config }
     }
 
-    pub fn config(&self) -> &DiffCompressorConfig {
-        &self.config
-    }
-
     pub fn compress(&self, content: &str, context: &str) -> DiffCompressionResult {
         self.compress_with_stats(content, context).0
     }
@@ -149,7 +145,7 @@ impl DiffCompressor {
                     hunks_removed: 0,
                     cache_key: None,
                 },
-                emit_span_and_return(stats),
+                stats,
             );
         }
 
@@ -182,7 +178,7 @@ impl DiffCompressor {
                     hunks_removed: 0,
                     cache_key: None,
                 },
-                emit_span_and_return(stats),
+                stats,
             );
         }
 
@@ -341,7 +337,7 @@ impl DiffCompressor {
             cache_key,
         };
 
-        (result, emit_span_and_return(stats))
+        (result, stats)
     }
 }
 
@@ -810,31 +806,6 @@ fn format_output(
     }
 
     out_lines.join("\n")
-}
-
-fn emit_span_and_return(stats: DiffCompressorStats) -> DiffCompressorStats {
-    tracing::info!(
-        target: "diff_compressor",
-        input_lines = stats.input_lines,
-        output_lines = stats.output_lines,
-        compression_ratio = stats.compression_ratio,
-        files_total = stats.files_total,
-        files_kept = stats.files_kept,
-        files_dropped = stats.files_dropped.len(),
-        hunks_total = stats.hunks_total,
-        hunks_kept = stats.hunks_kept,
-        hunks_dropped = stats.hunks_dropped,
-        context_lines_trimmed = stats.context_lines_trimmed,
-        largest_hunk_kept_lines = stats.largest_hunk_kept_lines,
-        largest_hunk_dropped_lines = stats.largest_hunk_dropped_lines,
-        parse_warnings = stats.parse_warnings.len(),
-        processing_duration_us = stats.processing_duration_us,
-        cache_key_emitted = stats.cache_key_emitted,
-        file_mode_normalizations = stats.file_mode_normalizations.len(),
-        binary_files_simplified = stats.binary_files_simplified.len(),
-        "diff_compressor finished"
-    );
-    stats
 }
 
 #[cfg(test)]

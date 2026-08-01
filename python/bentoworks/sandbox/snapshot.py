@@ -1,10 +1,4 @@
-"""SnapshotManager — hash-based filesystem snapshot for rollback on compartment failure.
-
-On ``snapshot()``, every file under *workdir* (excluding common build/vendor
-directories) has its content stored under *snapshot_dir* and its blake3 hash
-recorded in a manifest.  On ``restore()``, current hashes are compared
-against the manifest and only files whose hashes differ are copied back.
-"""
+"""SnapshotManager - hash-based filesystem snapshot for rollback on compartment failure."""
 
 import hashlib
 import json
@@ -34,17 +28,7 @@ def _file_hash(path: str) -> str:
 
 
 class SnapshotManager:
-    """Hash-based filesystem snapshot for rollback.
-
-    Parameters
-    ----------
-    workdir : str
-        Absolute path to the project root being snapshotted.
-    snapshot_dir : str
-        Absolute path where snapshots are stored.
-    exclude : set[str], optional
-        Top-level directory names to exclude.
-    """
+    """Hash-based filesystem snapshot for rollback."""
 
     def __init__(
         self,

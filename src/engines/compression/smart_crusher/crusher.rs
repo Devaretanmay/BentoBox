@@ -414,7 +414,7 @@ impl SmartCrusher {
 
         debug_assert!(
             !self.config.lossless_only,
-            "lossy path reached under lossless_only — the early return \
+            "lossy path reached under lossless_only - the early return \
              above must keep this codepath (and its CCR store write) \
              unreachable in strict lossless mode",
         );
@@ -1007,7 +1007,7 @@ mod tests {
             "got: {}",
             result.dropped_summary
         );
-        assert!(result.dropped_summary.contains(&format!("{h}")));
+        assert!(result.dropped_summary.contains(&h.to_string()));
     }
 
     #[test]
@@ -1316,7 +1316,7 @@ mod tests {
         assert_eq!(
             store.len(),
             store_len_before,
-            "ccr_store grew under lossless_only — invariant violated"
+            "ccr_store grew under lossless_only - invariant violated"
         );
     }
 }

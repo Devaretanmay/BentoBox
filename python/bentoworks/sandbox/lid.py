@@ -1,4 +1,4 @@
-"""Lid — insulation layer that loads behaviour modules when the box is entered."""
+"""Lid - insulation layer that loads behaviour modules when the box is entered."""
 
 import logging
 from dataclasses import dataclass, field

@@ -412,7 +412,7 @@ mod tests {
     fn bug4_k_split_no_overshoot_when_k_total_is_one() {
         let items: [&str; 1] = ["only"];
         let (kt, kf, kl, ki) = compute_k_split(&items, &cfg(), 1.0);
-        assert_eq!(kt, 1, "n=1 triggers fast-path n<=8 → k_total=1");
+        assert_eq!(kt, 1, "n=1 triggers fast-path n<=8 -> k_total=1");
         assert!(
             kf + kl <= kt,
             "BUG #4: k_first={} + k_last={} must not exceed k_total={}",
@@ -437,7 +437,7 @@ mod tests {
     fn k_split_low_diversity_returns_min_k() {
         let items: [&str; 10] = ["x"; 10];
         let (kt, kf, kl, _) = compute_k_split(&items, &cfg(), 1.0);
-        assert_eq!(kt, 3, "low-diversity → max(min_k, unique_count)=3");
+        assert_eq!(kt, 3, "low-diversity -> max(min_k, unique_count)=3");
         assert_eq!(kf, 1);
         assert_eq!(kl, 1);
     }
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn string_array_dedup_count_appears_in_strategy() {
-        let items: Vec<&str> = std::iter::repeat("dup").take(50).collect();
+        let items: Vec<&str> = std::iter::repeat_n("dup", 50).collect();
         let (_out, strat) = crush_string_array(&items, &cfg(), 1.0);
         assert!(
             strat.contains("dedup="),

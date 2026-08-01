@@ -2,19 +2,6 @@ use std::collections::HashMap;
 
 pub trait RelevanceScorer {
     fn score_batch(&self, items: &[&str], context: Option<&str>) -> Vec<f64>;
-
-    fn score(&self, item: &str, context: Option<&str>) -> f64 {
-        self.score_batch(&[item], context)
-            .first()
-            .copied()
-            .unwrap_or(0.0)
-    }
-
-    fn score_content(&self, content: &str, context: Option<&str>) -> f64 {
-        let lines: Vec<&str> = content.lines().collect();
-        let scores = self.score_batch(&lines, context);
-        scores.iter().copied().sum::<f64>() / scores.len().max(1) as f64
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -35,10 +22,6 @@ impl Default for BM25Scorer {
 }
 
 impl BM25Scorer {
-    pub fn new(avg_doc_len: f64, k1: f64, b: f64) -> Self {
-        Self { avg_doc_len, k1, b }
-    }
-
     fn compute_bm25(&self, term_freq: f64, doc_len: f64, idf: f64) -> f64 {
         let numerator = term_freq * (self.k1 + 1.0);
         let denominator =

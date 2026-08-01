@@ -491,10 +491,6 @@ impl LogCompressor {
         }
     }
 
-    pub fn config(&self) -> &LogCompressorConfig {
-        &self.config
-    }
-
     pub fn compress(&self, content: &str, bias: f64) -> (LogCompressionResult, LogCompressorStats) {
         self.compress_with_store(content, bias, None)
     }

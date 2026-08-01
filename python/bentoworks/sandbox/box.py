@@ -1,4 +1,4 @@
-"""Box — standalone kernel-level sandbox. No AI awareness."""
+"""Box - standalone kernel-level sandbox. No AI awareness."""
 
 import logging
 import os
@@ -12,7 +12,7 @@ from ..engine.events import emit
 
 _logger = logging.getLogger("bentoworks.box")
 
-# The Rust _core sandbox is optional — BentoBox works without it,
+# The Rust _core sandbox is optional - BentoBox works without it,
 # which lets users run tests and experiments without compiling the native module.
 _CORE = None
 
@@ -110,7 +110,7 @@ class Box:
         core = _get_core()
         if len(core) < 3:
             return (
-                f"INFO — Rust sandbox module not loaded.\n"
+                f"INFO - Rust sandbox module not loaded.\n"
                 f"Run 'maturin develop --offline' to build the native module.\n"
                 f"Without it, BentoBox runs in no-sandbox mode."
             )
@@ -122,7 +122,7 @@ class Box:
                 resolved = os.path.abspath(os.path.expanduser(path))
             return why_fn(resolved, self.workdir, self.config.block_network)
         except Exception as e:
-            return f"ERROR — Diagnostic failed: {e}"
+            return f"ERROR - Diagnostic failed: {e}"
 
     @property
     def state(self) -> str:

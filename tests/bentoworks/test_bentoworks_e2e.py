@@ -1,8 +1,4 @@
-"""E2E tests for the compartment-centric BentoBox API.
-
-Compartments are now user-defined execution units with their own
-permissions and function bodies. No more fixed Intent/Plan/Execute/Verify.
-"""
+"""E2E tests for the compartment-centric BentoBox API."""
 
 import os
 import shutil

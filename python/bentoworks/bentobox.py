@@ -1,25 +1,4 @@
-"""BentoBox — kernel-level sandbox with an insulated runtime for isolated execution.
-
-Usage::
-
-    from bentoworks import BentoBox
-    from bentoworks.compartments import Compartment, CompartmentConfig
-
-    # Single compartment
-    box = BentoBox()
-    box.add(Compartment(
-        name="build",
-        fn=lambda ctx: __import__("os").system("npm run build"),
-        config=CompartmentConfig(permissions=["fs_read", "fs_write", "fs_exec"]),
-    ))
-    result = box.run()
-
-    # Multi-compartment graph with message passing
-    box = BentoBox()
-    box.add(comp_a).add(comp_b).add(comp_c)
-    box.edge("A", "B").edge("B", "C")
-    result = box.run()
-"""
+"""BentoBox - kernel-level sandbox with an insulated runtime for isolated execution."""
 
 import logging
 import os
@@ -62,15 +41,7 @@ class BentoBoxResult:
 
 
 class BentoBox:
-    """A kernel-level sandbox with compartmentalized execution.
-
-    The BentoBox is the user-facing entry point. It composes three layers:
-
-    * ``Box`` — kernel-level sandbox (process isolation, permissions)
-    * ``Lid`` — insulation layer (behaviour modules, optimisation)
-    * ``CompartmentRuntime`` — coordinates compartment lifecycle and
-      message passing
-    """
+    """A kernel-level sandbox with compartmentalized execution."""
 
     BENTOWORKS_DIR = ".bentoworks"
 
@@ -111,7 +82,7 @@ class BentoBox:
         return self
 
     def edge(self, from_name: str, to_name: str) -> "BentoBox":
-        """Define a message path between two compartments: ``from_name → to_name``.
+        """Define a message path between two compartments: ``from_name -> to_name``.
 
         Messages sent by ``from_name`` are routed to ``to_name``.
         """
@@ -131,10 +102,10 @@ class BentoBox:
 
         The lifecycle is:
 
-        1. **Box entered** — sandbox environment is created
-        2. **Lid insulated** — behaviour modules load for the task
-        3. **Compartments execute** — each runs with its own policy
-        4. **Cleanup** — lid released, box destroyed
+        1. **Box entered** - sandbox environment is created
+        2. **Lid insulated** - behaviour modules load for the task
+        3. **Compartments execute** - each runs with its own policy
+        4. **Cleanup** - lid released, box destroyed
 
         Parameters
         ----------
@@ -144,7 +115,7 @@ class BentoBox:
         request : str, optional
             Human-readable task description for logging and trace
             headers. Also used by the Lid to classify the task
-            profile (e.g. "fix bug" → debugging profile).
+            profile (e.g. "fix bug" -> debugging profile).
 
         Returns
         -------
@@ -160,13 +131,10 @@ class BentoBox:
             set_tracer(self._tracer)
             self._wire_tracer_events()
 
-        # ── Box entry ──────────────────────────────────────────────────
         self._box.enter(block_network=False, sandbox=False)
 
-        # ── Lid insulation ─────────────────────────────────────────────
         self._lid.insulate(self._box, task_desc)
 
-        # ── Execute compartments ───────────────────────────────────────
         raw_results = self._runtime.run(
             entry=entry,
             box=self._box,
@@ -188,7 +156,6 @@ class BentoBox:
 
         elapsed = round(time.time() - self._started_at, 2)
 
-        # ── Cleanup ────────────────────────────────────────────────────
         try:
             self._lid.release()
         except Exception:
@@ -198,7 +165,6 @@ class BentoBox:
         except Exception:
             pass
 
-        # ── Tracer cleanup ─────────────────────────────────────────────
         if self._tracer:
             status = "error" if any(
                 isinstance(v, dict) and "error" in v for v in raw_results.values()

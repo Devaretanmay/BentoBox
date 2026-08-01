@@ -1,10 +1,3 @@
-"""CredentialProxy — local HTTP proxy that injects API credentials into upstream requests.
-
-The compartment connects to this proxy via HTTP (not HTTPS), and the proxy
-makes a fresh HTTPS connection upstream, injecting the real credential.
-This avoids needing MITM certificate generation entirely.
-"""
-
 import http.server
 import json
 import logging
@@ -26,29 +19,33 @@ _HOP_BY_HOP = frozenset({
 })
 
 
+def _request_path(request_target: str) -> str:
+    """Extract the path component from an origin-form or absolute-form request target.
+
+    ``BaseHTTPRequestHandler.path`` is the raw HTTP/1.1 request target, which
+    comes in two forms:
+
+    * **Origin-form** (client pointed straight at the proxy):
+      ``"/openai/v1/chat"``
+    * **Absolute-form** (client using the proxy via ``HTTP_PROXY``):
+      ``"http://api.example.com/openai/v1/chat"``
+
+    Route matching must compare against the path component in both cases, so
+    ``HTTP_PROXY``-configured clients get the same credential injection as
+    direct clients. The query string is preserved (``?stream=true`` stays in
+    the rewritten URL), since prefix matching only inspects the start of the
+    path.
+    """
+    parsed = urllib.parse.urlsplit(request_target)
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+    return path
+
+
 @dataclass
 class RouteConfig:
-    """Defines a single credential injection rule.
-
-    The proxy matches ``prefix`` against the incoming request path and,
-    on a match, injects ``header`` with ``format`` (where ``{credential}``
-    is replaced by the resolved value) before forwarding to ``upstream``.
-
-    Parameters
-    ----------
-    prefix : str
-        Path prefix to match, e.g. ``"/openai"``.
-    upstream : str
-        Base URL to forward to, e.g. ``"https://api.openai.com"``.
-    header : str
-        HTTP header name to inject, e.g. ``"Authorization"``.
-    format : str
-        Header value template with ``{credential}`` placeholder,
-        e.g. ``"Bearer {credential}"``.
-    credential_source : str
-        How to resolve the credential.  Currently supports
-        ``"env:VAR_NAME"`` (read from environment variable).
-    """
+    """Defines a single credential injection rule."""
     prefix: str
     upstream: str
     header: str = "Authorization"
@@ -79,7 +76,7 @@ class RouteConfig:
 class _CredentialProxyHandler(http.server.BaseHTTPRequestHandler):
     """Request handler that proxies HTTP requests and injects credentials."""
 
-    # Set by the factory — avoids passing args through the HTTPServer API.
+    # Set by the factory to avoid passing args through the HTTPServer API.
     routes: list[RouteConfig] = []
     server: "CredentialProxy" = None  # type: ignore
 
@@ -94,13 +91,15 @@ class _CredentialProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_OPTIONS(self): self._proxy("OPTIONS")
 
     def do_CONNECT(self):
-        self.send_error(501, "CONNECT not supported — use HTTP to reach the proxy")
+        self.send_error(501, "CONNECT not supported - use HTTP to reach the proxy")
 
     def _proxy(self, method: str) -> None:
+        # Match on the path so origin-form and absolute-form (HTTP_PROXY) targets get injected.
+        request_path = _request_path(self.path)
         target_url = self.path
-        route = self._match_route(target_url)
+        route = self._match_route(request_path)
         if route is not None:
-            target_url = route.rewrite_path(target_url)
+            target_url = route.rewrite_path(request_path)
 
         body = self._read_body()
         headers = self._clean_headers(route)
@@ -164,15 +163,7 @@ class _CredentialProxyHandler(http.server.BaseHTTPRequestHandler):
 
 
 class CredentialProxy:
-    """Local HTTP proxy for credential injection.
-
-    Usage::
-
-        proxy = CredentialProxy(routes=[RouteConfig(...)])
-        proxy.start()
-        # ... run compartment ...
-        proxy.stop()
-    """
+    """Local HTTP proxy for credential injection."""
 
     def __init__(
         self,
@@ -191,8 +182,7 @@ class CredentialProxy:
         if self._server is not None:
             return
 
-        # Create an instance-specific handler class so class-level state
-        # is never shared across multiple proxies in the same process.
+        # Per-instance handler class so state is never shared between proxies.
         handler = type(
             "_CredentialProxyHandler",
             (_CredentialProxyHandler,),

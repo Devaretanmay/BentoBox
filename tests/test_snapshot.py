@@ -1,4 +1,4 @@
-"""Unit tests for SnapshotManager — hash-based snapshot, restore, and cleanup."""
+"""Unit tests for SnapshotManager - hash-based snapshot, restore, and cleanup."""
 
 import json
 import os
@@ -17,7 +17,6 @@ def _write(path: str, content: str) -> str:
 
 
 class _SnapshotTestBase(unittest.TestCase):
-    """Base class: workdir and snapdir are separate /tmp/ dirs."""
 
     def setUp(self):
         uid = uuid.uuid4().hex[:8]

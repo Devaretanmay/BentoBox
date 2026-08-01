@@ -11,20 +11,6 @@ pub enum ArrayType {
     Empty,
 }
 
-impl ArrayType {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            ArrayType::DictArray => "dict_array",
-            ArrayType::StringArray => "string_array",
-            ArrayType::NumberArray => "number_array",
-            ArrayType::BoolArray => "bool_array",
-            ArrayType::NestedArray => "nested_array",
-            ArrayType::MixedArray => "mixed_array",
-            ArrayType::Empty => "empty",
-        }
-    }
-}
-
 pub fn classify_array(items: &[Value]) -> ArrayType {
     if items.is_empty() {
         return ArrayType::Empty;
@@ -128,16 +114,5 @@ mod tests {
     fn null_in_array_is_mixed() {
         let items = vec![json!({"a": 1}), json!(null)];
         assert_eq!(classify_array(&items), ArrayType::MixedArray);
-    }
-
-    #[test]
-    fn as_str_matches_python_values() {
-        assert_eq!(ArrayType::DictArray.as_str(), "dict_array");
-        assert_eq!(ArrayType::StringArray.as_str(), "string_array");
-        assert_eq!(ArrayType::NumberArray.as_str(), "number_array");
-        assert_eq!(ArrayType::BoolArray.as_str(), "bool_array");
-        assert_eq!(ArrayType::NestedArray.as_str(), "nested_array");
-        assert_eq!(ArrayType::MixedArray.as_str(), "mixed_array");
-        assert_eq!(ArrayType::Empty.as_str(), "empty");
     }
 }

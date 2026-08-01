@@ -67,7 +67,6 @@ func TestValidateRuntime(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("expected valid runtime, ok=%v err=%v", ok, err)
 	}
-	// Unknown edge target should fail.
 	ok, err = ValidateRuntime(configs, [][2]string{{"lint", "nope"}})
 	if err != nil || ok {
 		t.Fatalf("expected invalid runtime, ok=%v err=%v", ok, err)
@@ -75,30 +74,23 @@ func TestValidateRuntime(t *testing.T) {
 }
 
 func TestCanRoute(t *testing.T) {
-	// can_route enforces BOTH the source's outbound whitelist and the
-	// destination's inbound whitelist. a->b and b->a are allowed under the
-	// wildcard defaults; a->c is blocked by a's outbound; b->c is blocked
-	// by c's empty inbound whitelist (explicit empty, not wildcard).
 	configs := []CompartmentConfig{
 		{Name: "a", AllowOutboundTo: []string{"b"}},
 		{Name: "b"},
-		{Name: "c", AllowInboundFrom: []string{}}, // explicit empty, not wildcard
+		{Name: "c", AllowInboundFrom: []string{}},
 	}
 	ok, err := CanRoute(configs, "a", "b")
 	if err != nil || !ok {
 		t.Fatalf("expected a->b allowed, got ok=%v err=%v", ok, err)
 	}
-	// Default outbound is the wildcard, so b->a is allowed too.
 	ok, err = CanRoute(configs, "b", "a")
 	if err != nil || !ok {
 		t.Fatalf("expected b->a allowed (wildcard default), got ok=%v err=%v", ok, err)
 	}
-	// a's outbound whitelist ["b"] blocks a->c.
 	ok, err = CanRoute(configs, "a", "c")
 	if err != nil || ok {
 		t.Fatalf("expected a->c denied, got ok=%v err=%v", ok, err)
 	}
-	// c's empty inbound whitelist (not nil, so not wildcard) blocks b->c.
 	ok, err = CanRoute(configs, "b", "c")
 	if err != nil || ok {
 		t.Fatalf("expected b->c denied, got ok=%v err=%v", ok, err)
@@ -157,12 +149,10 @@ func TestRuntimeHandle(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("expected a->b allowed, got ok=%v err=%v", ok, err)
 	}
-	// Wildcard defaults allow b->a.
 	ok, err = rt.CanRoute("b", "a")
 	if err != nil || !ok {
 		t.Fatalf("expected b->a allowed (wildcard), got ok=%v err=%v", ok, err)
 	}
-	// c's empty inbound whitelist blocks b->c.
 	ok, err = rt.CanRoute("b", "c")
 	if err != nil || ok {
 		t.Fatalf("expected b->c denied, got ok=%v err=%v", ok, err)
@@ -176,7 +166,6 @@ func TestRuntimeHandle(t *testing.T) {
 	if err != nil || len(order) != 3 || order[0] != "a" || order[2] != "c" {
 		t.Fatalf("run_order: %v err=%v", order, err)
 	}
-	// Entry slicing: starting at b runs b then c.
 	order, err = rt.RunOrder("b")
 	if err != nil || len(order) != 2 || order[0] != "b" || order[1] != "c" {
 		t.Fatalf("run_order(b): %v err=%v", order, err)
@@ -184,7 +173,6 @@ func TestRuntimeHandle(t *testing.T) {
 }
 
 func TestRuntimeHandleErrors(t *testing.T) {
-	// Invalid edge target should fail construction.
 	_, err := NewRuntime(
 		[]CompartmentConfig{{Name: "a"}},
 		[][2]string{{"a", "nope"}},
@@ -192,7 +180,6 @@ func TestRuntimeHandleErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected NewRuntime to fail for unknown edge target")
 	}
-	// A freed runtime must not be used; Free is idempotent-safe.
 	rt, err := NewRuntime([]CompartmentConfig{{Name: "a"}}, nil)
 	if err != nil {
 		t.Fatalf("NewRuntime: %v", err)
@@ -201,9 +188,6 @@ func TestRuntimeHandleErrors(t *testing.T) {
 	rt.Free()
 }
 
-// TestRuntimeHandleConcurrent verifies a single handle is safe to share
-// across goroutines (the native side wraps the Runtime in a Mutex). Run
-// with -race to catch data races on the Go side.
 func TestRuntimeHandleConcurrent(t *testing.T) {
 	configs := []CompartmentConfig{
 		{Name: "a", AllowOutboundTo: []string{"b"}},

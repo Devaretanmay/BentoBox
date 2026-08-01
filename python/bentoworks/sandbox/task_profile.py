@@ -1,5 +1,3 @@
-"""Task profile classifier — maps a request string to a behaviour profile."""
-
 import re
 
 TASK_PROFILES = {

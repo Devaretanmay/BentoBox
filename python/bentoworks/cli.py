@@ -1,4 +1,4 @@
-"""CLI for BentoBox — run compartments from the command line."""
+"""CLI for BentoBox - run compartments from the command line."""
 
 import argparse
 import os
@@ -23,11 +23,17 @@ def cmd_run(args: argparse.Namespace) -> int:
     perms = args.permissions or ["fs_read", "fs_exec"]
 
     def _run_shell(ctx):
-        return subprocess.run(
+        proc = subprocess.run(
             args.cmd if args.cmd else args.goal,
             shell=True, capture_output=True, text=True,
             cwd=ctx.workdir,
         )
+        # Return a dict (not CompletedProcess) so cmd_run can print output.
+        return {
+            "returncode": proc.returncode,
+            "stdout": proc.stdout or "",
+            "stderr": proc.stderr or "",
+        }
 
     box = BentoBox()
     box.add(Compartment(
@@ -48,7 +54,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             print(f"\nStdout:\n{output['stdout'][:2000]}")
         if output.get("stderr"):
             print(f"\nStderr:\n{output['stderr'][:1000]}")
-    return 0 if result.status == "success" else 1
+
+    returncode = output.get("returncode") if isinstance(output, dict) else None
+    if result.status == "success" and returncode in (None, 0):
+        return 0
+    return 1
 
 
 def cmd_why(args: argparse.Namespace) -> int:
@@ -64,7 +74,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command")
 
-    # ── run ────────────────────────────────────────────────────────────
     run_p = sub.add_parser("run", help="Run a task inside a single compartment")
     run_p.add_argument("goal", nargs="?", default="", help="Task description or command")
     run_p.add_argument("--name", default="task", help="Compartment name")
@@ -76,7 +85,6 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Timeout in seconds")
     run_p.set_defaults(func=cmd_run)
 
-    # ── why ────────────────────────────────────────────────────────────
     why_p = sub.add_parser("why",
                            help="Diagnose why a path or network would be blocked")
     why_p.add_argument("path", help="File path or network address")
