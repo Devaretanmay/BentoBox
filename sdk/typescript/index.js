@@ -37,7 +37,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.android-arm64.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-android-arm64')
+            nativeBinding = require('@bentwork/sdk-android-arm64')
           }
         } catch (e) {
           loadError = e
@@ -49,7 +49,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.android-arm-eabi.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-android-arm-eabi')
+            nativeBinding = require('@bentwork/sdk-android-arm-eabi')
           }
         } catch (e) {
           loadError = e
@@ -69,7 +69,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.win32-x64-msvc.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-win32-x64-msvc')
+            nativeBinding = require('@bentwork/sdk-win32-x64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -83,7 +83,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.win32-ia32-msvc.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-win32-ia32-msvc')
+            nativeBinding = require('@bentwork/sdk-win32-ia32-msvc')
           }
         } catch (e) {
           loadError = e
@@ -97,7 +97,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.win32-arm64-msvc.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-win32-arm64-msvc')
+            nativeBinding = require('@bentwork/sdk-win32-arm64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -113,7 +113,7 @@ switch (platform) {
       if (localFileExisted) {
         nativeBinding = require('./bentoworks-native.darwin-universal.node')
       } else {
-        nativeBinding = require('@bentobox/sdk-darwin-universal')
+        nativeBinding = require('@bentwork/sdk-darwin-universal')
       }
       break
     } catch {}
@@ -124,7 +124,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.darwin-x64.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-darwin-x64')
+            nativeBinding = require('@bentwork/sdk-darwin-x64')
           }
         } catch (e) {
           loadError = e
@@ -138,7 +138,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.darwin-arm64.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-darwin-arm64')
+            nativeBinding = require('@bentwork/sdk-darwin-arm64')
           }
         } catch (e) {
           loadError = e
@@ -157,7 +157,7 @@ switch (platform) {
       if (localFileExisted) {
         nativeBinding = require('./bentoworks-native.freebsd-x64.node')
       } else {
-        nativeBinding = require('@bentobox/sdk-freebsd-x64')
+        nativeBinding = require('@bentwork/sdk-freebsd-x64')
       }
     } catch (e) {
       loadError = e
@@ -174,7 +174,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-x64-musl.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-x64-musl')
+              nativeBinding = require('@bentwork/sdk-linux-x64-musl')
             }
           } catch (e) {
             loadError = e
@@ -187,7 +187,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-x64-gnu.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-x64-gnu')
+              nativeBinding = require('@bentwork/sdk-linux-x64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -203,7 +203,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-arm64-musl.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-arm64-musl')
+              nativeBinding = require('@bentwork/sdk-linux-arm64-musl')
             }
           } catch (e) {
             loadError = e
@@ -216,7 +216,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-arm64-gnu.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-arm64-gnu')
+              nativeBinding = require('@bentwork/sdk-linux-arm64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -232,7 +232,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-arm-musleabihf.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-arm-musleabihf')
+              nativeBinding = require('@bentwork/sdk-linux-arm-musleabihf')
             }
           } catch (e) {
             loadError = e
@@ -245,7 +245,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-arm-gnueabihf.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-arm-gnueabihf')
+              nativeBinding = require('@bentwork/sdk-linux-arm-gnueabihf')
             }
           } catch (e) {
             loadError = e
@@ -261,7 +261,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-riscv64-musl.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-riscv64-musl')
+              nativeBinding = require('@bentwork/sdk-linux-riscv64-musl')
             }
           } catch (e) {
             loadError = e
@@ -274,7 +274,7 @@ switch (platform) {
             if (localFileExisted) {
               nativeBinding = require('./bentoworks-native.linux-riscv64-gnu.node')
             } else {
-              nativeBinding = require('@bentobox/sdk-linux-riscv64-gnu')
+              nativeBinding = require('@bentwork/sdk-linux-riscv64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -289,7 +289,7 @@ switch (platform) {
           if (localFileExisted) {
             nativeBinding = require('./bentoworks-native.linux-s390x-gnu.node')
           } else {
-            nativeBinding = require('@bentobox/sdk-linux-s390x-gnu')
+            nativeBinding = require('@bentwork/sdk-linux-s390x-gnu')
           }
         } catch (e) {
           loadError = e

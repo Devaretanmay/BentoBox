@@ -46,7 +46,7 @@ rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
 
-Published on npm as `@bentobox/sdk`:
+Published on npm as `@bentwork/sdk`:
 
 ```bash
 cd sdk/typescript
@@ -56,7 +56,7 @@ npm test
 ```
 
 ```ts
-import * as bentobox from '@bentobox/sdk'
+import * as bentobox from '@bentwork/sdk'
 
 bentobox.version()                    // "0.9.1"
 bentobox.sandboxSupported()           // true

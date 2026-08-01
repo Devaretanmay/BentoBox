@@ -1,5 +1,5 @@
 {
-  "name": "@bentobox/sdk",
+  "name": "@bentwork/sdk",
   "version": "0.9.1",
   "description": "BentoBox TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
@@ -22,8 +22,8 @@
     "binaryName": "bentoworks-native"
   },
   "optionalDependencies": {
-    "@bentobox/sdk-darwin-arm64": "0.9.1",
-    "@bentobox/sdk-darwin-x64": "0.9.1"
+    "@bentwork/sdk-darwin-arm64": "0.9.1",
+    "@bentwork/sdk-darwin-x64": "0.9.1"
   },
   "engines": {
     "node": ">= 16.0.0"

@@ -186,7 +186,7 @@ One Rust core, two language wrappers. All compartment runtime logic — permissi
 
 ```bash
 pip install bentoworks                    # Python
-npm install @bentobox/sdk                  # TypeScript
+npm install @bentwork/sdk                  # TypeScript
 ```
 
 ### Python
@@ -267,7 +267,7 @@ result = box.run()
 ### TypeScript
 
 ```ts
-import * as bentobox from '@bentobox/sdk'
+import * as bentobox from '@bentwork/sdk'
 
 bentobox.runtimeCheckPermission(
   JSON.stringify({ permissions: ['fs_read'] }),

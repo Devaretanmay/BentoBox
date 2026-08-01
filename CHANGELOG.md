@@ -22,7 +22,7 @@ All notable changes to BentoBox are documented here.
 - **CLI branding.** `bentoworks --version` and `--help` now surface the
   tagline, and `bentoworks run`/`why` print a brand banner on interactive
   terminals. Non-TTY output stays machine-friendly for scripts and CI.
-- **TypeScript SDK package metadata.** `@bentobox/sdk` descriptions updated;
+- **TypeScript SDK package metadata.** `@bentwork/sdk` descriptions updated;
   the publish layout is trimmed to the shipped macOS platform packages
   (`darwin-arm64`, `darwin-x64`) at version `0.9.1`.
 
