@@ -22,5 +22,5 @@ sdk/typescript/node_modules/
 sdk/typescript/*.node
 sdk/typescript/native/target/
 sdk/typescript/native/Cargo.lock
-sdk/go/bin/
-sdk/go/*.test
+sdk/typescript/*.tgz
+sdk/typescript/sdk-darwin-*/

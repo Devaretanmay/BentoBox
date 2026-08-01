@@ -2,6 +2,30 @@
 
 All notable changes to BentoBox are documented here.
 
+## [Unreleased]
+
+### Removed
+
+- **Go SDK removed.** The `sdk/go/` module was dropped; BentoBox now ships
+  Python and TypeScript SDKs only. `Cargo.toml` no longer emits a
+  `staticlib` archive, `include/bentobox.h` no longer references the Go
+  bindings, and all Go code samples were stripped from the docs.
+
+### Changed
+
+- **Product rebrand.** The README is now a product landing page rather than a
+  technical writeup: a one-line hero promise ("Sandbox any AI agent in
+  seconds"), a "Why BentoBox" section, benefit-led features, real use cases
+  (coding agents, builds/tests, deploys, pipelines), and an honest security
+  model. SDK, CLI, and package metadata descriptions now carry the same
+  product voice.
+- **CLI branding.** `bentoworks --version` and `--help` now surface the
+  tagline, and `bentoworks run`/`why` print a brand banner on interactive
+  terminals. Non-TTY output stays machine-friendly for scripts and CI.
+- **TypeScript SDK package metadata.** `@bentobox/sdk` descriptions updated;
+  the publish layout is trimmed to the shipped macOS platform packages
+  (`darwin-arm64`, `darwin-x64`) at version `0.9.1`.
+
 ## [0.9.1] - 2026-07-31
 
 ### Fixed

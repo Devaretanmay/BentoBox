@@ -2,7 +2,7 @@
 #define BENTOBOX_H
 
 /* Stable C ABI for the BentoBox Rust core.
- * Used by the Go and TypeScript SDKs. Strings returned by this API
+ * Used by the TypeScript SDK. Strings returned by this API
  * must be freed with bentobox_free(). */
 
 #ifdef __cplusplus

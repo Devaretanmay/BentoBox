@@ -12,12 +12,12 @@ categories = ["development-tools", "command-line-utilities"]
 
 [lib]
 name = "bentoworks_core"
-crate-type = ["cdylib", "lib", "staticlib"]
+crate-type = ["cdylib", "lib"]
 
 [features]
 default = []
 # Python extension module (enabled by maturin). Plain `cargo build`
-# without this feature produces a clean FFI cdylib for Go/TS SDKs.
+# without this feature produces a clean FFI cdylib for the TS SDK.
 pyo3-binding = ["dep:pyo3", "pyo3/extension-module", "pyo3/abi3-py38"]
 
 [dependencies]
@@ -36,6 +36,4 @@ landlock = "0.4"
 opt-level = "z"
 lto = true
 codegen-units = 1
-# debuginfo only - strip=symbols would remove the symbol table and
-# break cgo static linking against the Go SDK's .a archive.
-strip = "debuginfo"
+strip = "symbols"

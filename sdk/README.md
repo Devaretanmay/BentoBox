@@ -1,14 +1,16 @@
 # BentoBox SDKs
 
-**One Rust core, three thin language wrappers.**
+**One Rust core, two thin language wrappers.**
 
 BentoBox implements kernel sandboxing, output compression, and the
 compartment runtime once in Rust. Every language SDK is a thin wrapper over
-that core, following a `core -> C ABI -> per-language SDK` layout:
+that core, following a `core -> C ABI -> per-language SDK` layout — so the
+same allow/deny decisions, snapshots, credential routing, and message routing
+behave identically whether you call them from Python or TypeScript:
 
 ```
 bentoworks-core (Rust)
- |-- C ABI        (include/bentobox.h)   -> Go SDK (cgo), C, any FFI
+ |-- C ABI        (include/bentobox.h)   -> C, any FFI
  |-- pyo3 module  (bentoworks._core)     -> Python SDK (published on PyPI)
  `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
@@ -39,27 +41,12 @@ All SDKs require the Rust core built once (from the repository root):
 cargo build --release
 ```
 
-This produces `target/release/libbentoworks_core.a` (Go static linking),
-`.dylib`/`.so`, and the rlib used by the napi crate.
-
-## Go SDK: `sdk/go/`
-
-```bash
-cd sdk/go
-make test      # builds core, runs go vet + go test
-```
-
-```go
-import "github.com/Devaretanmay/BentoBox/sdk/go" // package bentobox
-
-v := bentobox.Version()                 // "0.9.1"
-ok := bentobox.SandboxSupported()       // true on macOS/Linux
-compressed, _ := bentobox.Compress(text)
-reason, _ := bentobox.SandboxWhy("/etc/passwd", "/tmp/work", true)
-err := bentobox.SandboxApply("/path/to/work", true) // irreversible!
-```
+This produces `target/release/libbentoworks_core.dylib`/`.so`, and the
+rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
+
+Published on npm as `@bentobox/sdk`:
 
 ```bash
 cd sdk/typescript
@@ -87,7 +74,8 @@ rt.names()                   // ['a', 'b', ...]
 
 ## Python SDK: `python/bentoworks/`
 
-Published on PyPI as `bentoworks`:
+Published on PyPI as `bentoworks` — the same kernel-enforced isolation,
+compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash
 pip install bentoworks
@@ -103,8 +91,7 @@ from bentoworks import BentoBox
   No SDK test calls it; it is exercised only through the Python
   `Box.enter(sandbox=...)` path.
 - The TypeScript SDK's `Runtime` handle (and the Rust core's `names()`
-  method) is exercised by `npm test`; the Go `Runtime` handle is exercised
-  by `go test`.
+  method) is exercised by `npm test`.
 - The crate version (`Cargo.toml`) and the Python package version
   (`pyproject.toml`) are kept in lockstep at `0.9.1` so
   `bentobox_version()` is consistent across all SDKs.
