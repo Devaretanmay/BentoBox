@@ -156,7 +156,11 @@ fn build_row(
     Row::new(cells)
 }
 
-fn cell_from_value(v: &Value, cfg: &CompactConfig, store: Option<&Arc<InMemoryCcrStore>>) -> CellValue {
+fn cell_from_value(
+    v: &Value,
+    cfg: &CompactConfig,
+    store: Option<&Arc<InMemoryCcrStore>>,
+) -> CellValue {
     match classify_cell(v, &cfg.classify) {
         CellClass::Scalar => CellValue::Scalar(v.clone()),
         CellClass::JsonObject => CellValue::Scalar(v.clone()),

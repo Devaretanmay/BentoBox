@@ -1,9 +1,9 @@
 use serde_json::Value;
 use std::collections::{BTreeSet, HashSet};
 
-use super::SmartCrusherConfig;
 use super::outliers::{detect_error_items_for_preservation, detect_structural_outliers};
 use super::types::{ArrayAnalysis, FieldStats};
+use super::SmartCrusherConfig;
 use crate::engines::compression::anchor_selector::compute_item_hash;
 
 pub fn deduplicate_indices_by_content(
@@ -105,13 +105,10 @@ pub fn prioritize_indices(
 
     let anomaly_indices = numeric_anomaly_indices(config, items, analysis);
 
-    let learned_indices: BTreeSet<usize> = BTreeSet::new();
-
     let mut prioritized: BTreeSet<usize> = BTreeSet::new();
     prioritized.extend(&error_indices);
     prioritized.extend(&outlier_indices);
     prioritized.extend(&anomaly_indices);
-    prioritized.extend(&learned_indices);
 
     let mut remaining = effective_max.saturating_sub(prioritized.len());
     if remaining > 0 {

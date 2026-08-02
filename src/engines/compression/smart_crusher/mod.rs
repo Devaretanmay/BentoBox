@@ -19,7 +19,6 @@ pub use anchors::{extract_query_anchors, item_matches_anchors};
 
 pub use classifier::{classify_array, ArrayType};
 
-
 pub use crusher::{CrushArrayResult, SmartCrusher};
 pub use crushers::{compute_k_split, crush_number_array, crush_object, crush_string_array};
 
@@ -102,15 +101,29 @@ mod error_keywords_tests {
     #[test]
     fn all_lowercase_invariant() {
         for &kw in ERROR_KEYWORDS {
-            assert_eq!(kw, kw.to_lowercase(), "ERROR_KEYWORDS must all be lowercase");
+            assert_eq!(
+                kw,
+                kw.to_lowercase(),
+                "ERROR_KEYWORDS must all be lowercase"
+            );
         }
     }
 
     #[test]
     fn pinned_membership() {
         let expected = [
-            "error", "exception", "failed", "failure", "critical", "fatal",
-            "crash", "panic", "abort", "timeout", "denied", "rejected",
+            "error",
+            "exception",
+            "failed",
+            "failure",
+            "critical",
+            "fatal",
+            "crash",
+            "panic",
+            "abort",
+            "timeout",
+            "denied",
+            "rejected",
         ];
         let actual: std::collections::BTreeSet<&str> = ERROR_KEYWORDS.iter().copied().collect();
         let expected: std::collections::BTreeSet<&str> = expected.iter().copied().collect();
@@ -134,7 +147,10 @@ mod must_keep_tests {
     #[test]
     fn must_keep_uses_item_strings_when_provided() {
         let items: Vec<Value> = vec![json!({"a": 1}), json!({"a": "exception"})];
-        let strings: Vec<String> = items.iter().map(|v| serde_json::to_string(v).unwrap()).collect();
+        let strings: Vec<String> = items
+            .iter()
+            .map(|v| serde_json::to_string(v).unwrap())
+            .collect();
         let with_cache = must_keep(&items, Some(&strings));
         let without_cache = must_keep(&items, None);
         assert_eq!(with_cache, without_cache);
@@ -143,7 +159,9 @@ mod must_keep_tests {
 
     #[test]
     fn must_keep_finds_structural_outliers() {
-        let mut items: Vec<Value> = (0..20).map(|i| json!({"id": i, "kind": "common"})).collect();
+        let mut items: Vec<Value> = (0..20)
+            .map(|i| json!({"id": i, "kind": "common"}))
+            .collect();
         items.push(json!({"id": 20, "kind": "common", "rare_extra_field": "x"}));
         let kept = must_keep(&items, None);
         assert!(kept.contains(&20));
@@ -151,7 +169,9 @@ mod must_keep_tests {
 
     #[test]
     fn must_keep_merges_error_and_outlier_indices() {
-        let mut items: Vec<Value> = (0..20).map(|i| json!({"id": i, "kind": "common"})).collect();
+        let mut items: Vec<Value> = (0..20)
+            .map(|i| json!({"id": i, "kind": "common"}))
+            .collect();
         items.push(json!({"id": 20, "kind": "common", "x": "rare"}));
         items.push(json!({"id": 21, "status": "error", "msg": "FATAL"}));
         let kept = must_keep(&items, None);

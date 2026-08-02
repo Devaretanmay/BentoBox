@@ -1,9 +1,9 @@
 use serde_json::{Map, Value};
 use std::collections::{BTreeSet, HashSet};
 
+use super::stats_math::{format_g, mean, median, sample_stdev};
 use super::SmartCrusherConfig;
 use super::ERROR_KEYWORDS;
-use super::stats_math::{format_g, mean, median, sample_stdev};
 use crate::engines::compression::adaptive_sizer::compute_optimal_k;
 
 pub fn compute_k_split(
@@ -17,8 +17,10 @@ pub fn compute_k_split(
         None
     };
     let k_total = compute_optimal_k(items, bias, 3, max_k);
-    let k_first_raw = 1_usize.max(round_ties_even(k_total as f64 * config.first_fraction) as usize);
-    let k_last_raw = 1_usize.max(round_ties_even(k_total as f64 * config.last_fraction) as usize);
+    let k_first_raw =
+        1_usize.max((k_total as f64 * config.first_fraction).round_ties_even() as usize);
+    let k_last_raw =
+        1_usize.max((k_total as f64 * config.last_fraction).round_ties_even() as usize);
     let k_first = k_first_raw.min(k_total);
     let k_last = k_last_raw.min(k_total.saturating_sub(k_first));
     let k_importance = k_total.saturating_sub(k_first + k_last);
@@ -303,8 +305,8 @@ pub fn crush_object(
         }
     }
 
-    let k_first = 1_usize.max(round_ties_even(k_total as f64 * config.first_fraction) as usize);
-    let k_last = 1_usize.max(round_ties_even(k_total as f64 * config.last_fraction) as usize);
+    let k_first = 1_usize.max((k_total as f64 * config.first_fraction).round_ties_even() as usize);
+    let k_last = 1_usize.max((k_total as f64 * config.last_fraction).round_ties_even() as usize);
     for k in keys.iter().take(k_first) {
         keep_keys.insert((*k).clone());
     }
@@ -366,10 +368,6 @@ fn finite_min(values: &[f64]) -> f64 {
 
 fn finite_max(values: &[f64]) -> f64 {
     values.iter().cloned().reduce(f64::max).unwrap_or(0.0)
-}
-
-fn round_ties_even(x: f64) -> f64 {
-    x.round_ties_even()
 }
 
 fn format_number_repr(x: f64) -> String {

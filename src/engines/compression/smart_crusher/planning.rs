@@ -4,12 +4,12 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use super::analyzer::SmartAnalyzer;
 use super::anchors::{extract_query_anchors, item_matches_anchors};
-use super::SmartCrusherConfig;
 use super::field_detect::detect_score_field_statistically;
 use super::hash_field_name;
 use super::must_keep;
 use super::orchestration::prioritize_indices;
 use super::types::{ArrayAnalysis, CompressionPlan, CompressionStrategy, FieldStats};
+use super::SmartCrusherConfig;
 use crate::engines::compression::anchor_selector::{AnchorSelector, DataPattern};
 use crate::engines::compression::bm25::RelevanceScorer;
 
@@ -535,7 +535,12 @@ mod tests {
         SmartCrusherPlanner::new(config, anchor_selector, scorer, analyzer)
     }
 
-    fn make_planner_deps() -> (SmartCrusherConfig, AnchorSelector, BM25Scorer, SmartAnalyzer) {
+    fn make_planner_deps() -> (
+        SmartCrusherConfig,
+        AnchorSelector,
+        BM25Scorer,
+        SmartAnalyzer,
+    ) {
         let cfg = SmartCrusherConfig::default();
         let asel = AnchorSelector::new(AnchorConfig::default());
         let scorer = BM25Scorer::default();

@@ -1,7 +1,1 @@
-from .events import EventBus, Event, event_bus, emit
-from .tracer import Tracer
-
-__all__ = [
-    "EventBus", "Event", "event_bus", "emit",
-    "Tracer",
-]
+"""Engine subpackage: event bus and execution tracer."""

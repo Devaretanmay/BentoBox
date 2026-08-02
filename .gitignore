@@ -24,3 +24,7 @@ sdk/typescript/native/target/
 sdk/typescript/native/Cargo.lock
 sdk/typescript/*.tgz
 sdk/typescript/sdk-darwin-*/
+
+# Bench & transient state
+.DS_Store
+.opencode/

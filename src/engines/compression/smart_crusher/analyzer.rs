@@ -1,10 +1,10 @@
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::SmartCrusherConfig;
 use super::field_detect::{detect_id_field_statistically, detect_score_field_statistically};
 use super::stats_math::{mean, sample_stdev, sample_variance};
 use super::types::{ArrayAnalysis, CompressionStrategy, CrushabilityAnalysis, FieldStats};
+use super::SmartCrusherConfig;
 
 pub struct SmartAnalyzer {
     pub config: SmartCrusherConfig,
@@ -145,7 +145,6 @@ impl SmartAnalyzer {
             variance: None,
             change_points: Vec::new(),
             avg_length: None,
-
         };
 
         match field_type.as_str() {
@@ -187,7 +186,6 @@ impl SmartAnalyzer {
                 if !strs.is_empty() {
                     let lens: Vec<f64> = strs.iter().map(|s| s.chars().count() as f64).collect();
                     stats.avg_length = mean(&lens);
-
                 }
             }
             _ => {}
@@ -890,7 +888,7 @@ mod tests {
                     variance: None,
                     change_points: Vec::new(),
                     avg_length: None,
-                    },
+                },
             );
         }
         let r = analyzer().estimate_reduction(&fs, CompressionStrategy::ClusterSample, 10);

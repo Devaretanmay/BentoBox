@@ -78,5 +78,3 @@ impl RelevanceScorer for BM25Scorer {
         scores
     }
 }
-
-

@@ -8,7 +8,10 @@ pub struct CompartmentConfig {
     pub name: String,
     #[serde(default)]
     pub description: String,
-    #[serde(default = "default_permissions", deserialize_with = "de_null_permissions")]
+    #[serde(
+        default = "default_permissions",
+        deserialize_with = "de_null_permissions"
+    )]
     pub permissions: Vec<String>,
     #[serde(default = "default_timeout")]
     pub timeout_s: u64,
@@ -83,7 +86,10 @@ impl Runtime {
             return Err("Every compartment needs a unique name in its config.".to_string());
         }
         if self.compartments.contains_key(&config.name) {
-            return Err(format!("Compartment '{}' is already registered.", config.name));
+            return Err(format!(
+                "Compartment '{}' is already registered.",
+                config.name
+            ));
         }
         self.order.push(config.name.clone());
         self.compartments.insert(config.name.clone(), config);
@@ -98,13 +104,16 @@ impl Runtime {
             return Err(format!("Unknown target compartment: '{to}'"));
         };
 
-        if dst_cfg.allow_inbound_from != ["*"] && !dst_cfg.allow_inbound_from.iter().any(|s| s == from) {
+        if dst_cfg.allow_inbound_from != ["*"]
+            && !dst_cfg.allow_inbound_from.iter().any(|s| s == from)
+        {
             return Err(format!(
                 "Compartment '{to}' does not accept inbound from '{from}'. allow_inbound_from = {:?}",
                 dst_cfg.allow_inbound_from
             ));
         }
-        if src_cfg.allow_outbound_to != ["*"] && !src_cfg.allow_outbound_to.iter().any(|s| s == to) {
+        if src_cfg.allow_outbound_to != ["*"] && !src_cfg.allow_outbound_to.iter().any(|s| s == to)
+        {
             return Err(format!(
                 "Compartment '{from}' cannot outbound to '{to}'. allow_outbound_to = {:?}",
                 src_cfg.allow_outbound_to
@@ -123,7 +132,9 @@ impl Runtime {
         match entry {
             Some(e) => {
                 if !self.compartments.contains_key(e) {
-                    return Err(format!("Entry compartment '{e}' not found. Registered: {names:?}"));
+                    return Err(format!(
+                        "Entry compartment '{e}' not found. Registered: {names:?}"
+                    ));
                 }
                 let start = names.iter().position(|n| n == e).unwrap_or(0);
                 Ok(names[start..].to_vec())
@@ -139,13 +150,16 @@ impl Runtime {
         let Some(dst_cfg) = self.compartments.get(to) else {
             return Err(format!("Unknown target compartment: '{to}'"));
         };
-        if dst_cfg.allow_inbound_from != ["*"] && !dst_cfg.allow_inbound_from.iter().any(|s| s == from) {
+        if dst_cfg.allow_inbound_from != ["*"]
+            && !dst_cfg.allow_inbound_from.iter().any(|s| s == from)
+        {
             return Err(format!(
                 "Compartment '{to}' does not accept inbound from '{from}'. allow_inbound_from = {:?}",
                 dst_cfg.allow_inbound_from
             ));
         }
-        if src_cfg.allow_outbound_to != ["*"] && !src_cfg.allow_outbound_to.iter().any(|s| s == to) {
+        if src_cfg.allow_outbound_to != ["*"] && !src_cfg.allow_outbound_to.iter().any(|s| s == to)
+        {
             return Err(format!(
                 "Compartment '{from}' cannot outbound to '{to}'. allow_outbound_to = {:?}",
                 src_cfg.allow_outbound_to
@@ -206,10 +220,9 @@ mod tests {
     #[test]
     fn serde_tolerates_null_vec_fields() {
         // Go/TS SDKs emit `null` for nil slices - must not error.
-        let cfg: CompartmentConfig = serde_json::from_str(
-            r#"{"name":"a","permissions":null,"allow_inbound_from":null}"#,
-        )
-        .unwrap();
+        let cfg: CompartmentConfig =
+            serde_json::from_str(r#"{"name":"a","permissions":null,"allow_inbound_from":null}"#)
+                .unwrap();
         assert_eq!(cfg.permissions, vec!["fs_read"]);
         assert_eq!(cfg.allow_inbound_from, vec!["*"]);
         assert_eq!(cfg.allow_outbound_to, vec!["*"]);

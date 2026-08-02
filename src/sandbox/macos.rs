@@ -8,42 +8,55 @@ use super::SandboxInfo;
 
 /// System paths that agents always need read-execute access to.
 const SYSTEM_READ_PATHS: &[&str] = &[
-    "/usr", "/bin", "/sbin", "/etc", "/opt",
-    "/System", "/Library", "/nix", "/private",
+    "/usr", "/bin", "/sbin", "/etc", "/opt", "/System", "/Library", "/nix", "/private", "/var",
 ];
 
 /// Standard temp directories that agents need read-write access to.
-const TEMP_WRITE_PATHS: &[&str] = &[
-    "/tmp", "/var/tmp", "/private/tmp", "/private/var/tmp",
-];
+const TEMP_WRITE_PATHS: &[&str] = &["/tmp", "/var/tmp", "/private/tmp", "/private/var/tmp"];
 
 // Sensitive user paths kept DENIED by default (Seatbelt adds explicit deny
 // rules; Landlock simply never allows them).
 const DENIED_PATHS: &[&str] = &[
     ".ssh",
-    ".aws", ".azure", ".gcloud", ".config/gcloud",
+    ".aws",
+    ".azure",
+    ".gcloud",
+    ".config/gcloud",
     ".docker/config.json",
-    ".git-credentials", ".gitconfig",
+    ".git-credentials",
+    ".gitconfig",
     ".gnupg",
-    ".bash_history", ".zsh_history", ".zshrc", ".bashrc", ".bash_profile",
+    ".bash_history",
+    ".zsh_history",
+    ".zshrc",
+    ".bashrc",
+    ".bash_profile",
     ".config",
     "Library/Application Support/Google",
     "Library/Application Support/Firefox",
     "Library/Application Support/BraveSoftware",
     "Library/Application Support/Chromium",
     "Library/Keychains",
-    ".npmrc", ".yarnrc", ".yarnrc.yml",
+    ".npmrc",
+    ".yarnrc",
+    ".yarnrc.yml",
     ".pypirc",
     ".kube",
     ".netrc",
 ];
 
 fn push_file_read(sb: &mut String, path: &str) {
-    sb.push_str(&format!("(allow file-read* (subpath \"{}\"))\n", escape_path(path)));
+    sb.push_str(&format!(
+        "(allow file-read* (subpath \"{}\"))\n",
+        escape_path(path)
+    ));
 }
 
 fn push_file_write(sb: &mut String, path: &str) {
-    sb.push_str(&format!("(allow file-write* (subpath \"{}\"))\n", escape_path(path)));
+    sb.push_str(&format!(
+        "(allow file-write* (subpath \"{}\"))\n",
+        escape_path(path)
+    ));
 }
 
 fn push_file_read_write(sb: &mut String, path: &str) {
@@ -71,6 +84,10 @@ fn generate_profile(worktree_path: &str, block_network: bool) -> String {
     sb.push_str("(allow mach-per-user-lookup)\n");
     sb.push_str("(allow mach-task-name)\n");
 
+    // dyld's CacheFinder issues file-read-data on the root directory "/"
+    // while locating the shared cache at process exec. Without this, every
+    // child process spawned after sandbox_init aborts with SIGABRT.
+    sb.push_str("(allow file-read* (literal \"/\"))\n");
 
     push_file_read_write(&mut sb, worktree_path);
 
@@ -102,8 +119,14 @@ fn generate_profile(worktree_path: &str, block_network: bool) -> String {
             let denied_path = format!("{}/{}", home, denied);
             let p = Path::new(&denied_path);
             if p.exists() {
-                sb.push_str(&format!("(deny file-read* (subpath \"{}\"))\n", escape_path(&denied_path)));
-                sb.push_str(&format!("(deny file-write* (subpath \"{}\"))\n", escape_path(&denied_path)));
+                sb.push_str(&format!(
+                    "(deny file-read* (subpath \"{}\"))\n",
+                    escape_path(&denied_path)
+                ));
+                sb.push_str(&format!(
+                    "(deny file-write* (subpath \"{}\"))\n",
+                    escape_path(&denied_path)
+                ));
             }
         }
     }
@@ -146,8 +169,8 @@ fn escape_path(path: &str) -> String {
 pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), String> {
     let profile = generate_profile(worktree_path, block_network);
 
-    let profile_cstr = CString::new(profile.as_str())
-        .map_err(|_| "Profile contains null byte".to_string())?;
+    let profile_cstr =
+        CString::new(profile.as_str()).map_err(|_| "Profile contains null byte".to_string())?;
 
     let mut error_ptr: *mut std::ffi::c_char = std::ptr::null_mut();
     let result = unsafe { sandbox_init(profile_cstr.as_ptr(), 0, &mut error_ptr) };
@@ -187,7 +210,8 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
                 "BLOCKED: Network is disabled (block_network=true).\n",
                 "Only localhost TCP (localhost:*) and Unix sockets are allowed.\n",
                 "Tip: Set block_network=False in BentoBoxConfig to allow network access.",
-            ).to_string();
+            )
+            .to_string();
         }
         return "ALLOWED: Network access is permitted (block_network=false).".to_string();
     }
@@ -207,19 +231,42 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
         for denied in DENIED_PATHS {
             let denied_full = format!("{}/{}", home, denied);
             if abs_str.starts_with(&denied_full)
-                || abs_str.contains(&format!("/{}{}", denied, if denied.ends_with('/') { "" } else { "/" }))
+                || abs_str.contains(&format!(
+                    "/{}{}",
+                    denied,
+                    if denied.ends_with('/') { "" } else { "/" }
+                ))
             {
                 let category = match denied {
                     d if d.starts_with(".ssh") => "SSH keys",
-                    d if d.starts_with(".aws") || d.starts_with(".azure") || d.starts_with(".gcloud") => "Cloud credentials",
+                    d if d.starts_with(".aws")
+                        || d.starts_with(".azure")
+                        || d.starts_with(".gcloud") =>
+                    {
+                        "Cloud credentials"
+                    }
                     d if d.contains("docker") => "Docker config",
                     d if d.starts_with(".git-") || d.starts_with(".gitconfig") => "Git credentials",
                     d if d.starts_with(".gnupg") => "GPG keys",
-                    d if d.contains(".bash_") || d.contains(".zsh_") || d.contains(".zshrc") || d.contains(".bashrc") => "Shell config",
+                    d if d.contains(".bash_")
+                        || d.contains(".zsh_")
+                        || d.contains(".zshrc")
+                        || d.contains(".bashrc") =>
+                    {
+                        "Shell config"
+                    }
                     d if d.contains("Keychains") => "System keychain",
-                    d if d.contains("Firefox") || d.contains("Chrome") || d.contains("Brave") || d.contains("Chromium") => "Browser data",
+                    d if d.contains("Firefox")
+                        || d.contains("Chrome")
+                        || d.contains("Brave")
+                        || d.contains("Chromium") =>
+                    {
+                        "Browser data"
+                    }
                     d if d.starts_with(".kube") => "Kubernetes config",
-                    d if d.starts_with(".npmrc") || d.starts_with(".yarnrc") => "Package manager config",
+                    d if d.starts_with(".npmrc") || d.starts_with(".yarnrc") => {
+                        "Package manager config"
+                    }
                     d if d.starts_with(".pypirc") => "Python package config",
                     d if d.starts_with(".netrc") => "Network credentials",
                     _ => "Sensitive path",
@@ -232,7 +279,9 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
         }
     }
 
-    if abs_str.starts_with(&*wt_str) && (abs_str.len() == wt_str.len() || abs_str[wt_str.len()..].starts_with('/')) {
+    if abs_str.starts_with(&*wt_str)
+        && (abs_str.len() == wt_str.len() || abs_str[wt_str.len()..].starts_with('/'))
+    {
         return format!(
             "ALLOWED: Inside worktree path.\nPath: {}\nWorktree: {}\nThe sandbox grants full read-write-execute access to files under the worktree.",
             path, worktree_path
@@ -293,6 +342,14 @@ mod tests {
         let profile = generate_profile("/tmp/test-worktree", false);
         assert!(profile.contains("(allow file-read* (subpath \"/tmp/test-worktree\"))"));
         assert!(profile.contains("(allow file-write* (subpath \"/tmp/test-worktree\"))"));
+    }
+
+    #[test]
+    fn test_generate_profile_allows_root_read_for_dyld_cachefinder() {
+        // dyld's CacheFinder file-read-data on "/" at exec; without this rule
+        // every child process aborts with SIGABRT after sandbox_init.
+        let profile = generate_profile("/tmp/test-worktree", true);
+        assert!(profile.contains("(allow file-read* (literal \"/\"))"));
     }
 
     #[test]

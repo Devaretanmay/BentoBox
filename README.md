@@ -53,29 +53,29 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 
 ## How it works
 
-A BentoBox has two parts: the **Box** (kernel-level sandbox) and the **Lid** (insulation layer). Inside the box, **compartments** define what runs, each with its own permissions and resource limits.
+The box is the box — the lid is part of it. There are two entry points:
+
+- **`BentoBox`** — just the box. A kernel-level sandbox plus a runtime for the compartments **you** define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
+- **`AgentBentoBox`** — a box with the lid on. It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
+
+In both, **compartments are always yours** — create them, wire them with `edge()`, and drop them into either box:
 
 ```
-BentoBox
-|-- Box (kernel-level sandbox)
+BentoBox / AgentBentoBox
+|-- Box (kernel-level sandbox — the lid is part of the box)
 |   |-- Isolated workspace (.bentoworks/boxes/)
 |   |-- File system policy
 |   |-- Network policy
-|   `-- Process restrictions
+|   |-- Process restrictions
+|   `-- Insulation (task profile + behaviour modules)
 |
-|-- Lid (insulation layer)
-|   |-- Task profile classification
-|   `-- Behaviour modules (runtime plugins)
-|
-`-- Compartment Runtime
+`-- Compartment Runtime (you define these)
     |-- Compartment "test"   -> permissions: [fs_read, fs_exec]
     |-- Compartment "build"  -> permissions: [fs_read, fs_write, fs_exec]
     `-- Compartment "deploy" -> permissions: [fs_read, fs_write]
 ```
 
-The **Box** is the secure execution environment. The **Lid** optimizes that environment for the task. **Compartments** are isolated units of work with their own policies. The user sees them as one unified thing: a BentoBox.
-
-The runtime has no opinion about what compartments do. It only coordinates their lifecycle, enforces their policies, and routes messages.
+The **Box** is the secure execution environment; insulation is folded into it. **Compartments** are isolated units of work with their own policies that you register. The runtime has no opinion about what compartments do. It only coordinates their lifecycle, enforces their policies, and routes messages.
 
 ## Use it anywhere
 
@@ -144,8 +144,13 @@ The enforcer wraps 30+ Python stdlib functions (`builtins.open`, `os.*`, `subpro
 ## CLI
 
 ```bash
-# Run a shell command in a compartment
+# Run a shell command inside a kernel-enforced BentoBox (default).
+# The worktree is the current directory; everything else is deny-by-default.
 bentoworks run "npm run build" --name build --permissions fs_read fs_write fs_exec
+
+# Allow outbound network (off by default), or run WITHOUT the kernel sandbox
+bentoworks run --network "npm install"
+bentoworks run --no-sandbox "debug command"   # unsafe; debugging only
 
 # Diagnose sandbox blocks
 bentoworks why ~/.ssh/id_rsa

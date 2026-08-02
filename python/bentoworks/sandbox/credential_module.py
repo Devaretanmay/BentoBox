@@ -1,7 +1,5 @@
 import logging
 
-from typing import Any
-
 from .behaviour import BehaviourModule, register
 from .proxy import CredentialProxy, RouteConfig
 

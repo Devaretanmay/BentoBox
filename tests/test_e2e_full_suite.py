@@ -7,7 +7,7 @@ import time
 import unittest
 import uuid
 
-from bentoworks import BentoBox, BentoBoxConfig
+from bentoworks import BentoBox
 from bentoworks.compartments import Compartment, CompartmentConfig, CompartmentRuntime
 from bentoworks.sandbox.task_profile import classify
 from bentoworks.engine.tracer import Tracer
@@ -57,7 +57,7 @@ class TestSingleCompartment(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_basic_lifecycle_executes(self):
-        """Box, Lid, Compartment, Cleanup, Destroy."""
+        """Box (lid folded in), Compartment, Cleanup, Destroy."""
         box = BentoBox(workdir=self.tmpdir)
         self.assertEqual(box._box.state, "created")
 
@@ -65,12 +65,12 @@ class TestSingleCompartment(unittest.TestCase):
         self.assertEqual(box._box.state, "running")
         self.assertTrue(os.path.isdir(box.box_dir))
 
-        box._lid.insulate(box._box, "Create a Python function that reverses a string")
-        self.assertIsNotNone(box._lid._ctx)
-        self.assertEqual(box._lid._ctx.task_profile, "code")
+        box._box.insulate("Create a Python function that reverses a string")
+        self.assertIsNotNone(box._box._ctx)
+        self.assertEqual(box._box._ctx.task_profile, "code")
 
-        box._lid.release()
-        self.assertIsNone(box._lid._ctx)
+        box._box.release()
+        self.assertIsNone(box._box._ctx)
 
         box._box.exit()
         self.assertEqual(box._box.state, "destroyed")
@@ -94,8 +94,8 @@ class TestSingleCompartment(unittest.TestCase):
         box._box.enter(block_network=False)
         tracer.emit("box.entered", sandbox_applied=False)
 
-        box._lid.insulate(box._box, "Reverse a string")
-        box._lid.release()
+        box._box.insulate("Reverse a string")
+        box._box.release()
 
         box._box.exit()
         tracer.emit("box.destroyed")
@@ -222,7 +222,7 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
         self.assertEqual(order, ["alpha", "beta", "gamma"])
 
 class TestLongWorkflow(unittest.TestCase):
-    """Test 4 - Box stability, Lid adaptation over time."""
+    """Test 4 - Box stability, insulation adaptation over time."""
 
     def setUp(self):
         self.tmpdir = f"/tmp/bw_test4_{uuid.uuid4().hex[:8]}"
@@ -241,15 +241,15 @@ class TestLongWorkflow(unittest.TestCase):
             box._box.exit()
             self.assertEqual(box._box.state, "destroyed")
 
-    def test_lid_adapts_to_different_tasks(self):
-        """Lid should load different profiles for different tasks."""
+    def test_insulation_adapts_to_different_tasks(self):
+        """The box should load different profiles for different tasks."""
         profiles_seen = []
         for request in ["Refactor X", "Fix Y", "Explore Z"]:
             box = BentoBox(workdir=self.tmpdir)
             box._box.enter(block_network=False)
-            box._lid.insulate(box._box, request)
-            profiles_seen.append(box._lid._ctx.task_profile)
-            box._lid.release()
+            box._box.insulate(request)
+            profiles_seen.append(box._box._ctx.task_profile)
+            box._box.release()
             box._box.exit()
         self.assertIn("code", profiles_seen)
         self.assertIn("debugging", profiles_seen)
@@ -305,19 +305,19 @@ class TestFailureRecovery(unittest.TestCase):
         self.assertEqual(result.status, "error")
 
     def test_cleanup_always_runs(self):
-        """Cleanup (lid.release + box.exit) must run even with mid-execution errors."""
+        """Cleanup (box.release + box.exit) must run even with mid-execution errors."""
         box = BentoBox(workdir=self.tmpdir)
         try:
             box._box.enter(block_network=False)
-            box._lid.insulate(box._box, "test")
+            box._box.insulate("test")
             raise RuntimeError("Mid-execution error")
         except RuntimeError:
             pass
         finally:
-            box._lid.release()
+            box._box.release()
             box._box.exit()
         self.assertEqual(box._box.state, "destroyed")
-        self.assertIsNone(box._lid._ctx)
+        self.assertIsNone(box._box._ctx)
 
 class TestNoAgentBehavior(unittest.TestCase):
     """Test 6 - The runtime works identically without any AI agent."""
@@ -471,14 +471,13 @@ class TestSelfDogfooding(unittest.TestCase):
 
     def test_runtime_can_self_reflect(self):
         """Runtime should be able to report its own state and configuration."""
-        config = BentoBoxConfig(workdir=self.tmpdir, profile="testing")
-        box = BentoBox(config=config)
-        self.assertEqual(box.config.profile, "testing")
+        box = BentoBox(workdir=self.tmpdir)
+        self.assertEqual(box.workdir, os.path.abspath(self.tmpdir))
         self.assertEqual(box._box.state, "created")
-        box.add(_comp("reflect", {"profile": box.config.profile}))
+        box.add(_comp("reflect", {"workdir": box.workdir}))
         result = box.run()
         self.assertEqual(result.status, "success")
-        self.assertEqual(result.output.get("reflect", {}).get("profile"), "testing")
+        self.assertEqual(result.output.get("reflect", {}).get("workdir"), box.workdir)
 
 if __name__ == "__main__":
     unittest.main()

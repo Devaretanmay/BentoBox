@@ -5,7 +5,8 @@ import os
 import subprocess
 import sys
 
-from bentoworks.bentobox import BentoBox
+from bentoworks import __version__
+from bentoworks.bentobox import BentoBox, AgentBentoBox, BentoBoxConfig
 from bentoworks.compartments import Compartment, CompartmentConfig
 
 BRAND = "BentoBox — Sandbox any AI agent in seconds."
@@ -46,7 +47,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             "stderr": proc.stderr or "",
         }
 
-    box = BentoBox()
+    box = AgentBentoBox(config=BentoBoxConfig(
+        workdir=args.workdir or ".",
+        sandbox=not args.no_sandbox,
+        block_network=not args.network,
+    ))
     box.add(Compartment(
         name=name,
         fn=_run_shell,
@@ -97,7 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "isolation, deny-by-default, no containers, no VMs.",
     )
     parser.add_argument("--version", action="version",
-                        version="bentoworks 0.9.1 — Sandbox any AI agent in seconds.")
+                        version=f"bentoworks {__version__} — Sandbox any AI agent in seconds.")
 
     sub = parser.add_subparsers(dest="command")
 
@@ -110,6 +115,12 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Permissions for the compartment")
     run_p.add_argument("--timeout", type=int, default=300,
                        help="Timeout in seconds")
+    run_p.add_argument("--workdir", default=".",
+                       help="Worktree granted to the sandbox (default: current dir)")
+    run_p.add_argument("--network", action="store_true",
+                       help="Allow outbound network (default: deny-by-default)")
+    run_p.add_argument("--no-sandbox", action="store_true",
+                       help="Disable the kernel sandbox (unsafe; debugging only)")
     run_p.set_defaults(func=cmd_run)
 
     why_p = sub.add_parser("why",

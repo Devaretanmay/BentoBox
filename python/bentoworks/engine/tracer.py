@@ -3,18 +3,13 @@
 import os
 import sys
 import time
+from functools import cache
 from typing import Optional
 
 
-_TRACE_ENABLED: Optional[bool] = None
-
-
-def _is_trace_enabled() -> bool:
-    global _TRACE_ENABLED
-    if _TRACE_ENABLED is None:
-        val = os.environ.get("BENTOWORKS_TRACE", "0")
-        _TRACE_ENABLED = val in ("1", "true", "yes", "on")
-    return _TRACE_ENABLED
+@cache
+def is_trace_enabled() -> bool:
+    return os.environ.get("BENTOWORKS_TRACE", "0") in ("1", "true", "yes", "on")
 
 
 def _colorize(s: str, color: str) -> str:
@@ -33,10 +28,9 @@ class Tracer:
 
     def __init__(self, box_id: str, verbose: bool = False):
         self.box_id = box_id
-        self.verbose = verbose or _is_trace_enabled()
+        self.verbose = verbose or is_trace_enabled()
         self._started_at: float = time.time()
         self._entries: list[str] = []
-        self._header_printed = False
 
     def emit(self, event: str, **data) -> None:
         if not self.verbose:
@@ -62,7 +56,6 @@ class Tracer:
         self._entries.extend(lines)
         for l in lines:
             print(l, file=sys.stderr, flush=True)
-        self._header_printed = True
 
     def footer(self, status: str, elapsed_total: float) -> None:
         if not self.verbose:
@@ -94,13 +87,13 @@ class Tracer:
         if event == "box.destroyed":
             return f"{prefix}  {_colorize('[ok]', 'green')} Box Destroyed"
 
-        if event == "lid.insulated":
+        if event == "box.insulated":
             profile = data.get("profile", "")
             modules = data.get("modules", 0)
-            return f"{prefix}  {_colorize('[ok]', 'green')} Lid Insulated       profile={profile}, modules={modules}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Box Insulated       profile={profile}, modules={modules}"
 
-        if event == "lid.released":
-            return f"{prefix}  {_colorize('[ok]', 'green')} Lid Released"
+        if event == "box.released":
+            return f"{prefix}  {_colorize('[ok]', 'green')} Box Released"
 
         if event == "task_profile":
             profile = data.get("profile", "code")
@@ -122,20 +115,8 @@ class Tracer:
 
         return None
 
-    def entry(self, text: str) -> None:
-        if not self.verbose:
-            return
-        prefix = f"  {(time.time() - self._started_at):>7.3f}s"
-        line = f"{prefix}  {text}"
-        self._entries.append(line)
-        print(line, file=sys.stderr, flush=True)
-
 
 _current: Optional[Tracer] = None
-
-
-def get_tracer() -> Optional[Tracer]:
-    return _current
 
 
 def set_tracer(t: Optional[Tracer]) -> None:

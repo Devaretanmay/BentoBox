@@ -1,13 +1,11 @@
 import http.server
-import json
 import logging
 import os
-import re
 import threading
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 _logger = logging.getLogger("bentoworks.proxy")
@@ -225,10 +223,6 @@ class CredentialProxy:
             else:
                 os.environ.pop(var, None)
         self._saved_env.clear()
-
-    @property
-    def is_running(self) -> bool:
-        return self._server is not None
 
     @property
     def proxy_url(self) -> str:

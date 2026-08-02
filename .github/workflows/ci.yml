@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  linux:
+    name: Linux (Landlock) — unit + kernel demos
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build wheel (maturin)
+        run: |
+          python -m pip install --upgrade pip maturin
+          maturin build --release --out dist
+
+      - name: Install bentoworks + test deps
+        run: |
+          python -m pip install dist/*.whl pytest
+          python -c "from bentoworks._core import sandbox_check_supported as c; print(c())"
+
+      - name: Unit tests (no sandbox applies in-process)
+        run: python -m pytest tests/ -q
+
+      - name: Verify Landlock is live
+        run: |
+          python - <<'EOF'
+          import os, tempfile
+          from bentoworks._core import sandbox_apply
+          wt = tempfile.mkdtemp(prefix="bw-ci-")
+          os.chdir(wt)
+          sandbox_apply(wt, True)
+          # worktree write must succeed
+          with open(os.path.join(wt, "ok.txt"), "w") as f:
+              f.write("x")
+          # credential path read must fail
+          import subprocess
+          r = subprocess.run(["sh", "-c", "cat ~/.ssh/id_ed25519 2>/dev/null; echo rc=$?"],
+                             capture_output=True, text=True, cwd=wt)
+          print(r.stdout.strip() or r.stderr.strip())
+          assert "PRIVATE KEY" not in (r.stdout + r.stderr)
+          print("LANDLOCK_OK")
+          EOF
+
+  macos:
+    name: macOS (Seatbelt) — unit tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel (maturin)
+        run: |
+          python -m pip install --upgrade pip maturin
+          maturin build --release --out dist
+
+      - name: Install bentoworks + test deps
+        run: |
+          python -m pip install dist/*.whl pytest
+          python -c "from bentoworks._core import sandbox_check_supported as c; print(c())"
+
+      - name: Unit tests
+        run: python -m pytest tests/ -q
+
+      - name: Verify Seatbelt is live
+        run: |
+          python - <<'EOF'
+          import os, tempfile, subprocess
+          from bentoworks._core import sandbox_apply
+          wt = tempfile.mkdtemp(prefix="bw-ci-")
+          os.chdir(wt)
+          sandbox_apply(wt, True)
+          with open(os.path.join(wt, "ok.txt"), "w") as f:
+              f.write("x")
+          r = subprocess.run(["sh", "-c", "cat ~/.ssh/id_ed25519 2>/dev/null; echo rc=$?"],
+                             capture_output=True, text=True, cwd=wt)
+          print(r.stdout.strip() or r.stderr.strip())
+          assert "PRIVATE KEY" not in (r.stdout + r.stderr)
+          print("SEATBELT_OK")
+          EOF

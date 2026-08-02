@@ -25,7 +25,6 @@ class Compartment:
         if config:
             self.config = config
         self._fn = fn
-        self._state = "created"
         self._inbox: list[Message] = []
         self._outbox: list[Message] = []
 
@@ -46,12 +45,6 @@ class Compartment:
         )
 
 
-    def send(self, to: str, data: Any, type: str = "data") -> None:
-        """Queue a message for another compartment."""
-        self._outbox.append(
-            Message(from_=self.config.name, to=to, data=data, type=type)
-        )
-
     def receive(self) -> list[Message]:
         """Read all pending messages from other compartments."""
         msgs = list(self._inbox)
@@ -62,10 +55,6 @@ class Compartment:
         msgs = list(self._outbox)
         self._outbox.clear()
         return msgs
-
-    @property
-    def name(self) -> str:
-        return self.config.name
 
     def __repr__(self) -> str:
         return f"<Compartment '{self.config.name}': {self.config.permissions}>"

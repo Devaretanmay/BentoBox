@@ -6,7 +6,7 @@ import subprocess
 import unittest
 import uuid
 
-from bentoworks.bentobox import BentoBox
+from bentoworks.bentobox import BentoBox, AgentBentoBox
 from bentoworks.compartments import Compartment, CompartmentConfig
 
 
@@ -50,7 +50,30 @@ class TestBentoBoxInit(unittest.TestCase):
     def test_init_creates_structure(self):
         box = BentoBox(workdir=self.tmpdir)
         self.assertTrue(box.box_id.startswith("box_"))
-        self.assertTrue(hasattr(box, "_lid"))
+        self.assertTrue(hasattr(box, "_box"))
+        self.assertTrue(hasattr(box._box, "insulate"), "lid must be folded into the box")
+
+    def test_plain_box_loads_no_modules_by_default(self):
+        """BentoBox is just the box: no modules auto-load."""
+        box = AgentBentoBox(workdir=self.tmpdir)
+        self.assertTrue(box.config.auto_modules)
+        box._box.insulate("Fix the bug")
+        module_count = sum(len(e.modules) for e in box._box._engines.values())
+        self.assertGreater(module_count, 0, "AgentBentoBox should auto-load modules")
+
+        plain = BentoBox(workdir=self.tmpdir)
+        plain._box.insulate("Fix the bug")
+        plain_count = sum(len(e.modules) for e in plain._box._engines.values())
+        self.assertEqual(plain_count, 0, "plain BentoBox ships empty")
+
+    def test_plain_box_can_opt_in_a_module(self):
+        """register_module() lets a plain box opt in to behaviour modules."""
+        from bentoworks.sandbox.credential_module import CredentialModule
+        box = BentoBox(workdir=self.tmpdir)
+        box.register_module(CredentialModule)
+        box._box.insulate("Fix the bug")
+        count = sum(len(e.modules) for e in box._box._engines.values())
+        self.assertGreaterEqual(count, 1)
 
     def test_two_boxes_independent(self):
         a = BentoBox(workdir=self.tmpdir)

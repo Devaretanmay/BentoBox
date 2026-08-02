@@ -10,10 +10,21 @@ pub const MANIFEST: &str = "_manifest.json";
 
 // Top-level directory names never snapshotted.
 const DEFAULT_EXCLUDE: &[&str] = &[
-    ".git", ".venv", "venv", "env", "node_modules",
-    "__pycache__", ".pytest_cache", ".mypy_cache",
-    ".bentoworks", ".hg", ".svn",
-    "target", "build", "dist", ".next",
+    ".git",
+    ".venv",
+    "venv",
+    "env",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".bentoworks",
+    ".hg",
+    ".svn",
+    "target",
+    "build",
+    "dist",
+    ".next",
 ];
 
 const CHUNK: usize = 65_536;
@@ -34,8 +45,15 @@ fn file_hash(path: &Path) -> std::io::Result<String> {
     Ok(hex[..16].to_string())
 }
 
-fn walk_files(dir: &Path, base: &Path, exclude: &HashSet<String>, visit: &mut impl FnMut(&Path, &Path)) {
-    let Ok(entries) = fs::read_dir(dir) else { return };
+fn walk_files(
+    dir: &Path,
+    base: &Path,
+    exclude: &HashSet<String>,
+    visit: &mut impl FnMut(&Path, &Path),
+) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
@@ -78,13 +96,21 @@ impl SnapshotManager {
 
         let mut manifest: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
         let mut count = 0usize;
-        walk_files(&self.workdir, &self.workdir, &self.exclude, &mut |src, rel| {
-            let dst = self.snapshot_dir.join(rel);
-            if let (Ok(h), Ok(_)) = (file_hash(src), fs::copy(src, &dst)) {
-                manifest.insert(rel.to_string_lossy().to_string(), serde_json::Value::String(h));
-                count += 1;
-            }
-        });
+        walk_files(
+            &self.workdir,
+            &self.workdir,
+            &self.exclude,
+            &mut |src, rel| {
+                let dst = self.snapshot_dir.join(rel);
+                if let (Ok(h), Ok(_)) = (file_hash(src), fs::copy(src, &dst)) {
+                    manifest.insert(
+                        rel.to_string_lossy().to_string(),
+                        serde_json::Value::String(h),
+                    );
+                    count += 1;
+                }
+            },
+        );
 
         let manifest_path = self.snapshot_dir.join(MANIFEST);
         let json = serde_json::Value::Object(manifest);
@@ -146,7 +172,10 @@ mod tests {
 
     fn uuid() -> String {
         use std::time::{SystemTime, UNIX_EPOCH};
-        let n = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let n = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         format!("{n:x}")
     }
 
@@ -162,7 +191,10 @@ mod tests {
 
         fs::write(format!("{workdir}/a.txt"), "changed").unwrap();
         assert_eq!(mgr.restore().unwrap(), 1);
-        assert_eq!(fs::read_to_string(format!("{workdir}/a.txt")).unwrap(), "hello");
+        assert_eq!(
+            fs::read_to_string(format!("{workdir}/a.txt")).unwrap(),
+            "hello"
+        );
 
         let _ = mgr.cleanup();
         let _ = fs::remove_dir_all(&workdir);

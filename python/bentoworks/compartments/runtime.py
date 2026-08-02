@@ -7,18 +7,8 @@ from typing import Any, Optional
 from .base import Compartment
 from .config import CompartmentConfig
 from .message import Message
+from ..engine.events import emit
 from ..sandbox.enforcer import SandboxEnforcer
-
-# Imported lazily to avoid circular deps at module level.
-_EMIT = None
-
-
-def _get_emit():
-    global _EMIT
-    if _EMIT is None:
-        from ..engine.events import emit as _emit_fn
-        _EMIT = _emit_fn
-    return _EMIT
 
 _logger = logging.getLogger("bentoworks.runtime")
 
@@ -34,7 +24,7 @@ class CompartmentContext:
         box_dir: str,
         messages: list[Message],
         state: dict,
-        _lid: Any = None,
+        _box: Any = None,
     ):
         self.name = name
         self.config = config
@@ -42,21 +32,15 @@ class CompartmentContext:
         self.box_dir = box_dir
         self.messages = messages
         self.state = state
-        self._lid = _lid
+        self._box = _box
 
     def send(self, to: str, data: Any, type: str = "data") -> None:
         """Convenience - runtime routes this to the target compartment."""
-        if self._lid:
-            self._lid.dispatch("compartment_send", from_=self.name, to=to, data=data, type=type)
+        if self._box:
+            self._box.dispatch("compartment_send", from_=self.name, to=to, data=data, type=type)
         self.state.setdefault("_outbox", []).append(
             Message(from_=self.name, to=to, data=data, type=type)
         )
-
-    def receive(self) -> list[Message]:
-        """Read all delivered messages and clear the inbox."""
-        msgs = list(self.messages)
-        self.messages.clear()
-        return msgs
 
 
 class CompartmentRuntime:
@@ -107,7 +91,6 @@ class CompartmentRuntime:
         self,
         entry: Optional[str] = None,
         box: Any = None,
-        lid: Any = None,
         workdir: str = ".",
         box_dir: str = "",
     ) -> dict:
@@ -120,10 +103,8 @@ class CompartmentRuntime:
             registration order.
         box : Box, optional
             Kernel sandbox instance. If provided, each compartment's
-            policy is pushed to the Box before execution.
-        lid : Lid, optional
-            Insulation layer. If provided, lifecycle events are dispatched
-            to behaviour modules.
+            policy is pushed to the Box, and lifecycle events are
+            dispatched to its behaviour modules (the lid is part of the box).
         workdir, box_dir : str
             Paths exposed to compartments.
 
@@ -164,15 +145,15 @@ class CompartmentRuntime:
                 box_dir=box_dir,
                 messages=comp.receive(),
                 state=self._shared_state,
-                _lid=lid,
+                _box=box,
             )
 
             _logger.info("Compartment %s start  perms=%s", name, cfg.permissions)
             start = time.time()
 
-            _get_emit()("compartment_start", name=name)
-            if lid:
-                lid.dispatch("compartment_start", name=name)
+            emit("compartment_start", name=name)
+            if box:
+                box.dispatch("compartment_start", name=name)
 
             # Wrap execution in per-compartment sandbox enforcement
             policy = box._current_policy if box is not None else {}
@@ -194,17 +175,17 @@ class CompartmentRuntime:
                 elapsed = round(time.time() - start, 2)
                 _logger.info("Compartment %s done  %.2fs", name, elapsed)
 
-                _get_emit()("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
-                if lid:
-                    lid.dispatch("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
+                emit("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
+                if box:
+                    box.dispatch("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
 
             except Exception as exc:
                 elapsed = round(time.time() - start, 2)
                 _logger.warning("Compartment %s failed after %.2fs: %s", name, elapsed, exc)
                 self._results[name] = {"error": str(exc)}
-                _get_emit()("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
-                if lid:
-                    lid.dispatch("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
+                emit("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
+                if box:
+                    box.dispatch("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
             finally:
                 if enforcer:
                     enforcer.__exit__(None, None, None)

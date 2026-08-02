@@ -1,21 +1,33 @@
-"""BentoBox - kernel-level sandbox with an insulated runtime for isolated execution."""
+"""BentoBox - kernel-level sandbox with an insulated runtime for isolated execution.
+
+Two entry points:
+
+* :class:`BentoBox` — just the box. A kernel sandbox plus a runtime that
+  runs compartments you register. Nothing is predefined: no compartments,
+  no behaviour modules. Load a module explicitly with :meth:`register_module`.
+* :class:`AgentBentoBox` — a box with the lid on. It auto-loads every
+  behaviour module (credential proxy, snapshots, compression) the moment
+  it runs.
+
+Compartments are always yours: create them, wire them, and drop them into
+either box.
+"""
 
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Optional
 
-from .sandbox.box import Box
-from .sandbox.lid import Lid, LidConfig
+from .sandbox.box import Box, BoxConfig
 from .sandbox import compression as _compression_module  # noqa: F401
 from .sandbox import credential_module as _credential_module  # noqa: F401
 from .sandbox import snapshot_module as _snapshot_module  # noqa: F401
 from .sandbox.proxy import RouteConfig
-from .compartments import Compartment, CompartmentConfig, CompartmentRuntime
+from .compartments import Compartment, CompartmentRuntime
 from .errors import LayerError
-from .engine.events import emit, event_bus
-from .engine.tracer import Tracer, set_tracer
+from .engine.events import event_bus
+from .engine.tracer import Tracer, is_trace_enabled, set_tracer
 
 _logger = logging.getLogger("bentoworks")
 
@@ -23,9 +35,10 @@ _logger = logging.getLogger("bentoworks")
 @dataclass
 class BentoBoxConfig:
     workdir: str = "."
-    profile: str = "default"
     credential_rules: list[RouteConfig] = field(default_factory=list)
-
+    sandbox: bool = False
+    block_network: bool = False
+    auto_modules: bool = False
 
 
 @dataclass
@@ -35,13 +48,11 @@ class BentoBoxResult:
     elapsed_s: float = 0.0
     compartments_completed: list[str] = field(default_factory=list)
     output: dict[str, dict] = field(default_factory=dict)
-    state: dict = field(default_factory=dict)
     errors: list[LayerError] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
 
 
 class BentoBox:
-    """A kernel-level sandbox with compartmentalized execution."""
+    """A kernel-level sandbox. Just the box — nothing predefined."""
 
     BENTOWORKS_DIR = ".bentoworks"
 
@@ -56,21 +67,18 @@ class BentoBox:
         else:
             self.config = BentoBoxConfig(workdir=workdir)
         self.workdir = os.path.abspath(self.config.workdir)
-        self._box = Box(workdir=self.workdir)
-        self.box_id = self._box.box_id
-        self.box_dir = self._box.box_dir
         self._snapshot_base = os.path.join(self.workdir, self.BENTOWORKS_DIR, "snapshots")
-        self._lid = Lid(LidConfig(
-            profile=self.config.profile,
+        self._box = Box(workdir=self.workdir, config=BoxConfig(
             credential_rules=self.config.credential_rules,
             snapshot_base=self._snapshot_base,
+            auto_modules=self.config.auto_modules,
         ))
+        self.box_id = self._box.box_id
+        self.box_dir = self._box.box_dir
         self._runtime = CompartmentRuntime()
         self._started_at: float = 0.0
         self._tracer: Optional[Tracer] = None
-        self.verbose = verbose or os.environ.get("BENTOWORKS_TRACE", "0") in (
-            "1", "true", "yes", "on",
-        )
+        self.verbose = verbose or is_trace_enabled()
 
     def add(self, compartment: Compartment) -> "BentoBox":
         """Register a compartment.
@@ -89,6 +97,15 @@ class BentoBox:
         self._runtime.edge(from_name, to_name)
         return self
 
+    def register_module(self, module_cls) -> "BentoBox":
+        """Opt-in a behaviour module for this box.
+
+        Plain boxes ship empty. If you want snapshots, the credential
+        proxy, or output compression, register the module explicitly.
+        """
+        self._box.register_module(module_cls)
+        return self
+
     def why(self, path: str) -> str:
         """Diagnose why a path or network call would be blocked by the sandbox."""
         return self._box.why(path)
@@ -103,9 +120,9 @@ class BentoBox:
         The lifecycle is:
 
         1. **Box entered** - sandbox environment is created
-        2. **Lid insulated** - behaviour modules load for the task
+        2. **Box insulated** - behaviour modules load for the task (lid is part of the box)
         3. **Compartments execute** - each runs with its own policy
-        4. **Cleanup** - lid released, box destroyed
+        4. **Cleanup** - insulation released, box destroyed
 
         Parameters
         ----------
@@ -114,8 +131,8 @@ class BentoBox:
             compartments run in registration order.
         request : str, optional
             Human-readable task description for logging and trace
-            headers. Also used by the Lid to classify the task
-            profile (e.g. "fix bug" -> debugging profile).
+            headers. Also used to classify the task profile
+            (e.g. "fix bug" -> debugging profile).
 
         Returns
         -------
@@ -131,14 +148,16 @@ class BentoBox:
             set_tracer(self._tracer)
             self._wire_tracer_events()
 
-        self._box.enter(block_network=False, sandbox=False)
+        self._box.enter(
+            block_network=self.config.block_network,
+            sandbox=self.config.sandbox,
+        )
 
-        self._lid.insulate(self._box, task_desc)
+        self._box.insulate(task_desc)
 
         raw_results = self._runtime.run(
             entry=entry,
             box=self._box,
-            lid=self._lid,
             workdir=self.workdir,
             box_dir=self.box_dir,
         )
@@ -157,7 +176,7 @@ class BentoBox:
         elapsed = round(time.time() - self._started_at, 2)
 
         try:
-            self._lid.release()
+            self._box.release()
         except Exception:
             pass
         try:
@@ -186,7 +205,7 @@ class BentoBox:
 
         for event_name in [
             "box.created", "box.entered", "box.destroyed",
-            "lid.insulated", "lid.released",
+            "box.insulated", "box.released",
             "task_profile",
             "compartment_start", "compartment_done", "compartment_failed",
         ]:
@@ -202,7 +221,7 @@ class BentoBox:
 
     def _read_compressed_outputs(self) -> dict[str, str]:
         """Read compressed outputs from the CompressionModule (if loaded)."""
-        for engine in self._lid._engines.values():
+        for engine in self._box._engines.values():
             for module in engine.modules:
                 if hasattr(module, "compressed_outputs"):
                     return module.compressed_outputs
@@ -230,6 +249,25 @@ class BentoBox:
             elapsed_s=elapsed,
             compartments_completed=completed,
             output=dict(raw),
-            state=dict(raw),
             errors=errors,
         )
+
+
+class AgentBentoBox(BentoBox):
+    """A box with the lid on: auto-loads every behaviour module.
+
+    Credential proxy, snapshots, and output compression all activate
+    automatically when the box runs. Compartments are still yours to define.
+    """
+
+    def __init__(
+        self,
+        workdir: str = ".",
+        config: Optional[BentoBoxConfig] = None,
+        verbose: bool = False,
+    ):
+        if config is not None:
+            config = replace(config, auto_modules=True)
+        else:
+            config = BentoBoxConfig(workdir=workdir, auto_modules=True)
+        super().__init__(workdir=workdir, config=config, verbose=verbose)

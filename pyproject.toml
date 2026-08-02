@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bentoworks"
-version = "0.9.1"
+version = "0.9.2"
 description = "BentoBox - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs."
 requires-python = ">=3.10"
 license = { text = "BUSL-1.1" }

@@ -46,5 +46,3 @@ fn humanize(n: usize) -> String {
     }
     format!("{:.1}MB", kb / 1024.0)
 }
-
-

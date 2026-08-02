@@ -7,27 +7,14 @@ use std::sync::OnceLock;
 
 use super::SandboxInfo;
 
-use landlock::{
-    ABI, AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, Ruleset,
-};
+use landlock::{AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, Ruleset, ABI};
 
 // System paths: read-execute. Temp dirs: read-write. Devices: basic I/O.
 const SYSTEM_READ_PATHS: &[&str] = &[
-    "/usr",
-    "/lib",
-    "/lib64",
-    "/bin",
-    "/sbin",
-    "/etc",
-    "/opt",
-    "/nix",
+    "/usr", "/lib", "/lib64", "/bin", "/sbin", "/etc", "/opt", "/nix",
 ];
 
-const TEMP_WRITE_PATHS: &[&str] = &[
-    "/tmp",
-    "/var/tmp",
-    "/dev/shm",
-];
+const TEMP_WRITE_PATHS: &[&str] = &["/tmp", "/var/tmp", "/dev/shm"];
 
 const DEVICE_PATHS: &[&str] = &[
     "/dev/null",
@@ -75,8 +62,9 @@ fn detect_abi() -> Result<ABI, String> {
         }
     }
 
-    let msg = "Landlock not available. Requires Linux kernel 5.13+ with CONFIG_SECURITY_LANDLOCK=y."
-        .to_string();
+    let msg =
+        "Landlock not available. Requires Linux kernel 5.13+ with CONFIG_SECURITY_LANDLOCK=y."
+            .to_string();
     let _ = CACHED_ABI.set(Err(msg.clone()));
     Err(msg)
 }
@@ -125,7 +113,6 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         .create()
         .map_err(|e| format!("Failed to create Landlock ruleset: {}", e))?;
 
-
     let mut add_path_rule = |path: &Path, access: BitFlags<AccessFs>| -> Result<(), String> {
         let path_beneath = PathBeneath::new(PathFd::new(path), access)
             .map_err(|e| format!("Invalid path '{}': {}", path.display(), e))?;
@@ -135,14 +122,15 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         Ok(())
     };
 
-    let mut add_resolved_path_rule = |path: &Path, access: BitFlags<AccessFs>| -> Result<(), String> {
-        let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-        add_path_rule(&resolved, access)?;
-        if resolved != path {
-            add_path_rule(path, access)?;
-        }
-        Ok(())
-    };
+    let mut add_resolved_path_rule =
+        |path: &Path, access: BitFlags<AccessFs>| -> Result<(), String> {
+            let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+            add_path_rule(&resolved, access)?;
+            if resolved != path {
+                add_path_rule(path, access)?;
+            }
+            Ok(())
+        };
 
     let worktree_access = AccessFs::ReadFile
         | AccessFs::ReadDir
@@ -192,7 +180,6 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         }
     }
 
-
     ruleset
         .restrict_self()
         .map_err(|e| format!("Failed to apply Landlock sandbox: {}", e))?;
@@ -210,11 +197,16 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
                 "BLOCKED: Network is disabled (block_network=true).\n",
                 "Only localhost TCP and Unix sockets are allowed.\n",
                 "Tip: Set block_network=False in BentoBoxConfig to allow network access.",
-            ).to_string();
+            )
+            .to_string();
         }
         return format!(
             "ALLOWED: Network access is permitted (block_network={}).",
-            if block_network { "true, but Landlock network V4+ not available" } else { "false" }
+            if block_network {
+                "true, but Landlock network V4+ not available"
+            } else {
+                "false"
+            }
         );
     }
 
@@ -226,10 +218,14 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
         p.to_path_buf()
     };
     let abs_str = abs.to_string_lossy();
-    let wt = Path::new(worktree_path).canonicalize().unwrap_or_else(|_| Path::new(worktree_path).to_path_buf());
+    let wt = Path::new(worktree_path)
+        .canonicalize()
+        .unwrap_or_else(|_| Path::new(worktree_path).to_path_buf());
     let wt_str = wt.to_string_lossy();
 
-    if abs_str.starts_with(&*wt_str) && (abs_str.len() == wt_str.len() || abs_str[wt_str.len()..].starts_with('/')) {
+    if abs_str.starts_with(&*wt_str)
+        && (abs_str.len() == wt_str.len() || abs_str[wt_str.len()..].starts_with('/'))
+    {
         return format!(
             "ALLOWED: Inside worktree path.\nPath: {}\nWorktree: {}\nFull read-write-execute access.",
             path, worktree_path
@@ -256,10 +252,7 @@ pub(super) fn why(path: &str, worktree_path: &str, block_network: bool) -> Strin
 
     for dev_path in DEVICE_PATHS {
         if abs_str.starts_with(dev_path) && Path::new(dev_path).exists() {
-            return format!(
-                "ALLOWED: Device path (read-write).\nPath: {}",
-                path
-            );
+            return format!("ALLOWED: Device path (read-write).\nPath: {}", path);
         }
     }
 

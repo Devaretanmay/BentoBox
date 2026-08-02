@@ -487,5 +487,4 @@ mod tests {
             raw_json.len()
         );
     }
-
 }

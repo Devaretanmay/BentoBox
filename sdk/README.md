@@ -58,7 +58,7 @@ npm test
 ```ts
 import * as bentobox from '@bentwork/sdk'
 
-bentobox.version()                    // "0.9.1"
+bentobox.version()                    // "0.9.2"
 bentobox.sandboxSupported()           // true
 const out = bentobox.compress(text)
 const why = bentobox.sandboxWhy('/etc/passwd', '/tmp/work', true)
@@ -93,5 +93,5 @@ from bentoworks import BentoBox
 - The TypeScript SDK's `Runtime` handle (and the Rust core's `names()`
   method) is exercised by `npm test`.
 - The crate version (`Cargo.toml`) and the Python package version
-  (`pyproject.toml`) are kept in lockstep at `0.9.1` so
+  (`pyproject.toml`) are kept in lockstep at `0.9.2` so
   `bentobox_version()` is consistent across all SDKs.

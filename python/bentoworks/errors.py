@@ -1,6 +1,2 @@
-class BentoBoxError(Exception):
-    pass
-
-
-class LayerError(BentoBoxError):
+class LayerError(Exception):
     pass

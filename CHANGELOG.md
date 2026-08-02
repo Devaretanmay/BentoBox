@@ -2,7 +2,7 @@
 
 All notable changes to BentoBox are documented here.
 
-## [Unreleased]
+## [0.9.2] - 2026-08-01
 
 ### Removed
 
@@ -24,7 +24,9 @@ All notable changes to BentoBox are documented here.
   terminals. Non-TTY output stays machine-friendly for scripts and CI.
 - **TypeScript SDK package metadata.** `@bentwork/sdk` descriptions updated;
   the publish layout is trimmed to the shipped macOS platform packages
-  (`darwin-arm64`, `darwin-x64`) at version `0.9.1`.
+  (`darwin-arm64`, `darwin-x64`) at version `0.9.2`.
+- **Version bumped to `0.9.2`** across the Rust core, Python package, and
+  TypeScript SDK to publish the rebranded build to PyPI.
 
 ## [0.9.1] - 2026-07-31
 
