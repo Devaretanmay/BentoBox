@@ -2,6 +2,23 @@
 
 All notable changes to BentoBox are documented here.
 
+## [0.9.4] - 2026-08-02
+
+### Fixed
+
+- **Version drift.** `bentoworks.__version__` is now read from installed
+  package metadata instead of a hardcoded constant that lagged behind
+  releases.
+
+## [0.9.3] - 2026-08-02
+
+### Removed
+
+- **Dead code culled.** Dropped the unused C ABI (`src/c_api.rs`,
+  `include/bentobox.h`), the credential proxy's unused header-injection
+  machinery, the `profile` config knob, and a re-export shim module.
+  No public Python/TS API change.
+
 ## [0.9.2] - 2026-08-01
 
 ### Removed
