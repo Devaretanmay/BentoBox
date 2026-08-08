@@ -27,7 +27,7 @@ from .sandbox.proxy import RouteConfig
 from .compartments import Compartment, CompartmentRuntime
 from .errors import LayerError
 from .engine.events import event_bus
-from .engine.tracer import Tracer, is_trace_enabled, set_tracer
+from .engine.tracer import Tracer, is_trace_enabled
 
 _logger = logging.getLogger("bentoworks")
 
@@ -106,10 +106,6 @@ class BentoBox:
         self._box.register_module(module_cls)
         return self
 
-    def why(self, path: str) -> str:
-        """Diagnose why a path or network call would be blocked by the sandbox."""
-        return self._box.why(path)
-
     def run(
         self,
         entry: Optional[str] = None,
@@ -145,7 +141,6 @@ class BentoBox:
         if self.verbose:
             self._tracer = Tracer(self.box_id, verbose=True)
             self._tracer.header(task_desc)
-            set_tracer(self._tracer)
             self._wire_tracer_events()
 
         self._box.enter(
@@ -190,7 +185,6 @@ class BentoBox:
             ) else "success"
             self._tracer.footer(status, elapsed)
             self._unwire_tracer_events()
-            set_tracer(None)
 
         return self._build_result(raw_results, elapsed)
 

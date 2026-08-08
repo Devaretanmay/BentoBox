@@ -11,11 +11,6 @@ pub fn sandbox_supported() -> bool {
 }
 
 #[napi]
-pub fn sandbox_why(path: String, worktree_path: String, block_network: bool) -> String {
-    bentoworks_core::sandbox::why(&path, &worktree_path, block_network)
-}
-
-#[napi]
 pub fn compress(content: String) -> String {
     bentoworks_core::compress::compress_content(&content)
 }

@@ -29,8 +29,8 @@ def _get_core():
     global _CORE
     if _CORE is None:
         try:
-            from bentoworks._core import sandbox_apply, sandbox_check_supported, sandbox_why
-            _CORE = (sandbox_apply, sandbox_check_supported, sandbox_why)
+            from bentoworks._core import sandbox_apply, sandbox_check_supported
+            _CORE = (sandbox_apply, sandbox_check_supported)
         except ImportError:
             _CORE = ()
     return _CORE
@@ -168,25 +168,6 @@ class Box:
         self._current_policy = {}
         _logger.info("Box %s destroyed", self.box_id)
         emit("box.destroyed", box_id=self.box_id)
-
-    def why(self, path: str) -> str:
-        """Queries the Rust sandbox diagnostic: why would this path be blocked?"""
-        core = _get_core()
-        if len(core) < 3:
-            return (
-                f"INFO - Rust sandbox module not loaded.\n"
-                f"Run 'maturin develop --offline' to build the native module.\n"
-                f"Without it, BentoBox runs in no-sandbox mode."
-            )
-        try:
-            why_fn = core[2]
-            if path.startswith(("tcp:", "udp:", "http://", "https://")):
-                resolved = path
-            else:
-                resolved = os.path.abspath(os.path.expanduser(path))
-            return why_fn(resolved, self.workdir, self.config.block_network)
-        except Exception as e:
-            return f"ERROR - Diagnostic failed: {e}"
 
     @property
     def state(self) -> str:

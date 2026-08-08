@@ -1,0 +1,23 @@
+name: BentoBox CI Verification
+
+on:
+  push:
+    branches: [ master, hooks, CI ]
+  pull_request:
+
+jobs:
+  test-ci-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1-Line Drop-In BentoBox CI Setup
+      - name: Setup BentoBox CI Sandbox
+        uses: ./
+        with:
+          network: 'false'
+
+      # Step 1: Run tests inside kernel sandbox with network egress blocked
+      - name: Run Pytest under Kernel Sandbox
+        run: |
+          python3 -m bentoworks.ci.runner "pytest tests/test_ci_integration.py"

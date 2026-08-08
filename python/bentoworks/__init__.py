@@ -2,6 +2,7 @@ from .bentobox import BentoBox, AgentBentoBox, BentoBoxConfig, BentoBoxResult
 
 from . import compartments as compartments
 from . import errors as errors
+from . import hooks as hooks
 
 try:
     from importlib.metadata import version as _package_version
@@ -16,4 +17,5 @@ __all__ = [
     "BentoBoxResult",
     "compartments",
     "errors",
+    "hooks",
 ]

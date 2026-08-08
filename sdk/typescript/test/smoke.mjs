@@ -12,10 +12,6 @@ const compressed = bentobox.compress(original)
 assert.ok(typeof compressed === 'string' && compressed.length > 0, 'compress() returns a string')
 console.log(`compress: ${original.length} bytes -> ${compressed.length} bytes`)
 
-const why = bentobox.sandboxWhy('/etc/passwd', '/tmp/work', true)
-assert.ok(typeof why === 'string' && why.length > 0, 'sandboxWhy() returns a string')
-console.log('sandboxWhy(/etc/passwd):', why.split('\n')[0])
-
 // --- Compartment runtime ---
 
 const policy = JSON.stringify({ permissions: ['fs_read', 'fs_write'] })

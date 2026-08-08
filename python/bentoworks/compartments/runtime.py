@@ -168,9 +168,6 @@ class CompartmentRuntime:
                     for msg in ctx.state.pop("_outbox"):
                         self._enqueue(msg)
 
-                for msg in comp.drain_outbox():
-                    self._enqueue(msg)
-
                 self._results[name] = result or {}
                 elapsed = round(time.time() - start, 2)
                 _logger.info("Compartment %s done  %.2fs", name, elapsed)

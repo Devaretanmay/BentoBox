@@ -20,11 +20,6 @@ fn sandbox_apply(worktree_path: &str, block_network: bool) -> PyResult<bool> {
 }
 
 #[pyfunction]
-fn sandbox_why(path: &str, worktree_path: &str, block_network: bool) -> String {
-    crate::sandbox::why(path, worktree_path, block_network)
-}
-
-#[pyfunction]
 fn sandbox_check_supported() -> PyResult<HashMap<String, String>> {
     let info = crate::sandbox::get_info();
     let mut result = HashMap::new();
@@ -42,7 +37,6 @@ fn route_and_compress(content: &str) -> String {
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sandbox_apply, m)?)?;
-    m.add_function(wrap_pyfunction!(sandbox_why, m)?)?;
     m.add_function(wrap_pyfunction!(sandbox_check_supported, m)?)?;
     m.add_function(wrap_pyfunction!(route_and_compress, m)?)?;
     Ok(())

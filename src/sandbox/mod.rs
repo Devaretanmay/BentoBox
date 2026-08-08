@@ -35,27 +35,6 @@ pub fn apply(worktree_path: &str, block_network: bool) -> Result<(), String> {
     }
 }
 
-pub fn why(path: &str, worktree_path: &str, block_network: bool) -> String {
-    #[cfg(target_os = "macos")]
-    {
-        macos::why(path, worktree_path, block_network)
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        linux::why(path, worktree_path, block_network)
-    }
-
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-    {
-        let _ = (path, worktree_path, block_network);
-        format!(
-            "Unknown - sandboxing not supported on '{}'",
-            std::env::consts::OS
-        )
-    }
-}
-
 pub fn check_supported() -> bool {
     #[cfg(target_os = "linux")]
     {

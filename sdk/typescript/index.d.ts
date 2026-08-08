@@ -5,7 +5,6 @@
 
 export declare function version(): string
 export declare function sandboxSupported(): boolean
-export declare function sandboxWhy(path: string, worktreePath: string, blockNetwork: boolean): string
 export declare function compress(content: string): string
 export declare function runtimeCheckPermission(policyJson: string, requiredJson: string): boolean
 export declare function runtimeCheckCommand(cmd: string): boolean

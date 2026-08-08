@@ -24,7 +24,6 @@ Declared in [`include/bentobox.h`](../include/bentobox.h):
 | `bentobox_version()` | Core version string |
 | `bentobox_sandbox_supported()` | 1 if kernel sandboxing is available |
 | `bentobox_sandbox_apply(path, block_network)` | Apply sandbox (irreversible) |
-| `bentobox_sandbox_why(path, worktree, block_network)` | Explain a block |
 | `bentobox_compress(content)` | Smart-crush output text |
 | `bentobox_last_error()` | Last error message |
 | `bentobox_free(ptr)` | Free any string returned by this API |
@@ -61,7 +60,6 @@ import * as bentobox from '@bentwork/sdk'
 bentobox.version()                    // "0.9.2"
 bentobox.sandboxSupported()           // true
 const out = bentobox.compress(text)
-const why = bentobox.sandboxWhy('/etc/passwd', '/tmp/work', true)
 
 // Compartment runtime handle (parse once, route many).
 // configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }

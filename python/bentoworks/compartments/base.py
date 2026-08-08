@@ -26,7 +26,6 @@ class Compartment:
             self.config = config
         self._fn = fn
         self._inbox: list[Message] = []
-        self._outbox: list[Message] = []
 
 
     def deliver(self, msg: Message) -> None:
@@ -49,11 +48,6 @@ class Compartment:
         """Read all pending messages from other compartments."""
         msgs = list(self._inbox)
         self._inbox.clear()
-        return msgs
-
-    def drain_outbox(self) -> list[Message]:
-        msgs = list(self._outbox)
-        self._outbox.clear()
         return msgs
 
     def __repr__(self) -> str:

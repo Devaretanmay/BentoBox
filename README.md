@@ -6,10 +6,6 @@ Kernel-enforced isolation for AI coding agents — zero setup, zero latency, zer
 
 BentoBox runs any agent — or any command it shells out to — inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories — and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
 
-```bash
-pip install bentoworks && bentoworks run "npm run build"
-```
-
 ```python
 from bentoworks import BentoBox
 from bentoworks.compartments import Compartment, CompartmentConfig
@@ -141,39 +137,11 @@ with SandboxEnforcer(box._current_policy):
 
 The enforcer wraps 30+ Python stdlib functions (`builtins.open`, `os.*`, `subprocess.*`, `shutil.*`) and checks the active compartment policy before allowing any operation. On top of path permissions, a command blocklist stops dangerous commands (`rm -rf /`, `sudo`, `dd`, `mkfs`, pipes into shells) even when `fs_exec` is granted.
 
-## CLI
+## Use cases
 
-```bash
-# Run a shell command inside a kernel-enforced BentoBox (default).
-# The worktree is the current directory; everything else is deny-by-default.
-bentoworks run "npm run build" --name build --permissions fs_read fs_write fs_exec
-
-# Allow outbound network (off by default), or run WITHOUT the kernel sandbox
-bentoworks run --network "npm install"
-bentoworks run --no-sandbox "debug command"   # unsafe; debugging only
-
-# Diagnose sandbox blocks
-bentoworks why ~/.ssh/id_rsa
-bentoworks why http://api.example.com
-
-# Trace output (diagnostic)
-BENTOWORKS_TRACE=1 bentoworks run "pytest" --name test --permissions fs_read fs_exec
-```
-
-`bentoworks run` captures the command's stdout and stderr and prints them after the run summary, so you can see exactly what the compartment did:
-
-```
-Status: success
-Summary: Task completed
-Elapsed: 0.1s
-Compartments: ['build']
-
-Stdout:
-> npm run build
-...
-```
-
-If the shell command exits non-zero, the CLI itself exits with status `1` so scripts and CI can react to a failed task.
+Real scenarios with working code — sandboxing a CLI coding agent, REPL
+execution, credential handling under prompt injection, file rollback, and
+fan-out agentic workloads: [`docs/USE_CASES.md`](docs/USE_CASES.md).
 
 ## SDKs
 
@@ -288,6 +256,64 @@ rt.names()                    // ['fetch', 'build']
 ```
 
 For the full SDK guide, see [sdk/README.md](sdk/README.md).
+
+## Framework hooks
+
+Run AI-agent code inside kernel-enforced compartments from any major agent
+framework. Hooks are dependency-light — each framework is optional and the
+hook degrades to a plain duck-typed object when it is absent.
+
+```python
+# LangGraph — wrap any node in a sandboxed compartment.
+from bentoworks.hooks import BentoBoxGraphNode
+
+def crunch(state, ctx):
+    open(f"{ctx.workdir}/out.txt", "w").write(state["value"].upper())
+    return {"done": True}
+
+node = BentoBoxGraphNode(crunch, workdir=".")
+builder.add_edge(START, node.attach(builder))  # permissions ride on node metadata
+```
+
+```python
+# LangChain — a Python REPL tool that runs inside BentoBox, not exec().
+from bentoworks.hooks import BentoPythonREPLTool
+tool = BentoPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
+tool.invoke("print(6 * 7)")
+```
+
+```python
+# CrewAI — replace the Docker code interpreter with a BentoBox one.
+from bentoworks.hooks import BentoBoxCodeInterpreterTool
+agent = Agent(tools=[BentoBoxCodeInterpreterTool()], ...)
+```
+
+```python
+# AutoGen — runs each code block in a BentoBox compartment.
+from bentoworks.hooks import BentoBoxCodeExecutor, CodeBlock
+executor = BentoBoxCodeExecutor()
+result = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
+print(result.exit_code, result.output)
+```
+
+```python
+# Data / RAG agent — isolated workspace, network blocked, no exfiltration.
+from bentoworks.hooks import DataScienceSandboxHook
+hook = DataScienceSandboxHook()
+hook.mount_dataset("customers.csv")
+res = hook.run("import pandas as pd; df = pd.read_csv('customers.csv'); print(df.shape)")
+print(res.diffs)   # BLAKE3 file diffs the agent caused
+```
+
+```python
+# Plain CLI coding agent — sandbox any shell command or CLI agent.
+from bentoworks.hooks import SandboxRunner
+res = SandboxRunner(workdir=".").run("claude -p 'fix the bug'")
+print(res.returncode, res.stdout, res.diffs)
+```
+
+Every hook returns stdout, stderr, an exit code and BLAKE3 file diffs so the
+agent context can react cleanly to what ran.
 
 ## Development & Testing
 

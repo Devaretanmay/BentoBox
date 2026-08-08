@@ -114,11 +114,3 @@ class Tracer:
             return f"{prefix}    {_colorize('[x]', 'red')} {name}  {error}"
 
         return None
-
-
-_current: Optional[Tracer] = None
-
-
-def set_tracer(t: Optional[Tracer]) -> None:
-    global _current
-    _current = t

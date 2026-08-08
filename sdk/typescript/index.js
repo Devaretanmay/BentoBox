@@ -310,11 +310,10 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { version, sandboxSupported, sandboxWhy, compress, runtimeCheckPermission, runtimeCheckCommand, runtimeSnapshot, runtimeRestore, runtimeValidate, runtimeCanRoute, runtimeCredentialRewrite, runtimeCredentialResolve, Runtime } = nativeBinding
+const { version, sandboxSupported, compress, runtimeCheckPermission, runtimeCheckCommand, runtimeSnapshot, runtimeRestore, runtimeValidate, runtimeCanRoute, runtimeCredentialRewrite, runtimeCredentialResolve, Runtime } = nativeBinding
 
 module.exports.version = version
 module.exports.sandboxSupported = sandboxSupported
-module.exports.sandboxWhy = sandboxWhy
 module.exports.compress = compress
 module.exports.runtimeCheckPermission = runtimeCheckPermission
 module.exports.runtimeCheckCommand = runtimeCheckCommand

@@ -1,0 +1,22 @@
+name: 'BentoBox CI Security & Speed Setup'
+description: 'Zero-cost, zero-infrastructure OS kernel sandboxing and sub-millisecond state resets for CI steps.'
+author: 'BentoWorks'
+
+inputs:
+  network:
+    description: 'Allow network egress by default for pipeline steps (default: false / network blocked)'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install BentoWorks
+      shell: bash
+      run: |
+        python3 -m pip install bentoworks || pip install bentoworks || true
+
+    - name: Initialize BentoBox CI Environment
+      shell: bash
+      run: |
+        python3 -m bentoworks.ci.setup --network ${{ inputs.network }}
