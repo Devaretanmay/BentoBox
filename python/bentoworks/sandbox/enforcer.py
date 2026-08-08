@@ -127,8 +127,6 @@ def _extract_cmd_from_args(args: tuple, kwargs: dict) -> str:
     if not args:
         return ""
     cmd = args[0]
-    if isinstance(cmd, str):
-        return cmd
     if isinstance(cmd, (list, tuple)):
         return " ".join(str(a) for a in cmd)
     return str(cmd)

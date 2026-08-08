@@ -41,7 +41,7 @@ STATE_READY = "ready"
 STATE_RUNNING = "running"
 STATE_DESTROYED = "destroyed"
 
-ENGINE_ORDER = ["preparation", "optimisation", "behaviour", "observation"]
+ENGINE_ORDER = ["preparation", "behaviour", "observation"]
 
 
 @dataclass

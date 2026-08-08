@@ -11,10 +11,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install BentoWorks
+    - name: Install BentoWorks & Dependencies
       shell: bash
       run: |
-        python3 -m pip install bentoworks || pip install bentoworks || true
+        python3 -m pip install --upgrade pip maturin pytest || true
+        if [ -f "pyproject.toml" ]; then
+          maturin develop --release || python3 -m pip install -e . || pip install -e .
+        else
+          python3 -m pip install bentoworks || pip install bentoworks
+        fi
 
     - name: Initialize BentoBox CI Environment
       shell: bash

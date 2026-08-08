@@ -2,7 +2,7 @@ name: BentoBox CI Verification
 
 on:
   push:
-    branches: [ master, hooks, CI ]
+    branches: [ main, hooks, CI ]
   pull_request:
 
 jobs:
@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       # 1-Line Drop-In BentoBox CI Setup
       - name: Setup BentoBox CI Sandbox

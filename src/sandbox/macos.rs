@@ -151,18 +151,7 @@ fn generate_profile(worktree_path: &str, block_network: bool) -> String {
 }
 
 fn escape_path(path: &str) -> String {
-    let mut result = String::with_capacity(path.len());
-    for c in path.chars() {
-        match c {
-            '\\' => result.push_str("\\\\"),
-            '"' => result.push_str("\\\""),
-            c if c.is_control() => {
-                continue;
-            }
-            _ => result.push(c),
-        }
-    }
-    result
+    path.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 // Irreversible for the lifetime of the process tree.
