@@ -11,7 +11,7 @@ use landlock::{AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, 
 
 // System paths: read-execute. Temp dirs: read-write. Devices: basic I/O.
 const SYSTEM_READ_PATHS: &[&str] = &[
-    "/usr", "/lib", "/lib64", "/bin", "/sbin", "/etc", "/opt", "/nix",
+    "/usr", "/lib", "/lib64", "/bin", "/sbin", "/etc", "/opt", "/nix", "/proc", "/sys", "/usr/local",
 ];
 
 const TEMP_WRITE_PATHS: &[&str] = &["/tmp", "/var/tmp", "/dev/shm"];
@@ -132,7 +132,7 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
             Ok(())
         };
 
-    let worktree_access = AccessFs::ReadFile
+    let worktree_access = (AccessFs::ReadFile
         | AccessFs::ReadDir
         | AccessFs::WriteFile
         | AccessFs::Execute
@@ -146,10 +146,10 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         | AccessFs::MakeBlock
         | AccessFs::MakeSym
         | AccessFs::Refer
-        | AccessFs::Truncate;
+        | AccessFs::Truncate) & handled_fs;
     add_resolved_path_rule(worktree, worktree_access)?;
 
-    let read_exec_access = AccessFs::ReadFile | AccessFs::ReadDir | AccessFs::Execute;
+    let read_exec_access = (AccessFs::ReadFile | AccessFs::ReadDir | AccessFs::Execute) & handled_fs;
     for path_str in SYSTEM_READ_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
@@ -157,14 +157,14 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         }
     }
 
-    let read_write_dir_access = AccessFs::ReadFile
+    let read_write_dir_access = (AccessFs::ReadFile
         | AccessFs::ReadDir
         | AccessFs::WriteFile
         | AccessFs::MakeChar
         | AccessFs::MakeDir
         | AccessFs::MakeReg
         | AccessFs::RemoveFile
-        | AccessFs::RemoveDir;
+        | AccessFs::RemoveDir) & handled_fs;
     for path_str in TEMP_WRITE_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
@@ -172,13 +172,14 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         }
     }
 
-    let device_access = AccessFs::ReadFile | AccessFs::WriteFile;
+    let device_access = (AccessFs::ReadFile | AccessFs::WriteFile) & handled_fs;
     for path_str in DEVICE_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
             let _ = add_resolved_path_rule(path, device_access);
         }
     }
+
 
     ruleset
         .restrict_self()
