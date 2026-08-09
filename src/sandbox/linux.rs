@@ -194,7 +194,8 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         | AccessFs::MakeDir
         | AccessFs::MakeReg
         | AccessFs::RemoveFile
-        | AccessFs::RemoveDir)
+        | AccessFs::RemoveDir
+        | AccessFs::Truncate)
         & handled_fs;
     for path_str in TEMP_WRITE_PATHS {
         let path = Path::new(path_str);
