@@ -2,13 +2,14 @@
 // general LSM because the worktree path is known up front: read on system
 // paths, read-write on temp dirs, optional network blocking.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::OnceLock;
 
 use super::SandboxInfo;
 
 use landlock::{
-    AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, RestrictSelfAttr, Ruleset, ABI,
+    Access, AccessFs, AccessNet, BitFlags, CompatLevel, Compatible, PathBeneath, PathFd,
+    RestrictSelfAttr, Ruleset, RulesetAttr, RulesetCreated, RulesetCreatedAttr, ABI,
 };
 
 // System paths: read-execute. Temp dirs: read-write. Devices: basic I/O.
@@ -134,24 +135,30 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         .create()
         .map_err(|e| format!("Failed to create Landlock ruleset: {}", e))?;
 
-    let mut add_path_rule = |path: &Path, access: BitFlags<AccessFs>| -> Result<(), String> {
-        let path_beneath = PathBeneath::new(PathFd::new(path), access)
-            .map_err(|e| format!("Invalid path '{}': {}", path.display(), e))?;
+    let add_path_rule = |ruleset: &mut RulesetCreated,
+                         path: &Path,
+                         access: BitFlags<AccessFs>|
+     -> Result<(), String> {
+        let path_fd =
+            PathFd::new(path).map_err(|e| format!("Invalid path '{}': {}", path.display(), e))?;
+        let path_beneath = PathBeneath::new(path_fd, access);
         ruleset
             .add_rule(path_beneath)
             .map_err(|e| format!("Failed to add rule for '{}': {}", path.display(), e))?;
         Ok(())
     };
 
-    let mut add_resolved_path_rule =
-        |path: &Path, access: BitFlags<AccessFs>| -> Result<(), String> {
-            let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-            add_path_rule(&resolved, access)?;
-            if resolved != path {
-                add_path_rule(path, access)?;
-            }
-            Ok(())
-        };
+    let add_resolved_path_rule = |ruleset: &mut RulesetCreated,
+                                  path: &Path,
+                                  access: BitFlags<AccessFs>|
+     -> Result<(), String> {
+        let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        add_path_rule(ruleset, &resolved, access)?;
+        if resolved != path {
+            add_path_rule(ruleset, path, access)?;
+        }
+        Ok(())
+    };
 
     let worktree_access = (AccessFs::ReadFile
         | AccessFs::ReadDir
@@ -169,14 +176,14 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         | AccessFs::Refer
         | AccessFs::Truncate)
         & handled_fs;
-    add_resolved_path_rule(worktree, worktree_access)?;
+    add_resolved_path_rule(&mut ruleset, worktree, worktree_access)?;
 
     let read_exec_access =
         (AccessFs::ReadFile | AccessFs::ReadDir | AccessFs::Execute) & handled_fs;
     for path_str in SYSTEM_READ_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
-            let _ = add_resolved_path_rule(path, read_exec_access);
+            let _ = add_resolved_path_rule(&mut ruleset, path, read_exec_access);
         }
     }
 
@@ -192,7 +199,7 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
     for path_str in TEMP_WRITE_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
-            let _ = add_resolved_path_rule(path, read_write_dir_access);
+            let _ = add_resolved_path_rule(&mut ruleset, path, read_write_dir_access);
         }
     }
 
@@ -200,7 +207,7 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
     for path_str in DEVICE_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
-            let _ = add_resolved_path_rule(path, device_access);
+            let _ = add_resolved_path_rule(&mut ruleset, path, device_access);
         }
     }
 

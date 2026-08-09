@@ -45,19 +45,35 @@ pub fn route_and_compress(content: &str) -> String {
     let compressed = match detection.content_type {
         ContentType::JsonArray => {
             let res = smart_crusher().crush(content, "", 0.0);
-            if res.was_modified { Some(res.compressed) } else { None }
+            if res.was_modified {
+                Some(res.compressed)
+            } else {
+                None
+            }
         }
         ContentType::BuildOutput => {
             let (res, _) = log_compressor().compress(content, 0.0);
-            if res.compressed != res.original { Some(res.compressed) } else { None }
+            if res.compressed != res.original {
+                Some(res.compressed)
+            } else {
+                None
+            }
         }
         ContentType::SearchResults | ContentType::PlainText | ContentType::SourceCode => {
             let res = text_crusher().compress(content, "", None);
-            if res.compressed != content { Some(res.compressed) } else { None }
+            if res.compressed != content {
+                Some(res.compressed)
+            } else {
+                None
+            }
         }
         ContentType::GitDiff => {
             let res = diff_compressor().compress(content, "");
-            if res.compressed != content { Some(res.compressed) } else { None }
+            if res.compressed != content {
+                Some(res.compressed)
+            } else {
+                None
+            }
         }
         ContentType::Html => None,
     };
