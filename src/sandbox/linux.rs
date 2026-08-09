@@ -203,6 +203,20 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         }
     }
 
+    // CI runners may redirect Python's temporary files to a runner-specific
+    // directory (for example RUNNER_TEMP).  pytest and subprocess capture
+    // rely on being able to truncate those files after the sandbox is active.
+    let runtime_temp = std::env::temp_dir();
+    if runtime_temp.exists() {
+        let _ = add_resolved_path_rule(&mut ruleset, &runtime_temp, read_write_dir_access);
+    }
+    if let Some(runner_temp) = std::env::var_os("RUNNER_TEMP") {
+        let runner_temp = Path::new(&runner_temp);
+        if runner_temp.exists() {
+            let _ = add_resolved_path_rule(&mut ruleset, runner_temp, read_write_dir_access);
+        }
+    }
+
     let device_access = (AccessFs::ReadFile | AccessFs::WriteFile) & handled_fs;
     for path_str in DEVICE_PATHS {
         let path = Path::new(path_str);
