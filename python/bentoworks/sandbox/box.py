@@ -132,13 +132,20 @@ class Box:
             if len(core) >= 2:
                 apply_fn, check_supported_fn = core[0], core[1]
                 try:
-                    supported = check_supported_fn()
+                    supported_info = check_supported_fn()
+                    if isinstance(supported_info, dict):
+                        supported = str(supported_info.get("supported", "false")).lower() == "true"
+                    else:
+                        supported = bool(supported_info)
                     if not supported:
                         _logger.warning("Sandbox not available on this platform")
                     else:
-                        apply_fn(self.workdir, self.config.block_network)
-                        self._sandbox_applied = True
-                        _logger.info("Sandbox applied (network_blocked=%s)", self.config.block_network)
+                        applied = apply_fn(self.workdir, self.config.block_network)
+                        self._sandbox_applied = applied is not False
+                        if self._sandbox_applied:
+                            _logger.info("Sandbox applied (network_blocked=%s)", self.config.block_network)
+                        else:
+                            _logger.warning("Sandbox could not be applied")
                 except Exception as e:
                     _logger.warning("Sandbox unavailable, continuing without: %s", e)
         self._state = STATE_RUNNING

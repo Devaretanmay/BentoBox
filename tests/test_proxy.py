@@ -93,15 +93,12 @@ def test_absolute_form_gets_rewritten_and_injected(proxy, upstream):
     }]
 
 
-def test_no_route_match_passes_through_without_injection(proxy, upstream):
+def test_no_route_match_is_rejected(proxy, upstream):
     port = upstream.server_address[1]
     assert _absolute_form(
         proxy.port, f"http://127.0.0.1:{port}/other/v1/chat",
-    ) == 200
-    assert _CaptureUpstream.seen == [{
-        "path": "/other/v1/chat",
-        "auth": None,
-    }]
+    ) == 403
+    assert _CaptureUpstream.seen == []
 
 
 def test_query_string_preserved_on_rewrite(proxy, upstream):

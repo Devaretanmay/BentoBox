@@ -1,2 +1,0 @@
-class LayerError(Exception):
-    pass

@@ -91,6 +91,7 @@ class BentoPythonREPLTool(BaseTool):  # type: ignore[misc]
         "of a value, you should print it out with `print(...)`. "
         "Runs inside a kernel-enforced BentoBox sandbox."
     )
+    sanitize_input: bool = True
 
     def __init__(
         self,

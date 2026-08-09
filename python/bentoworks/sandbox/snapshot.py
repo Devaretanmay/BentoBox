@@ -1,11 +1,12 @@
 """SnapshotManager - hash-based filesystem snapshot for rollback on compartment failure."""
 
-import hashlib
 import json
 import logging
 import os
 import shutil
 from typing import Optional
+
+from blake3 import blake3
 
 _logger = logging.getLogger("bentoworks.snapshot")
 
@@ -20,7 +21,7 @@ _DEFAULT_EXCLUDE = frozenset({
 
 
 def _file_hash(path: str) -> str:
-    h = hashlib.blake3_128() if hasattr(hashlib, "blake3_128") else hashlib.sha256()
+    h = blake3()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
@@ -106,6 +107,24 @@ class SnapshotManager:
                 count += 1
             except (OSError, PermissionError) as exc:
                 _logger.warning("Restore failed for %s: %s", rel, exc)
+
+        tracked = set(manifest)
+        for dirpath, dirnames, filenames in os.walk(self._workdir, topdown=True, followlinks=False):
+            dirnames[:] = [d for d in dirnames if d not in self._exclude]
+            for fn in filenames:
+                path = os.path.join(dirpath, fn)
+                rel = os.path.relpath(path, self._workdir)
+                if rel in tracked:
+                    continue
+                snapshot_root = os.path.abspath(self._snapshot_dir)
+                absolute_path = os.path.abspath(path)
+                if absolute_path == snapshot_root or absolute_path.startswith(snapshot_root + os.sep):
+                    continue
+                try:
+                    os.unlink(path)
+                    count += 1
+                except (OSError, PermissionError) as exc:
+                    _logger.warning("Remove generated file failed for %s: %s", rel, exc)
 
         _logger.info("Restore: %d files changed out of %d tracked", count, len(manifest))
         return count

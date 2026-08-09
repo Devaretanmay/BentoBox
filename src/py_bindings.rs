@@ -31,7 +31,7 @@ fn sandbox_check_supported() -> PyResult<HashMap<String, String>> {
 
 #[pyfunction]
 fn route_and_compress(content: &str) -> String {
-    crate::compress::compress_content(content)
+    crate::engines::compression::route_and_compress(content)
 }
 
 #[pymodule]

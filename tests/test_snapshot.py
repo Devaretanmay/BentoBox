@@ -48,6 +48,8 @@ class TestSnapshotManagerBasics(_SnapshotTestBase):
         self.assertIn("a.txt", manifest)
         self.assertIn("b.txt", manifest)
         self.assertEqual(len(manifest["a.txt"]), 16)
+        from blake3 import blake3
+        self.assertEqual(manifest["a.txt"], blake3(b"aaa").hexdigest()[:16])
 
     def test_cleanup_removes_snapshot_dir(self):
         _write(os.path.join(self.workdir, "f.txt"), "data")
@@ -169,28 +171,22 @@ class TestSnapshotDeletedFiles(_SnapshotTestBase):
 
 
 class TestSnapshotNewFiles(_SnapshotTestBase):
-    """New files created during execution should NOT be removed on restore."""
+    """New files created during execution are removed on restore."""
 
-    def test_new_file_survives_restore(self):
+    def test_new_file_is_removed_on_restore(self):
         _write(os.path.join(self.workdir, "original.txt"), "original")
         self.mgr.snapshot()
         _write(os.path.join(self.workdir, "new.txt"), "i am new")
         self.mgr.restore()
-        self.assertTrue(
-            os.path.isfile(os.path.join(self.workdir, "new.txt")),
-            "New files must survive restore",
-        )
+        self.assertFalse(os.path.exists(os.path.join(self.workdir, "new.txt")))
 
-    def test_new_file_in_new_dir_survives(self):
+    def test_new_file_in_new_dir_is_removed(self):
         _write(os.path.join(self.workdir, "a.txt"), "a")
         self.mgr.snapshot()
         os.makedirs(os.path.join(self.workdir, "sub"))
         _write(os.path.join(self.workdir, "sub", "b.txt"), "b")
         self.mgr.restore()
-        self.assertTrue(
-            os.path.isfile(os.path.join(self.workdir, "sub", "b.txt")),
-            "New files in new directories must survive restore",
-        )
+        self.assertFalse(os.path.exists(os.path.join(self.workdir, "sub", "b.txt")))
 
 
 class TestSnapshotExcludePatterns(_SnapshotTestBase):

@@ -15,7 +15,8 @@ agent step, and a fleet you have to scale, patch, and pay for.
 BentoBox flips the trade. It enforces the same boundary that your **operating
 system kernel** already provides — Landlock on Linux, Seatbelt on macOS. A
 sandbox is a few kernel rules **applied in milliseconds**, with no marginal cost
-at runtime: no daemon, no container image, no VM to boot, nothing to install.
+at runtime: no daemon, no container image, or VM to boot; the SDK and native
+dependencies still need to be installed on the runner.
 
 Why this matters for a design partner:
 
@@ -35,7 +36,7 @@ Why this matters for a design partner:
 | Dimension | BentoBox (Landlock / Seatbelt) | Docker | MicroVM (Firecracker/Lambda-style) |
 | :--- | :--- | :--- | :--- |
 | Isolation enforced by | The OS kernel, per syscall | Kernel + daemon + user namespaces | Separate hypervisor (strongest) |
-| **Per-step / session startup** | **<1 ms** — apply the rule set | **~2.5 s+** — pull image, daemon, mount | **~125 ms–1 s** — boot from snapshot w/ warm pool |
+| **Per-step / session startup** | Depends on runner and process startup | **~2.5 s+** — pull image, daemon, mount | **~125 ms–1 s** — boot from snapshot w/ warm pool |
 | Memory/resource overhead | **In-process**; no guest OS, no daemon resident per unit | Per-container overhead + daemon | Full guest kernel + guest memory footprint |
 | What must be installed | **Nothing** — the OS ships it | Container runtime + daemon (image lifecycle) | Hypervisor + provisioning/orchestration |
 | Bypass surface | Kernel rejects the syscall itself (subprocess included) | Namespace escape is a known attack class | Hardest to escape, heaviest to run |
@@ -105,7 +106,7 @@ loosened — which is what makes the invariant achievable.
 | :--- | :--- |
 | **Enforcement model** | Kernel-enforced per-syscall; a write/exec/network against a shaded path is denied by the kernel — including from a subprocess. |
 | **Permissions (per compartment)** | `fs_read`, `fs_write`, `fs_exec`, `network`, `gpu`, `sys_info`. Compose per unit of work; default is read-only. |
-| **Latency** | Rule-set application measured in **<1 ms**; runtime enforcement cost ~0 (the rules live in the kernel, not interpreters). |
+| **Latency** | Kernel rule application and snapshot cost depend on platform and worktree size; benchmark before making an SLA claim. |
 | **Memory footprint** | In-process; no guest OS, no per-unit container, negligible per-compartment rule state. |
 | **Network control** | Full, localhost-only, or blocked, per box. Default **no outbound exfiltration route**. |
 | **Credential proxy** | Route rules `prefix` + `upstream` rewrite the request and inject API keys from env (`credential_source: "env:VAR"`). The agent **never holds a raw secret**; a localhost reverse-proxy strips hop-by-hop headers. |
@@ -113,7 +114,7 @@ loosened — which is what makes the invariant achievable.
 | **Framework hooks (1-line)** | `BentoPythonREPLTool` (LangChain), `BentoBoxGraphNode` (LangGraph), `BentoBoxCodeInterpreterTool` (CrewAI), `BentoBoxCodeExecutor` (AutoGen), `DataScienceSandboxHook` (data/RAG). |
 | **SDKs** | Python and TypeScript over a single Rust core. |
 | **Compression** | Long compartment output is compressed before it is stored or returned. |
-| **License** | BUSL‑1.1, with a no-change commercial conversion clause for design partners on a private bench. |
+| **License** | BUSL‑1.1 under the repository LICENSE; any separate commercial terms require a signed agreement. |
 
 ---
 
@@ -160,7 +161,7 @@ print(res.diffs)                             # audited agent mutations
   defeats the gate. BentoBox's kernel does the rejecting, including for
   subprocesses.
 - **Docker** — the same isolation behavior you are used to seeing in a stack,
-  but in milliseconds, with nothing to install and no daemon to run.
+  without requiring a separate daemon or container service.
 
 If your buyer's security team currently answers "we will never let agents touch
 our warehouse" with a no, BentoBox is the technical step up to turn that into a

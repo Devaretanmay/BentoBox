@@ -28,3 +28,5 @@ sdk/typescript/sdk-darwin-*/
 # Bench & transient state
 .DS_Store
 .opencode/
+.agents/
+.claude/

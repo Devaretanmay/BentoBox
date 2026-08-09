@@ -40,7 +40,7 @@ impl Default for CompactConfig {
 }
 
 pub fn compact(items: &[Value], cfg: &CompactConfig) -> Compaction {
-    compact_inner(items, cfg, None)
+    compact_inner(items, cfg, None, 0)
 }
 
 pub fn compact_with_store(
@@ -48,15 +48,16 @@ pub fn compact_with_store(
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
 ) -> Compaction {
-    compact_inner(items, cfg, store)
+    compact_inner(items, cfg, store, 0)
 }
 
 fn compact_inner(
     items: &[Value],
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
+    depth: usize,
 ) -> Compaction {
-    if items.len() < cfg.min_items {
+    if items.len() < cfg.min_items || depth >= 50 {
         return Compaction::Untouched(Value::Array(items.to_vec()));
     }
     if !items.iter().all(|v| matches!(v, Value::Object(_))) {
@@ -77,11 +78,11 @@ fn compact_inner(
 
     if core_ratio < cfg.heterogeneous_core_ratio {
         if let Some(disc) = detect_discriminator(items, &key_freqs, cfg) {
-            return bucket_by(items, &disc, cfg, store);
+            return bucket_by(items, &disc, cfg, store, depth);
         }
     }
 
-    build_homogeneous_table(items, &key_freqs, cfg, store)
+    build_homogeneous_table(items, &key_freqs, cfg, store, depth)
 }
 
 fn compute_key_freqs(items: &[Value]) -> BTreeMap<String, usize> {
@@ -101,6 +102,7 @@ fn build_homogeneous_table(
     key_freqs: &BTreeMap<String, usize>,
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
+    depth: usize,
 ) -> Compaction {
     let mut keys: Vec<(&String, &usize)> = key_freqs.iter().collect();
     keys.sort_by(|a, b| b.1.cmp(a.1).then_with(|| a.0.cmp(b.0)));
@@ -122,7 +124,7 @@ fn build_homogeneous_table(
 
     let mut rows: Vec<Row> = items
         .iter()
-        .map(|item| build_row(item, &ordered_keys, cfg, store))
+        .map(|item| build_row(item, &ordered_keys, cfg, store, depth))
         .collect();
 
     flatten_uniform_nested(&mut field_specs, &mut rows, cfg);
@@ -141,6 +143,7 @@ fn build_row(
     ordered_keys: &[String],
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
+    depth: usize,
 ) -> Row {
     let obj = match item.as_object() {
         Some(o) => o,
@@ -150,7 +153,7 @@ fn build_row(
         .iter()
         .map(|k| match obj.get(k) {
             None => CellValue::Missing,
-            Some(v) => cell_from_value(v, cfg, store),
+            Some(v) => cell_from_value(v, cfg, store, depth),
         })
         .collect();
     Row::new(cells)
@@ -160,6 +163,7 @@ fn cell_from_value(
     v: &Value,
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
+    depth: usize,
 ) -> CellValue {
     match classify_cell(v, &cfg.classify) {
         CellClass::Scalar => CellValue::Scalar(v.clone()),
@@ -167,7 +171,12 @@ fn cell_from_value(
         CellClass::JsonArray => {
             if let Value::Array(items) = v {
                 if items.iter().all(|i| matches!(i, Value::Object(_))) && items.len() >= 2 {
-                    return CellValue::Nested(Box::new(compact_inner(items, cfg, store)));
+                    return CellValue::Nested(Box::new(compact_inner(
+                        items,
+                        cfg,
+                        store,
+                        depth + 1,
+                    )));
                 }
             }
             CellValue::Scalar(v.clone())
@@ -175,7 +184,12 @@ fn cell_from_value(
         CellClass::StringifiedJson(parsed) => {
             if let Value::Array(items) = &parsed {
                 if items.iter().all(|i| matches!(i, Value::Object(_))) && items.len() >= 2 {
-                    return CellValue::Nested(Box::new(compact_inner(items, cfg, store)));
+                    return CellValue::Nested(Box::new(compact_inner(
+                        items,
+                        cfg,
+                        store,
+                        depth + 1,
+                    )));
                 }
             }
             CellValue::Scalar(parsed)
@@ -401,6 +415,7 @@ fn bucket_by(
     discriminator: &str,
     cfg: &CompactConfig,
     store: Option<&Arc<InMemoryCcrStore>>,
+    depth: usize,
 ) -> Compaction {
     let mut groups: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     for item in items {
@@ -415,7 +430,7 @@ fn bucket_by(
     let buckets: Vec<Bucket> = groups
         .into_iter()
         .map(|(key, group_items)| {
-            let inner = compact_inner(&group_items, cfg, store);
+            let inner = compact_inner(&group_items, cfg, store, depth + 1);
             match inner {
                 Compaction::Table { schema, rows, .. } => Bucket {
                     key: Value::String(key),

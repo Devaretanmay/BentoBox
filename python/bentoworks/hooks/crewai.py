@@ -15,6 +15,7 @@ when CrewAI is present.
 
 from __future__ import annotations
 
+import shlex
 from typing import Any, Dict, Optional, Sequence
 
 from .base import ExecutionResult, SandboxRunner, validate_permissions
@@ -119,7 +120,7 @@ class BentoBoxCodeInterpreterTool(_CrewaiBaseTool):  # type: ignore[misc]
     ) -> ExecutionResult:
         """Run the code with optional pre-installation of libraries."""
         if libraries_used:
-            install_cmd = " ".join(f"'{p}'" for p in libraries_used)
+            install_cmd = " ".join(shlex.quote(p) for p in libraries_used)
             install = self._runner.run(
                 f"python3 -m pip install --quiet {install_cmd}",
                 permissions=self._permissions,

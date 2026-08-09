@@ -18,7 +18,7 @@ from bentoworks.compartments import Compartment, CompartmentConfig
 from bentoworks.sandbox.snapshot import SnapshotManager
 
 
-def test_startup_latency(iterations: int = 20) -> dict[str, Any]:
+def test_startup_latency(iterations: int = 10) -> dict[str, Any]:
     """Benchmark 1: Startup Latency & Cold-Start Boot Overhead."""
     print("Running Benchmark 1: Startup Latency & Boot Overhead...")
     
@@ -84,12 +84,13 @@ except Exception as e:
     runner = BentoCIRunner(workdir=".", block_network=True)
     res = runner.run_step(f"{sys.executable} -c '{code}'")
 
-    blocked = "EXFILTRATION_BLOCKED" in res["stdout"] or "PermissionError" in res["stderr"] or res["returncode"] != 0
+    explicit_block = "PermissionError" in res["stdout"] or "PermissionError" in res["stderr"]
+    succeeded = "EXFILTRATION_SUCCESS" in res["stdout"]
 
     return {
         "exfiltration_attempt": "Outbound HTTP/TCP connection to 1.1.1.1:80",
-        "bento_network_blocked": blocked,
-        "result": "BLOCKED (Kernel Landlock/Seatbelt socket restriction)" if blocked else "ALLOWED",
+        "bento_network_blocked": explicit_block,
+        "result": "BLOCKED (explicit permission denial)" if explicit_block else "ALLOWED" if succeeded else "INCONCLUSIVE (connection failure is not proof of sandbox denial)",
     }
 
 
@@ -98,6 +99,12 @@ def test_credential_path_protection() -> dict[str, Any]:
     print("Running Benchmark 3: Sensitive Path Protection...")
 
     ssh_path = os.path.expanduser("~/.ssh")
+    if not os.path.exists(ssh_path):
+        return {
+            "target_path": ssh_path,
+            "bento_path_blocked": None,
+            "result": "INCONCLUSIVE (target path does not exist)",
+        }
     code = f"""
 import os
 try:
@@ -110,12 +117,12 @@ except Exception as e:
     runner = BentoCIRunner(workdir=".", block_network=True)
     res = runner.run_step(f"{sys.executable} -c '{code}'")
 
-    blocked = "READ_BLOCKED" in res["stdout"] or "PermissionError" in res["stderr"] or res["returncode"] != 0
+    blocked = "PermissionError" in res["stdout"] or "PermissionError" in res["stderr"]
 
     return {
         "target_path": ssh_path,
         "bento_path_blocked": blocked,
-        "result": "BLOCKED (Deny-by-default OS Kernel rules)" if blocked else "ALLOWED",
+        "result": "BLOCKED (explicit permission denial)" if blocked else "ALLOWED" if "READ_SUCCESS" in res["stdout"] else "INCONCLUSIVE (read failure is not proof of sandbox denial)",
     }
 
 

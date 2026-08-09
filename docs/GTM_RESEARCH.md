@@ -4,7 +4,7 @@
 
 Companion asset — the design-partner one-pager: [`docs/DESIGN_PARTNERS.md`](DESIGN_PARTNERS.md).
 
-Product framing used throughout: BentoBox executes agent code inside **kernel-enforced compartments** — Landlock (Linux) / Seatbelt (macOS), deny-by-default, **<1 ms** per-sandbox application (vs **~2.5 s** Docker cold-start), in-process (no daemon, no image), with a credential proxy and instant BLAKE3 file rollback. One-line hooks exist for LangChain / LangGraph / CrewAI / AutoGen / data agents, plus a generic `SandboxRunner` for sandboxing any CLI coding agent.
+Product framing used throughout: BentoBox executes agent code with **kernel-enforced process controls** — Landlock (Linux) / Seatbelt (macOS), with a credential proxy and BLAKE3 file snapshots. Startup and rollback costs depend on the platform and worktree size. One-line hooks exist for LangChain / LangGraph / CrewAI / AutoGen / data agents, plus a generic `SandboxRunner` for sandboxing any CLI coding agent.
 
 **Confidence key.** `Confirmed` = public evidence (docs/blog/press). `Likely` = inferred from product surface. Founder LinkedIn/X shown only where verified, otherwise flagged "not confirmed". **★** = strongest sandbox fit. This is a live snapshot; re-verify before outreach.
 
@@ -44,7 +44,7 @@ Product framing used throughout: BentoBox executes agent code inside **kernel-en
 - **What** Vibe-coding platform that generates, tests, and deploys full-stack apps at scale. YC S24, ~$230M; claims ~$120M ARR, 200K+ paying customers.
 - **Founders** Mukund Jha (CEO, LinkedIn); Madhav Jha (CTO) — LinkedIn not individually confirmed.
 - **Architecture** `Likely` cloud container/VM fleet per user build. No public docs.
-- **Value prop** Millions of LLM-generated apps per tenant mean per-user isolation must be cheap and fast. <1 ms kernel sandboxing collapses per-app execution cost at their scale — a unit-economics story.
+- **Value prop** Millions of LLM-generated apps per tenant mean per-user isolation must be cheap and fast. Benchmark the native process controls and snapshots on the target runner to establish unit economics.
 
 #### A6. All Hands AI / OpenHands — all-hands.dev
 - **What** Open-source platform for cloud coding agents (OpenHands); model-agnostic, self-hostable. YC W24; $18.8M Series A.
@@ -106,7 +106,7 @@ Product framing used throughout: BentoBox executes agent code inside **kernel-en
 - **What** Enterprise agent platform (Python automation) that runs natively inside Snowflake on governed data. ~$55M Series A.
 - **Founders** Rob Bearden (CEO); Antti Karjalainen (Co-founder, Robocorp); CTO line not fully confirmed.
 - **Architecture** `Confirmed` — inherits the **Robocorp `rcc` Docker-container Python** runtime.
-- **Value prop** Directly governed Snowflake data. A <1 ms kernel sandbox with blocked egress, credential proxy to Snowflake, and BLAKE3 rollback tightens their audit/trust pitch and cuts container latency per automation action.
+- **Value prop** Directly governed Snowflake data. Kernel controls, credential proxying, and BLAKE3 rollback can tighten the audit/trust story; measure latency on the target workload.
 
 #### C6. RelationalAI — relational.ai
 - **What** Relational graph coprocessor that runs inside the Snowflake data cloud — zero data movement. $150M+ funded.
@@ -203,7 +203,7 @@ verify "the agent cannot touch what it shouldn't" will block the deal.
 
 BentoBox executes agent code inside compartments **your OS kernel already
 provides** — Landlock on Linux, Seatbelt on macOS. The sandbox is a couple of
-kernel rules applied in **under 1 ms**, in-process, with nothing to install: no
+kernel rules applied in-process, with no daemon or container service to operate; the SDK and native toolchain still need to be installed:
 container, no VM, no daemon. Deny-by-default, so `~/.ssh`/`~/.aws` is unreachable
 unless you opt in; a credential proxy injects model/DB keys from env so the agent
 never holds a raw secret; and a BLAKE3 content-hash snapshot means any mutation
@@ -250,7 +250,7 @@ level checks are bypassable from inside, and containers cost a cold start per st
 Sandbox each command with the OS kernel instead of a process — **Landlock on
 Linux / Seatbelt on macOS** — as an optional, behind-a-flag integration:
 
-- **<1 ms per call, in-process** — no image pull, no daemon, no container.
+- **In-process controls** — no image pull, daemon, or container service; benchmark startup and snapshot costs for your workload.
 - **Deny-by-default:** worktree read/write, system paths read-only, everything else
   blocked. Credentials (`~/.ssh`, `~/.aws`, git creds, keychain) unreachable unless
   allowed.
@@ -265,7 +265,7 @@ Linux / Seatbelt on macOS** — as an optional, behind-a-flag integration:
 
 I'll implement and land this as an optional integration (a 1-line hook) and
 maintain it, at no cost to `[repo]`. I maintain the open-source BentoBox
-kernel-sandbox library (`github.com/bentoworks/bentobox`).
+kernel-sandbox library (`github.com/Devaretanmay/BentoBox`).
 
 Interested? I'll open a proper PR/draft and you review, or I can start with a
 discussion post cook-through. Happy to keep it minimal: a new sandbox option with

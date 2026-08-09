@@ -140,8 +140,6 @@ fn generate_profile(worktree_path: &str, block_network: bool) -> String {
 
         sb.push_str("(allow network-outbound (path \"/private/var/run/mDNSResponder\"))\n");
         sb.push_str("(allow network-outbound (path \"/var/run/mDNSResponder\"))\n");
-
-        sb.push_str("(allow system-socket (socket-domain AF_UNIX))\n");
     } else {
         sb.push_str("(allow network*)\n");
         sb.push_str("(allow system-socket)\n");

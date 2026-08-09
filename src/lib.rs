@@ -1,7 +1,4 @@
-#![allow(dead_code, unused_imports)]
-
 /// BentoBox Rust Core - sandbox enforcement + output compression.
-pub mod compress;
 pub mod sandbox;
 
 mod engines;

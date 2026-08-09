@@ -139,7 +139,7 @@ pub fn prioritize_indices(
         }
     }
 
-    prioritized
+    prioritized.into_iter().take(effective_max).collect()
 }
 
 fn numeric_anomaly_indices(

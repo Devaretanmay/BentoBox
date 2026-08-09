@@ -26,7 +26,7 @@ class CompressionModule(BehaviourModule):
     """Auto-compresses compartment output using the Rust compression engine."""
 
     name = "compression"
-    engine = "optimisation"
+    engine = "observation"
 
     def load(self, ctx) -> None:
         self._stats: dict[str, dict] = {}

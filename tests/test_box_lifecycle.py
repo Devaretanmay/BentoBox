@@ -3,6 +3,7 @@
 import os
 import shutil
 import unittest
+from unittest.mock import patch
 
 
 class TestBoxLifecycle(unittest.TestCase):
@@ -53,3 +54,12 @@ class TestBoxLifecycle(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             b.enter(sandbox=False)
 
+    def test_unsupported_native_sandbox_is_not_reported_as_applied(self):
+        from bentoworks.sandbox.box import Box
+
+        b = Box(workdir=self.tmpdir)
+        apply_fn = lambda *_args: False
+        check_fn = lambda: {"supported": "false", "platform": "test", "details": "unsupported"}
+        with patch("bentoworks.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
+            self.assertFalse(b.enter(sandbox=True))
+        b.exit()

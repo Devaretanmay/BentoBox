@@ -21,6 +21,9 @@ classifiers = [
     "Programming Language :: Rust",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dependencies = [
+    "blake3>=1.0",
+]
 
 
 [project.urls]

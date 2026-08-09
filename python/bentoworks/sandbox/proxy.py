@@ -96,17 +96,18 @@ class _CredentialProxyHandler(http.server.BaseHTTPRequestHandler):
         request_path = _request_path(self.path)
         target_url = self.path
         route = self._match_route(request_path)
-        if route is not None:
-            target_url = route.rewrite_path(request_path)
+        if route is None:
+            self.send_error(403, "No credential route matches this destination")
+            return
+        target_url = route.rewrite_path(request_path)
 
         body = self._read_body()
         headers = self._clean_headers(route)
 
-        if route is not None:
-            credential = route.resolve_credential()
-            if credential:
-                value = route.format.replace("{credential}", credential)
-                headers[route.header] = value
+        credential = route.resolve_credential()
+        if credential:
+            value = route.format.replace("{credential}", credential)
+            headers[route.header] = value
 
         req = urllib.request.Request(
             target_url, data=body, headers=headers, method=method,

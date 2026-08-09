@@ -12,7 +12,7 @@ Quick reference — this is the state of the art these examples replace:
 | :--- | :--- | :--- |
 | Agents on the bare host, `--dangerously-skip-permissions` | Agent has your SSH keys, cloud creds, browser data, network | `SandboxRunner` deny-by-default; kernel blocks `~/.ssh`, `~/.aws` |
 | Git worktrees | Protects the *branch*, not credentials or network | Kernel denies the file/network read regardless of branch |
-| Remote microVMs (E2B, Firecracker, Modal) | ~80-150 ms boot, per-VM-second billing, data leaves the box | In-process kernel rules, `<1 ms`, data stays local |
+| Remote microVMs (E2B, Firecracker, Modal) | ~80-150 ms boot, per-VM-second billing, data leaves the box | In-process kernel rules, local data; benchmark startup for the target workload |
 | Interpreter-level `exec()` sandboxes | Bypassable from inside (C-extension escape) | The kernel rejects, including for subprocesses |
 | Docker containers | Image pull + daemon + seconds of startup | Nothing to install, milliseconds |
 

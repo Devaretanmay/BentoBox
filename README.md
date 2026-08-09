@@ -103,7 +103,9 @@ Each compartment gets its own `CompartmentConfig`:
 - **Resource limits**: `timeout_s`, `memory_mb`, `storage_mb`, `cpu_percent`
 - **Communication whitelist**: `allow_inbound_from`, `allow_outbound_to`
 
-The `SandboxEnforcer` blocks any operation that violates the compartment's permission set: a read-only compartment cannot write files; a build compartment cannot reach the network if `network` is missing from its permissions.
+The `SandboxEnforcer` is an interpreter-level guard for Python code. The native
+kernel sandbox is process-wide; compartment-specific permissions are enforced by
+the enforcer and must not be treated as an OS boundary for hostile code.
 
 ### Custom compartments
 
@@ -158,8 +160,8 @@ One Rust core, two language wrappers. All compartment runtime logic — permissi
 | Opaque runtime handle | `BentoBox` | `new Runtime(...)` |
 
 ```bash
-pip install bentoworks                    # Python
-npm install @bentwork/sdk                  # TypeScript
+pip install bentoworks                    # Python; native wheels depend on platform
+npm install @bentwork/sdk                  # TypeScript; publish platform addons first
 ```
 
 ### Python

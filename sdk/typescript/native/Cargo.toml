@@ -1,6 +1,6 @@
 [package]
 name = "bentoworks-native"
-version = "0.1.0"
+version = "0.9.4"
 edition = "2021"
 description = "Node/TypeScript binding for the BentoBox kernel sandbox"
 license = "BUSL-1.1"

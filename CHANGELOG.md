@@ -93,7 +93,7 @@ All notable changes to BentoBox are documented here.
 
 ### Verified
 
-- Python: 73 tests pass (installed wheel).
-- Rust core: 425 tests pass.
+- Python: 107 tests pass (installed wheel).
+- Rust core: 423 tests pass.
 - Go SDK: `go vet` clean, 15 tests pass.
 - TypeScript SDK: builds and all smoke tests pass.

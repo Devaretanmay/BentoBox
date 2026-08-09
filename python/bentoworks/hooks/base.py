@@ -26,7 +26,7 @@ import shlex
 import shutil
 import subprocess
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from ..bentobox import AgentBentoBox, BentoBoxConfig
@@ -172,15 +172,7 @@ class ExecutionResult:
 
     def as_dict(self) -> dict[str, Any]:
         """Plain-dict view safe to embed in agent state / tool results."""
-        return {
-            "returncode": self.returncode,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-            "diffs": list(self.diffs),
-            "elapsed_s": self.elapsed_s,
-            "error": self.error,
-            "timed_out": self.timed_out,
-        }
+        return asdict(self)
 
 
 class SandboxRunner:

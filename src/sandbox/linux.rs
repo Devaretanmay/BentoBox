@@ -7,11 +7,23 @@ use std::sync::OnceLock;
 
 use super::SandboxInfo;
 
-use landlock::{AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, Ruleset, ABI};
+use landlock::{
+    AccessFs, AccessNet, BitFlags, CompatLevel, PathBeneath, PathFd, RestrictSelfAttr, Ruleset, ABI,
+};
 
 // System paths: read-execute. Temp dirs: read-write. Devices: basic I/O.
 const SYSTEM_READ_PATHS: &[&str] = &[
-    "/usr", "/lib", "/lib64", "/bin", "/sbin", "/etc", "/opt", "/nix", "/proc", "/sys", "/usr/local",
+    "/usr",
+    "/lib",
+    "/lib64",
+    "/bin",
+    "/sbin",
+    "/etc",
+    "/opt",
+    "/nix",
+    "/proc",
+    "/sys",
+    "/usr/local",
 ];
 
 const TEMP_WRITE_PATHS: &[&str] = &["/tmp", "/var/tmp", "/dev/shm"];
@@ -36,7 +48,16 @@ fn detect_abi() -> Result<ABI, String> {
         return result.clone();
     }
 
-    let probe_order = [ABI::V6, ABI::V5, ABI::V4, ABI::V3, ABI::V2, ABI::V1];
+    let probe_order = [
+        ABI::V8,
+        ABI::V7,
+        ABI::V6,
+        ABI::V5,
+        ABI::V4,
+        ABI::V3,
+        ABI::V2,
+        ABI::V1,
+    ];
 
     for &abi in &probe_order {
         let mut ruleset = Ruleset::default();
@@ -81,7 +102,7 @@ fn has_network() -> bool {
 
 fn has_execute() -> bool {
     detect_abi()
-        .map(|abi| matches!(abi, ABI::V3 | ABI::V4 | ABI::V5 | ABI::V6))
+        .map(|abi| AccessFs::from_all(abi).contains(AccessFs::Execute))
         .unwrap_or(false)
 }
 
@@ -146,10 +167,12 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         | AccessFs::MakeBlock
         | AccessFs::MakeSym
         | AccessFs::Refer
-        | AccessFs::Truncate) & handled_fs;
+        | AccessFs::Truncate)
+        & handled_fs;
     add_resolved_path_rule(worktree, worktree_access)?;
 
-    let read_exec_access = (AccessFs::ReadFile | AccessFs::ReadDir | AccessFs::Execute) & handled_fs;
+    let read_exec_access =
+        (AccessFs::ReadFile | AccessFs::ReadDir | AccessFs::Execute) & handled_fs;
     for path_str in SYSTEM_READ_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
@@ -164,7 +187,8 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         | AccessFs::MakeDir
         | AccessFs::MakeReg
         | AccessFs::RemoveFile
-        | AccessFs::RemoveDir) & handled_fs;
+        | AccessFs::RemoveDir)
+        & handled_fs;
     for path_str in TEMP_WRITE_PATHS {
         let path = Path::new(path_str);
         if path.exists() {
@@ -180,8 +204,9 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         }
     }
 
-
     ruleset
+        .all_threads(true)
+        .map_err(|e| format!("Failed to configure all-thread Landlock enforcement: {}", e))?
         .restrict_self()
         .map_err(|e| format!("Failed to apply Landlock sandbox: {}", e))?;
 

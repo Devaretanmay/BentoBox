@@ -1,5 +1,5 @@
 name: 'BentoBox CI Security & Speed Setup'
-description: 'Zero-cost, zero-infrastructure OS kernel sandboxing and sub-millisecond state resets for CI steps.'
+description: 'OS-kernel sandboxing and workspace state protection for CI steps.'
 author: 'BentoWorks'
 
 inputs:
@@ -11,14 +11,18 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Install BentoWorks & Dependencies
       shell: bash
       run: |
-        python3 -m pip install --upgrade pip maturin pytest || true
+        set -euo pipefail
+        python3 -m pip install --upgrade pip maturin pytest
         if [ -f "pyproject.toml" ]; then
-          maturin develop --release || python3 -m pip install -e . || pip install -e .
+          maturin develop --release
         else
-          python3 -m pip install bentoworks || pip install bentoworks
+          python3 -m pip install bentoworks
         fi
 
     - name: Initialize BentoBox CI Environment

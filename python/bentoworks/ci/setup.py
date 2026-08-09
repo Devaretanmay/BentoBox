@@ -1,6 +1,6 @@
 """BentoBox GitHub Actions Setup Entrypoint.
 
-Invoked during ``uses: bentoworks/setup@v1`` to configure shell wrappers and
+Invoked by the BentoBox repository action to configure CI defaults and
 environment defaults on GitHub-hosted or self-hosted runners.
 """
 
@@ -12,9 +12,9 @@ BANNER = """
 ===========================================================
   BentoBox CI Security & Acceleration Initialized
   - Kernel Isolation: Landlock (Linux) / Seatbelt (macOS)
-  - Latency: < 1ms
+  - Latency: depends on repository and runner
   - Network Egress: Managed per-stage
-  - State Reset: BLAKE3 Hash Rollback (<100ms)
+  - State Reset: BLAKE3 Hash Rollback
 ===========================================================
 """
 

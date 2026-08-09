@@ -41,49 +41,26 @@ pub fn route_and_compress(content: &str) -> String {
     }
 
     let detection = content_detector::detect_content_type(content);
-    let content_type = detection.content_type;
 
-    match content_type {
+    let compressed = match detection.content_type {
         ContentType::JsonArray => {
-            let result = smart_crusher().crush(content, "", 0.0);
-            if result.was_modified {
-                result.compressed
-            } else {
-                content.to_string()
-            }
+            let res = smart_crusher().crush(content, "", 0.0);
+            if res.was_modified { Some(res.compressed) } else { None }
         }
         ContentType::BuildOutput => {
-            let (result, _) = log_compressor().compress(content, 0.0);
-            if result.compressed != result.original {
-                result.compressed
-            } else {
-                content.to_string()
-            }
+            let (res, _) = log_compressor().compress(content, 0.0);
+            if res.compressed != res.original { Some(res.compressed) } else { None }
         }
-        ContentType::SearchResults => {
-            let result = text_crusher().compress(content, "", None);
-            if result.compressed != content {
-                result.compressed
-            } else {
-                content.to_string()
-            }
+        ContentType::SearchResults | ContentType::PlainText | ContentType::SourceCode => {
+            let res = text_crusher().compress(content, "", None);
+            if res.compressed != content { Some(res.compressed) } else { None }
         }
         ContentType::GitDiff => {
-            let result = diff_compressor().compress(content, "");
-            if result.compressed != content {
-                result.compressed
-            } else {
-                content.to_string()
-            }
+            let res = diff_compressor().compress(content, "");
+            if res.compressed != content { Some(res.compressed) } else { None }
         }
-        ContentType::PlainText | ContentType::SourceCode => {
-            let result = text_crusher().compress(content, "", None);
-            if result.compressed != content {
-                result.compressed
-            } else {
-                content.to_string()
-            }
-        }
-        ContentType::Html => content.to_string(),
-    }
+        ContentType::Html => None,
+    };
+
+    compressed.unwrap_or_else(|| content.to_string())
 }

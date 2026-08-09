@@ -25,7 +25,6 @@ from .sandbox import credential_module as _credential_module  # noqa: F401
 from .sandbox import snapshot_module as _snapshot_module  # noqa: F401
 from .sandbox.proxy import RouteConfig
 from .compartments import Compartment, CompartmentRuntime
-from .errors import LayerError
 from .engine.events import event_bus
 from .engine.tracer import Tracer, is_trace_enabled
 
@@ -48,7 +47,7 @@ class BentoBoxResult:
     elapsed_s: float = 0.0
     compartments_completed: list[str] = field(default_factory=list)
     output: dict[str, dict] = field(default_factory=dict)
-    errors: list[LayerError] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class BentoBox:
@@ -222,20 +221,20 @@ class BentoBox:
         return {}
 
     def _build_result(self, raw: dict[str, Any], elapsed: float) -> BentoBoxResult:
-        errors: list[LayerError] = []
+        errors: list[str] = []
         completed: list[str] = []
         status = "success"
 
         for name, result in raw.items():
             if isinstance(result, dict) and "error" in result:
-                errors.append(LayerError(result["error"]))
+                errors.append(str(result["error"]))
                 status = "error"
             else:
                 completed.append(name)
 
         summary = "Task completed"
         if errors:
-            summary = errors[-1].args[0] if errors else "Unknown error"
+            summary = errors[-1]
 
         return BentoBoxResult(
             status=status,

@@ -102,6 +102,9 @@ impl SnapshotManager {
             &self.exclude,
             &mut |src, rel| {
                 let dst = self.snapshot_dir.join(rel);
+                if let Some(parent) = dst.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
                 if let (Ok(h), Ok(_)) = (file_hash(src), fs::copy(src, &dst)) {
                     manifest.insert(
                         rel.to_string_lossy().to_string(),
@@ -151,6 +154,25 @@ impl SnapshotManager {
                 count += 1;
             }
         }
+
+        let tracked: HashSet<String> = manifest.keys().cloned().collect();
+        let mut generated = Vec::new();
+        walk_files(
+            &self.workdir,
+            &self.workdir,
+            &self.exclude,
+            &mut |_src, rel| {
+                let rel = rel.to_string_lossy().to_string();
+                if !tracked.contains(&rel) {
+                    generated.push(self.workdir.join(&rel));
+                }
+            },
+        );
+        for path in generated {
+            if fs::remove_file(path).is_ok() {
+                count += 1;
+            }
+        }
         Ok(count)
     }
 
@@ -167,7 +189,8 @@ mod tests {
     use super::*;
 
     fn tmpdir(name: &str) -> String {
-        format!("/tmp/bw_snap_{name}_{}", uuid())
+        let dir = std::env::temp_dir().join(format!("bw_snap_{name}_{}", uuid()));
+        dir.to_string_lossy().to_string()
     }
 
     fn uuid() -> String {

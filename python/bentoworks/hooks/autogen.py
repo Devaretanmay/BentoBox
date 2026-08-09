@@ -15,6 +15,7 @@ the executor is usable, and testable, with no AutoGen installation.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, List, Optional, Sequence
 
@@ -113,24 +114,11 @@ class BentoBoxCodeExecutor:
         """
 
         def extract_code_blocks(text: str, **kwargs: Any) -> List[CodeBlock]:
-            """Parse fenced code blocks out of ``text``.
-
-            Parameters
-            ----------
-            text
-                Raw markdown containing fenced code blocks.
-
-            Returns
-            -------
-            list[CodeBlock]
-                One block per fence, language-parsed where possible.
-            """
+            pattern = r"```([a-zA-Z0-9_-]*)\n(.*?)```"
+            matches = re.findall(pattern, text, re.DOTALL)
             blocks: List[CodeBlock] = []
-            for line in text.splitlines():
-                stripped = line.strip()
-                if stripped.startswith("```"):
-                    language = stripped.strip("`").strip().split()[0] if stripped.strip("`").strip() else "python"
-                    blocks.append(CodeBlock(language=language, code=line))
+            for lang, code in matches:
+                blocks.append(CodeBlock(language=lang.strip() or "python", code=code.strip()))
             return blocks
 
         return type("MarkdownCodeExtractor", (), {"extract_code_blocks": staticmethod(extract_code_blocks)})()
@@ -201,11 +189,3 @@ class BentoBoxCodeExecutor:
 
     def restart(self) -> None:
         """Reset executor state (AutoGen lifecycle hook; no-op for stateless)."""
-
-
-
-__all__ = [
-    "CodeBlock",
-    "CodeResult",
-    "BentoBoxCodeExecutor",
-]

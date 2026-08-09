@@ -23,11 +23,13 @@ class BentoCIRunner:
         block_network: bool = True,
         timeout_s: int = 600,
         enable_snapshot: bool = True,
+        sandbox: bool = True,
     ):
         self.workdir = os.path.abspath(workdir)
         self.block_network = block_network
         self.timeout_s = timeout_s
         self.enable_snapshot = enable_snapshot
+        self.sandbox = sandbox
 
     def run_step(self, cmd: str, name: str = "ci_step") -> dict[str, Any]:
         """Runs a command inside a kernel-enforced BentoBox CI compartment."""
@@ -39,6 +41,7 @@ class BentoCIRunner:
                 capture_output=True,
                 text=True,
                 cwd=ctx.workdir,
+                timeout=self.timeout_s,
             )
             return {
                 "returncode": proc.returncode,
@@ -53,7 +56,7 @@ class BentoCIRunner:
         box = AgentBentoBox(
             config=BentoBoxConfig(
                 workdir=self.workdir,
-                sandbox=True,
+                sandbox=self.sandbox,
                 block_network=self.block_network,
             )
         )
@@ -79,9 +82,9 @@ class BentoCIRunner:
         }
 
 
-def run_ci_step(cmd: str, block_network: bool = True) -> int:
+def run_ci_step(cmd: str, block_network: bool = True, sandbox: bool = True) -> int:
     """Convenience helper to run a CI step and output directly to stdout/stderr."""
-    runner = BentoCIRunner(block_network=block_network)
+    runner = BentoCIRunner(block_network=block_network, sandbox=sandbox)
     res = runner.run_step(cmd)
     
     if res["stdout"]:

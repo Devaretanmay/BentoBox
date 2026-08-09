@@ -1,7 +1,6 @@
 from .bentobox import BentoBox, AgentBentoBox, BentoBoxConfig, BentoBoxResult
 
 from . import compartments as compartments
-from . import errors as errors
 from . import hooks as hooks
 
 try:
@@ -16,6 +15,5 @@ __all__ = [
     "BentoBoxConfig",
     "BentoBoxResult",
     "compartments",
-    "errors",
     "hooks",
 ]
