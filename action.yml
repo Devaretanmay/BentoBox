@@ -23,14 +23,17 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        python3 -m pip install --upgrade pip maturin pytest
+        python3 -m venv .venv
+        echo "${PWD}/.venv/bin" >> "$GITHUB_PATH"
+        echo "VIRTUAL_ENV=${PWD}/.venv" >> "$GITHUB_ENV"
+        .venv/bin/python -m pip install --upgrade pip maturin pytest
         if [ -f "pyproject.toml" ]; then
-          maturin develop --release
+          .venv/bin/maturin develop --release
         else
-          python3 -m pip install bentoworks
+          .venv/bin/python -m pip install bentoworks
         fi
 
     - name: Initialize BentoBox CI Environment
       shell: bash
       run: |
-        python3 -m bentoworks.ci.setup --network ${{ inputs.network }}
+        .venv/bin/python -m bentoworks.ci.setup --network ${{ inputs.network }}
