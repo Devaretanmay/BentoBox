@@ -91,6 +91,23 @@ Compart is agent-agnostic and process-agnostic. If it runs in a terminal, Compar
 
 ## Quick Start
 
+### Declarative CLI Workflow (Infrastructure-as-Code)
+
+Initialize a project, declare compartments, and run materialization:
+
+```bash
+compart init
+compart compartment create Research
+compart compartment create Builder
+compart connect Research Builder
+compart inspect
+compart run
+```
+
+For detailed CLI usage and Git PR review workflows, see [`docs/CLI.md`](docs/CLI.md).
+
+### Python SDK Workflow
+
 Multi-compartment pipeline with message passing:
 
 ```python
