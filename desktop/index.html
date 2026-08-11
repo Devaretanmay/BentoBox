@@ -3,384 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compart Dashboard</title>
+  <title>Compart</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Top Title Bar (macOS Style) -->
+  <!-- Titlebar -->
   <header class="titlebar">
     <div class="titlebar-left">
       <div class="traffic-lights">
-        <span class="dot dot-red"></span>
-        <span class="dot dot-yellow"></span>
-        <span class="dot dot-green"></span>
+        <span class="dot dot-close"></span>
+        <span class="dot dot-minimize"></span>
+        <span class="dot dot-zoom"></span>
       </div>
-      <div class="branch-pill">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
-        <span>origin/main</span>
-      </div>
-      <span class="meta-text">⏱ just now</span>
-      <span class="upstream-badge">Kernel Active</span>
+      <span class="titlebar-label" id="sys-sandbox-type">Seatbelt</span>
+      <span class="titlebar-meta" id="sys-python"></span>
     </div>
     <div class="titlebar-center">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-      <span>compart-workspace</span>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <span class="titlebar-repo" id="workspace-path">compart-workspace</span>
     </div>
-    <div class="titlebar-right"></div>
+    <div class="titlebar-right">
+      <span class="status-pill idle" id="status-pill">Idle</span>
+    </div>
   </header>
 
   <div class="app-layout">
 
-    <!-- Thin Left Icon Sidebar -->
+    <!-- Sidebar -->
     <aside class="sidebar">
+      <div class="sidebar-logo">C</div>
       <nav class="sidebar-nav">
-        <a href="#" class="nav-icon active" title="Dashboard">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-        </a>
-        <a href="#" class="nav-icon" title="Branches">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
-        </a>
-        <a href="#" class="nav-icon" title="Timeline">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        </a>
-        <a href="#" class="nav-icon" id="nav-vault-btn" title="Credential Vault">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        </a>
+        <button class="nav-btn active" title="Runner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </button>
+        <button class="nav-btn" title="History" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </button>
+        <button class="nav-btn" title="Vault" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </button>
       </nav>
-      <div class="sidebar-bottom">
-        <a href="#" class="nav-icon" title="Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </a>
-        <div class="avatar-dot">
-          <div class="avatar-circle">T</div>
-        </div>
-      </div>
     </aside>
 
-    <!-- COLUMN 1: Sandbox Rules & Unassigned Files -->
-    <section class="panel panel-left">
-      <div class="panel-header">
-        <div class="panel-header-row">
-          <span class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            Sandbox Rules
-          </span>
-          <button class="btn-text">Add rule +</button>
-        </div>
+    <!-- Panel 1: Run Configuration -->
+    <section class="panel panel-config">
+      <div class="panel-head">
+        <h2>Run</h2>
       </div>
 
-      <!-- Active rule assignment -->
-      <div class="rule-assignment">
-        <span class="rule-file">sandbox/enforcer.py</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        <span class="rule-target">kernel-lockdown</span>
-      </div>
+      <div class="panel-body">
+        <!-- Command -->
+        <div class="field">
+          <label>Command</label>
+          <input type="text" id="cmd-input" placeholder="ls -la" spellcheck="false">
+        </div>
 
-      <div class="section-divider">
-        <span class="section-label">Unassigned <span class="help-circle">?</span></span>
-        <div class="view-toggles">
-          <button class="toggle-btn active">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-          </button>
-          <button class="toggle-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          </button>
+        <!-- Workdir -->
+        <div class="field">
+          <label>Working Directory</label>
+          <div class="workdir-display" id="workdir-display"></div>
         </div>
-      </div>
 
-      <!-- File list (GitButler-style) -->
-      <div class="file-list" id="file-list">
-        <div class="file-item">
-          <span class="file-dot dot-orange"></span>
-          <div class="file-info">
-            <span class="file-name">compart.py</span>
-            <span class="file-path">python/compart</span>
+        <!-- Permissions -->
+        <div class="field">
+          <label>Permissions</label>
+          <div class="perm-grid">
+            <label class="perm"><input type="checkbox" id="p-read" checked><code>fs_read</code></label>
+            <label class="perm"><input type="checkbox" id="p-write"><code>fs_write</code></label>
+            <label class="perm"><input type="checkbox" id="p-exec" checked><code>fs_exec</code></label>
+            <label class="perm"><input type="checkbox" id="p-net"><code>network</code></label>
           </div>
         </div>
-        <div class="file-item">
-          <span class="file-dot dot-teal"></span>
-          <div class="file-info">
-            <span class="file-name">runtime.py</span>
-            <span class="file-path">python/compart/compartments</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-orange"></span>
-          <div class="file-info">
-            <span class="file-name">enforcer.py</span>
-            <span class="file-path">python/compart/sandbox</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-teal"></span>
-          <div class="file-info">
-            <span class="file-name">proxy.py</span>
-            <span class="file-path">python/compart/sandbox</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-orange"></span>
-          <div class="file-info">
-            <span class="file-name">snapshot.py</span>
-            <span class="file-path">python/compart/sandbox</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-teal"></span>
-          <div class="file-info">
-            <span class="file-name">langchain.py</span>
-            <span class="file-path">python/compart/hooks</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-orange"></span>
-          <div class="file-info">
-            <span class="file-name">base.py</span>
-            <span class="file-path">python/compart/hooks</span>
-          </div>
-        </div>
-        <div class="file-item">
-          <span class="file-dot dot-teal"></span>
-          <div class="file-info">
-            <span class="file-name">crusher.rs</span>
-            <span class="file-path">src/engines/compression</span>
-          </div>
-        </div>
-      </div>
 
-      <div class="panel-footer">
-        <button class="btn-footer" id="btn-run">
-          <span>Run insulated session +</span>
+        <!-- Toggles -->
+        <div class="field">
+          <label>Sandbox</label>
+          <div class="toggle-row">
+            <span>Kernel enforcement</span>
+            <input type="checkbox" id="t-sandbox" class="toggle">
+          </div>
+          <div class="toggle-row">
+            <span>Block network</span>
+            <input type="checkbox" id="t-network" class="toggle" checked>
+          </div>
+        </div>
+
+        <!-- Run button -->
+        <button class="btn-run" id="btn-run">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Run Sandboxed
         </button>
       </div>
     </section>
 
-    <!-- COLUMN 2: Compartment Sessions (Branch Cards) -->
-    <section class="panel panel-center">
-      <div class="drop-zone">
-        <span>Drop files to assign or commit directly</span>
+    <!-- Panel 2: Terminal Output -->
+    <section class="panel panel-terminal">
+      <div class="panel-head">
+        <h2>Output</h2>
+        <div class="output-meta" id="output-meta"></div>
       </div>
+      <pre class="terminal" id="terminal"><span class="term-hint">Run a command to see output here.</span></pre>
+    </section>
 
-      <div class="commit-input-row">
-        <input type="text" class="commit-input" id="task-input" placeholder="Start a sandbox run...">
+    <!-- Panel 3: File Diffs -->
+    <section class="panel panel-diffs">
+      <div class="panel-head">
+        <h2>Changes</h2>
+        <button class="btn-rollback" id="btn-rollback" disabled>Rollback</button>
       </div>
-
-      <!-- Session cards (like GitButler branch cards) -->
-      <div class="branch-card-list" id="session-list">
-
-        <div class="branch-card">
-          <div class="branch-header">
-            <div class="branch-name-row">
-              <span class="branch-icon-pill">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-              </span>
-              <span class="branch-name">sandbox-session-1</span>
-            </div>
-            <span class="branch-meta">Completed · 2 min ago</span>
-          </div>
-          <div class="branch-actions">
-            <button class="btn-branch">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-              View Diffs ↗
-            </button>
-            <button class="btn-branch">Rollback ↺</button>
-            <button class="btn-branch-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-            </button>
-          </div>
-          <div class="commit-list">
-            <div class="commit-item">
-              <span class="commit-dot"></span>
-              <span class="commit-msg">Applied Seatbelt kernel sandbox constraints</span>
-            </div>
-            <div class="commit-item">
-              <span class="commit-dot"></span>
-              <span class="commit-msg">Enforcer blocked os.chmod on ~/.ssh</span>
-            </div>
-            <div class="commit-item">
-              <span class="commit-dot"></span>
-              <span class="commit-msg">Proxy injected OPENAI_API_KEY via loopback</span>
-            </div>
-            <div class="commit-item">
-              <span class="commit-dot"></span>
-              <span class="commit-msg">BLAKE3 snapshot captured (4 files hashed)</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="branch-card">
-          <div class="branch-header">
-            <div class="branch-name-row">
-              <span class="branch-icon-pill warning">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              </span>
-              <span class="branch-name">exfil-blocked-agent</span>
-            </div>
-            <span class="branch-meta">Violation · 20 min ago · <span class="pr-badge">⚠ Blocked</span></span>
-          </div>
-          <div class="branch-actions">
-            <button class="btn-branch">View Diffs ↗</button>
-            <button class="btn-branch">Rollback ↺</button>
-            <button class="btn-branch-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-            </button>
-          </div>
-          <div class="commit-list">
-            <div class="commit-item error">
-              <span class="commit-dot error"></span>
-              <span class="commit-msg">Egress blocked: curl 185.190.140.10</span>
-            </div>
-            <div class="commit-item">
-              <span class="commit-dot"></span>
-              <span class="commit-msg">Workspace rolled back to manifest</span>
-            </div>
-          </div>
-        </div>
-
+      <div class="diff-list" id="diff-list">
+        <div class="diff-empty" id="diff-empty">No file changes detected.</div>
       </div>
     </section>
 
-    <!-- COLUMN 3: Changed Files & Diff View -->
-    <section class="panel panel-right">
-      <div class="panel-header">
-        <div class="panel-header-row">
-          <span class="panel-title">Changed files <span class="help-circle">?</span> <span class="diff-stats"><span class="stat-add">+10</span> <span class="stat-del">-239</span></span></span>
-          <div class="view-toggles">
-            <button class="toggle-btn active">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-            </button>
-            <button class="toggle-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Changed file items -->
-      <div class="changed-file-list" id="changed-files">
-        <div class="changed-file">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-          <div class="changed-file-info">
-            <span class="changed-file-name">compart.py</span>
-            <span class="changed-file-path">python/compart</span>
-          </div>
-          <span class="file-status-dot dot-orange"></span>
-        </div>
-        <div class="changed-file">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-          <div class="changed-file-info">
-            <span class="changed-file-name">runtime.py</span>
-            <span class="changed-file-path">python/compart/compartments</span>
-          </div>
-          <span class="file-status-dot dot-teal"></span>
-        </div>
-        <div class="changed-file">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-          <div class="changed-file-info">
-            <span class="changed-file-name">crusher.rs</span>
-            <span class="changed-file-path">src/engines/compression</span>
-          </div>
-          <span class="file-status-dot dot-orange"></span>
-        </div>
-      </div>
-
-      <button class="btn-commit" id="btn-commit">Start a commit...</button>
-
-      <!-- Inline branch card in right panel -->
-      <div class="branch-card compact">
-        <div class="branch-header">
-          <div class="branch-name-row">
-            <span class="branch-icon-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            </span>
-            <span class="branch-name">credential-proxy-fix</span>
-          </div>
-          <span class="branch-meta">Active · now</span>
-        </div>
-        <div class="branch-actions">
-          <button class="btn-branch">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            Create PR ↗
-          </button>
-          <button class="btn-branch">Push ↺</button>
-          <button class="btn-branch-icon">⊕</button>
-          <button class="btn-branch-icon">···</button>
-        </div>
-        <div class="commit-list">
-          <div class="commit-item">
-            <span class="commit-dot"></span>
-            <span class="commit-msg">fix: resolve broken proxy route configs</span>
-          </div>
-          <div class="commit-item">
-            <span class="commit-dot"></span>
-            <span class="commit-msg">chore: update BLAKE3 snapshot hashing</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- New branch drop zone -->
-      <div class="new-branch-zone">
-        <div class="plus-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        </div>
-        <span>Drag changes here to<br>branch off your changes</span>
-        <button class="btn-new-branch">New branch +</button>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- CREDENTIAL VAULT MODAL -->
-  <div class="modal-backdrop" id="vault-modal">
-    <div class="modal">
-      <header class="modal-header">
-        <h3>Opaque Credential Vault</h3>
-        <button class="btn-close" id="vault-close-btn">&times;</button>
-      </header>
-      <div class="modal-body">
-        <p class="modal-desc">Proxy injection routes. Keys are resolved from the local environment and masked behind localhost loopback.</p>
-        <div class="vault-list">
-          <div class="vault-row">
-            <div class="vault-left">
-              <code class="vault-prefix">/openai</code>
-              <span class="vault-target">→ https://api.openai.com</span>
-            </div>
-            <span class="vault-status active">MASKED</span>
-          </div>
-          <div class="vault-row">
-            <div class="vault-left">
-              <code class="vault-prefix">/anthropic</code>
-              <span class="vault-target">→ https://api.anthropic.com</span>
-            </div>
-            <span class="vault-status active">MASKED</span>
-          </div>
-          <div class="vault-row">
-            <div class="vault-left">
-              <code class="vault-prefix">/aws-s3</code>
-              <span class="vault-target">→ https://s3.amazonaws.com</span>
-            </div>
-            <span class="vault-status inactive">UNSET</span>
-          </div>
-        </div>
-      </div>
-      <footer class="modal-footer">
-        <button class="btn-commit" id="vault-ok-btn" style="width:auto;padding:8px 20px;">Done</button>
-      </footer>
-    </div>
-  </div>
-
-  <!-- Exfiltration Alert Toast -->
-  <div class="exfil-toast" id="exfil-alert">
-    <span class="toast-icon">⚠️</span>
-    <div class="toast-body">
-      <span class="toast-title">EGRESS BLOCKED</span>
-      <span class="toast-text" id="exfil-text">Compartment attempted outbound access. Terminated by kernel rules.</span>
-    </div>
   </div>
 
   <script src="app.js"></script>
