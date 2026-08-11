@@ -9,9 +9,9 @@
 > - `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS).
 > - `compart diff` PR Security Governance Action for GitHub.
 
-Kernel-enforced isolation for AI coding agents — zero setup, zero latency, zero escape.
+Kernel-enforced isolation for AI coding agents: zero setup, zero latency, zero escape.
 
-Compart runs any agent — or any command it shells out to — inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories — and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
+Compart runs any agent, or any command it shells out to, inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories, and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
 
 ```python
 from compart import Compart
@@ -58,10 +58,10 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 
 There are two entry points for the outer container:
 
-- **`Compart`** — a normal outer compartment. A kernel-level sandbox plus a runtime for the inner compartments **you** define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
-- **`AgentCompart`** — an agent outer compartment (agent-oriented container). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
+- **`Compart`**: a normal outer compartment. A kernel-level sandbox plus a runtime for the inner compartments you define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
+- **`AgentCompart`**: an agent outer compartment (agent-oriented container). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
 
-In both, **inner compartments are always yours** — create them, wire them with `edge()`, and drop them into either outer compartment:
+In both, inner compartments are always yours: create them, wire them with `edge()`, and drop them into either outer compartment:
 
 ```
 Compart / AgentCompart (Outer Compartment Container)
@@ -84,10 +84,10 @@ The outer **compartment** is the secure execution environment; insulation is fol
 
 Compart is agent-agnostic and process-agnostic. If it runs in a terminal, Compart can sandbox it:
 
-- **Coding agents** — Claude Code, Codex, opencode, or any CLI agent. The agent reads your repo and writes code, but cannot touch `~/.ssh`, `~/.aws`, or anything outside its granted paths.
-- **Builds & tests** — `npm run build`, `pytest`, `cargo build`, with read-only system paths and no network unless granted.
-- **Deploys** — a deploy compartment that can read source and write output, but never reaches credentials.
-- **Multi-step pipelines** — fetch → build → deploy, with message passing and routing rules enforced in both directions.
+- **Coding agents**: Claude Code, Codex, opencode, or any CLI agent. The agent reads your repo and writes code, but cannot touch `~/.ssh`, `~/.aws`, or anything outside its granted paths.
+- **Builds & tests**: `npm run build`, `pytest`, `cargo build`, with read-only system paths and no network unless granted.
+- **Deploys**: a deploy compartment that can read source and write output, but never reaches credentials.
+- **Multi-step pipelines**: fetch -> build -> deploy, with message passing and routing rules enforced in both directions.
 
 ## Quick Start
 
@@ -154,7 +154,7 @@ fan-out agentic workloads: [`docs/USE_CASES.md`](docs/USE_CASES.md).
 
 ## SDKs
 
-One Rust core, two language wrappers. All compartment runtime logic — permission enforcement, the command blocklist, filesystem snapshots, credential proxy routing, and message routing — is implemented **once in Rust** and exposed identically in Python and TypeScript.
+One Rust core, two language wrappers. All compartment runtime logic (permission enforcement, the command blocklist, filesystem snapshots, credential proxy routing, and message routing) is implemented once in Rust and exposed identically in Python and TypeScript.
 
 | Capability | Python | TypeScript |
 | :--- | :--- | :--- |
@@ -186,7 +186,7 @@ with SandboxEnforcer(policy):
     os.system("rm -rf /")                 # PermissionError: blocked command
 ```
 
-Snapshots & rollback — a hash-based snapshot records every file (excluding build/vendor dirs) and its blake3 hash; `restore()` copies back only the files whose hash changed:
+Snapshots & rollback: a hash-based snapshot records every file (excluding build/vendor dirs) and its blake3 hash; `restore()` copies back only the files whose hash changed:
 
 ```python
 from compart.sandbox.snapshot import SnapshotManager
@@ -198,7 +198,7 @@ restored = snap.restore()  # roll back changed files
 snap.cleanup()
 ```
 
-Credential proxy — `RouteConfig` matches a request path prefix and rewrites it to an upstream base URL, injecting a credential resolved from the environment. In Python the proxy runs as a real local HTTP server (set `HTTP_PROXY` to route through it); TypeScript exposes the same matching/rewriting decision logic without the server transport.
+Credential proxy: `RouteConfig` matches a request path prefix and rewrites it to an upstream base URL, injecting a credential resolved from the environment. In Python the proxy runs as a real local HTTP server (set `HTTP_PROXY` to route through it); TypeScript exposes the same matching/rewriting decision logic without the server transport.
 
 ```python
 from compart.sandbox.proxy import CredentialProxy, RouteConfig
@@ -219,7 +219,7 @@ proxy.stop()
 
 The proxy matches the **path component** of each request, so it handles both origin-form (`GET /openai/v1/chat`) and absolute-form (`GET http://api.example.com/openai/v1/chat`) transparently. Query strings survive the rewrite, and unmatched absolute-form requests pass through untouched.
 
-Compartment configs & message routing — routing enforces **both** directions: the source's `allow_outbound_to` and the destination's `allow_inbound_from`. The default whitelist is `["*"]` (wildcard); an explicitly empty list denies everything.
+Compartment configs & message routing: routing enforces both directions: the source's `allow_outbound_to` and the destination's `allow_inbound_from`. The default whitelist is `["*"]` (wildcard); an explicitly empty list denies everything.
 
 ```python
 from compart import Compart
@@ -268,9 +268,7 @@ For the full SDK guide, see [sdk/README.md](sdk/README.md).
 
 ## Framework hooks
 
-Run AI-agent code inside kernel-enforced compartments from any major agent
-framework. Hooks are dependency-light — each framework is optional and the
-hook degrades to a plain duck-typed object when it is absent.
+Run AI-agent code inside kernel-enforced compartments from any major agent framework. Hooks are dependency-light: each framework is optional and the hook degrades to a plain duck-typed object when it is absent.
 
 ```python
 # LangGraph — wrap any node in a sandboxed compartment.
@@ -339,4 +337,4 @@ The test suite imports the **installed** package, not the source tree: the compi
 
 ## License
 
-BUSL-1.1. See [CHANGELOG.md](CHANGELOG.md) for release history.
+ELv2 (Elastic License 2.0). See [CHANGELOG.md](CHANGELOG.md) for release history.
