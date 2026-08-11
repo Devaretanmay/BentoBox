@@ -4,11 +4,11 @@ Every hook (LangChain, CrewAI, AutoGen, data-science, CLI agents) runs user
 or LLM-authored code inside a :class:`compart.AgentCompart` compartment.
 This module centralises the pieces they all share:
 
-* :class:`ExecutionResult` — the structured outcome returned to agent context
+* :class:`ExecutionResult` : the structured outcome returned to agent context
   (stdout, stderr, exit code, elapsed time and BLAKE3 file diffs).
-* :class:`SandboxRunner` — one-shot "run a shell command / code snippet inside
+* :class:`SandboxRunner` : one-shot "run a shell command / code snippet inside
   a kernel-enforced compartment" helper used by every hook underneath.
-* :data:`VALID_PERMISSIONS` — the permission vocabulary recognised by the
+* :data:`VALID_PERMISSIONS` : the permission vocabulary recognised by the
   sandbox policy layer.
 
 The native ``_core`` module is optional: when it is not built, ``sandbox`` is

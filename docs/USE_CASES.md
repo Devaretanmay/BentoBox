@@ -1,12 +1,12 @@
-# Compart — Use Cases & Working Examples
+# Compart : Use Cases & Working Examples
 
 Every snippet below was executed against the built wheel on macOS (Seatbelt
 kernel sandbox). The sandbox layer is exercised in an isolated subprocess
-because it is **irreversible in-process** — once applied it can only be
+because it is **irreversible in-process** : once applied it can only be
 tightened, never loosened. Python-level checks (`sandbox=False`) run inline the
 same way the test suite does.
 
-Quick reference — this is the state of the art these examples replace:
+Quick reference : this is the state of the art these examples replace:
 
 | What people run today | Its gap | Compart |
 | :--- | :--- | :--- |
@@ -18,7 +18,7 @@ Quick reference — this is the state of the art these examples replace:
 
 ---
 
-## Use case 1 — Sandbox a CLI coding agent (Claude Code, Cursor CLI, Codex, OpenCode)
+## Use case 1 : Sandbox a CLI coding agent (Claude Code, Cursor CLI, Codex, OpenCode)
 
 **Today:** devs run CLI agents on the host with permissions skipped. The agent
 reads `~/.ssh`, `~/.aws`, keychains, and `.env`; it can shell out to
@@ -28,7 +28,7 @@ var the agent can see and exfiltrate.
 **Compart:** the agent runs in one compartment with a credential proxy in
 front of the model API. The kernel denies reads of SSH keys, cloud configs,
 browser data, and git credentials; the network is localhost-only unless granted;
-and the raw API key is injected at the proxy — the agent never holds it.
+and the raw API key is injected at the proxy : the agent never holds it.
 
 ```python
 from compart.hooks import SandboxRunner
@@ -52,8 +52,8 @@ What the kernel enforces (proven on this machine):
 
 ```
 ~/.ssh …            DENIED   (PermissionError on read, subprocesses included)
-/etc/master.passwd  DENIED   (PermissionError — read of system paths)
-~/… non-temp write  DENIED   (PermissionError — outside the worktree)
+/etc/master.passwd  DENIED   (PermissionError : read of system paths)
+~/… non-temp write  DENIED   (PermissionError : outside the worktree)
 /tmp writes         ALLOWED  (temp dirs are read-write by policy)
 /usr, /bin …         READ-ONLY
 ```
@@ -64,7 +64,7 @@ post-sandbox `curl https://api.anthropic.com` fails with connection refused when
 
 ---
 
-## 2 — Untrusted code execution (REPL tools, generated code, notebooks)
+## 2 : Untrusted code execution (REPL tools, generated code, notebooks)
 
 **Today:** LangChain/CrewAI/AutoGen REPL tools either `exec()` in-process or
 fire a Docker container. `exec()` is bypassable (any `os.system`, any C
@@ -100,7 +100,7 @@ than crashing the orchestrator.
 ## 3. Credential handling under prompt injection
 
 **Today:** secrets are passed to agents as env vars (`.env`, `export`), which
-prompt-injected agent prompts can read and ship out — the 2026 supply-chain
+prompt-injected agent prompts can read and ship out : the 2026 supply-chain
 attacks (a malicious dependency hiding instructions in a project) turn that into
 a real pre-vector.
 
@@ -144,7 +144,7 @@ pain.)
 
 **Compart:** snapshots record a BLAKE3 content-addressed manifest of the
 worktree (skipping `.git`, `node_modules`, `target`, venvs, etc.) and `restore()`
-copies **only the files whose hash changed** — so deleted files come back and
+copies **only the files whose hash changed** : so deleted files come back and
 untouched files stay. Audit: `diffs` returns added/modified/deleted paths per run.
 
 ```python
@@ -168,7 +168,7 @@ deleted file is restored from the index.
 ## 5. Agentic workflows: many one-shot compartments, no cold start
 
 **Today:** an orchestrator that fans a task into a dozen sub-agents spins up a
-microVM or container per sub-task — boot per sandbox plus per-VM cost.
+microVM or container per sub-task : boot per sandbox plus per-VM cost.
 
 **Compart:** compartments are in-process kernel rules; each `Compart` gets its
 own policy. Registration order runs; `edge()` wires message paths between
@@ -208,7 +208,7 @@ a LangChain tool, a LangGraph node, a CrewAI interpreter, an AutoGen executor,
 or a data-science subprocess.
 
 ```python
-# LangGraph — wrap any node callable in a sandboxed compartment.
+# LangGraph : wrap any node callable in a sandboxed compartment.
 from compart.hooks import CompartGraphNode
 node = CompartGraphNode(crunch, workdir=".", block_network=True)
 
@@ -217,16 +217,16 @@ from compart.hooks import CompartPythonREPLTool
 tool = CompartPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
 tool.invoke("print(6 * 7)")
 
-# CrewAI — replace the Docker code interpreter
+# CrewAI : replace the Docker code interpreter
 from compart.hooks import CompartCodeInterpreterTool
 agent = Agent(tools=[CompartCodeInterpreterTool(block_network=True)], …)
 
-# AutoGen — each code block in its own compartment
+# AutoGen : each code block in its own compartment
 from compart.hooks import CompartCodeExecutor, CodeBlock
 executor = CompartCodeExecutor()
 res = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
 
-# Data / RAG — mount ONLY the datasets; no network route out
+# Data / RAG : mount ONLY the datasets; no network route out
 from compart.hooks import DataScienceSandboxHook
 hook = DataScienceSandboxHook(allow_network=False)
 hook.mount_dataset("customers.csv")          # only this is visible

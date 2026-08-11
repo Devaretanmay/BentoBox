@@ -2,10 +2,10 @@
 
 Two entry points:
 
-* :class:`CompartPythonREPLTool` — a drop-in replacement for ``PythonREPLTool``
+* :class:`CompartPythonREPLTool` : a drop-in replacement for ``PythonREPLTool``
   that executes the code snippet inside a kernel-enforced Compart
   compartment instead of ``exec()`` in the caller's process.
-* :class:`CompartGraphNode` — wraps any LangGraph execution node so its body
+* :class:`CompartGraphNode` : wraps any LangGraph execution node so its body
   runs inside an :class:`compart.AgentCompart` compartment, with
   permissions drawn from node metadata or an explicit override.
 

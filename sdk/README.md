@@ -53,7 +53,7 @@ rt.names()                   // ['a', 'b', ...]
 
 ## Python SDK: `python/compart/`
 
-Published on PyPI as `compart` — the same kernel-enforced isolation,
+Published on PyPI as `compart` : the same kernel-enforced isolation,
 compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash

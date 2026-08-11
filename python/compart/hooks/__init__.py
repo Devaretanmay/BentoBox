@@ -11,10 +11,10 @@ dependency is the Compart runtime itself.
 
 Available hooks:
 
-* :mod:`compart.hooks.langchain` — ``CompartPythonREPLTool``, ``CompartGraphNode``
-* :mod:`compart.hooks.crewai` — ``CompartCodeInterpreterTool``, ``CrewAICodeExecutor``
-* :mod:`compart.hooks.autogen` — ``CompartCodeExecutor`` (+ ``CodeBlock`` / ``CodeResult``)
-* :mod:`compart.hooks.data_agent` — ``DataScienceSandboxHook``, ``DataSandboxConfig``
+* :mod:`compart.hooks.langchain` : ``CompartPythonREPLTool``, ``CompartGraphNode``
+* :mod:`compart.hooks.crewai` : ``CompartCodeInterpreterTool``, ``CrewAICodeExecutor``
+* :mod:`compart.hooks.autogen` : ``CompartCodeExecutor`` (+ ``CodeBlock`` / ``CodeResult``)
+* :mod:`compart.hooks.data_agent` : ``DataScienceSandboxHook``, ``DataSandboxConfig``
 """
 
 from __future__ import annotations

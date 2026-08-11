@@ -8,12 +8,12 @@
 ## 1. Executive Summary
 
 Every AI agent runs code the model wrote and that you cannot fully predict. Today
-most agent products contain that code with containers or microVMs — secure walls,
+most agent products contain that code with containers or microVMs : secure walls,
 but **heavy**: images to pull, runtimes to install, seconds of startup for every
 agent step, and a fleet you have to scale, patch, and pay for.
 
 Compart flips the trade. It enforces the same boundary that your **operating
-system kernel** already provides — Landlock on Linux, Seatbelt on macOS. A
+system kernel** already provides : Landlock on Linux, Seatbelt on macOS. A
 sandbox is a few kernel rules **applied in milliseconds**, with no marginal cost
 at runtime: no daemon, no container image, or VM to boot; the SDK and native
 dependencies still need to be installed on the runner.
@@ -27,7 +27,7 @@ Why this matters for a design partner:
   should not." Kernel-enforced, deny-by-default policy is something a security
   engineer can read and believe.
 - **Undo is governance.** Instant BLAKE3 file rollback gives you an auditable
-  "what did the agent change" trail — the missing proof in governed deployments.
+  "what did the agent change" trail : the missing proof in governed deployments.
 
 ---
 
@@ -36,13 +36,13 @@ Why this matters for a design partner:
 | Dimension | Compart (Landlock / Seatbelt) | Docker | MicroVM (Firecracker/Lambda-style) |
 | :--- | :--- | :--- | :--- |
 | Isolation enforced by | The OS kernel, per syscall | Kernel + daemon + user namespaces | Separate hypervisor (strongest) |
-| **Per-step / session startup** | Depends on runner and process startup | **~2.5 s+** — pull image, daemon, mount | **~125 ms–1 s** — boot from snapshot w/ warm pool |
+| **Per-step / session startup** | Depends on runner and process startup | **~2.5 s+** : pull image, daemon, mount | **~125 ms–1 s** : boot from snapshot w/ warm pool |
 | Memory/resource overhead | **In-process**; no guest OS, no daemon resident per unit | Per-container overhead + daemon | Full guest kernel + guest memory footprint |
-| What must be installed | **Nothing** — the OS ships it | Container runtime + daemon (image lifecycle) | Hypervisor + provisioning/orchestration |
+| What must be installed | **Nothing** : the OS ships it | Container runtime + daemon (image lifecycle) | Hypervisor + provisioning/orchestration |
 | Bypass surface | Kernel rejects the syscall itself (subprocess included) | Namespace escape is a known attack class | Hardest to escape, heaviest to run |
 | Per-user agent scale & cost | Sub-millisecond per compartment | Pay per container creation + daemon | Pay per VM + warm-pool orchestration |
 
-Compart does not remove the microVM from your stack — it removes the **need**
+Compart does not remove the microVM from your stack : it removes the **need**
 to pay for a container/VM on every low-risk step. For genuinely privileged work,
 keep the VM **behind the same Compart policy**. You get VM-grade isolation where
 you actually need it and near-free isolation everywhere else, with fewer moving
@@ -57,7 +57,7 @@ parts than running containers for every step.
 ## 3. What Compart Provides
 
 1. **Dedicated maintainers channel.** A private Slack/Discord with the Compart
-   engineers — a working relationship, not a support ticket queue.
+   engineers : a working relationship, not a support ticket queue.
 
 2. **Custom Landlock / Seatbelt policies.** We design the rule sets for *your*
    worktree, *your* file layout, *your* network topology and API endpoints,
@@ -77,7 +77,7 @@ parts than running containers for every step.
 ## 4. What the Design Partner Agrees To
 
 1. **Production stress-testing.** Point real agent traffic and realistic untrusted
-   scenarios at the sandbox. We want the honest weakness list — hard data is the
+   scenarios at the sandbox. We want the honest weakness list : hard data is the
    highest-value thing you can give.
 
 2. **Feedback sessions.** One recurring 30-minute sync per month
@@ -99,12 +99,12 @@ see **§6 Commercial intent**.
 
 **Approach:** Apply a `LANDLOCK_*` ruleset on Linux (kernel ≥ 5.13) or a
 Seatbelt profile on macOS. Deny by default, then grant only what a compartment
-declares. Irreversible in-process once applied — it can only be tightened, never
-loosened — which is what makes the invariant achievable.
+declares. Irreversible in-process once applied : it can only be tightened, never
+loosened : which is what makes the invariant achievable.
 
 | Capability | Specification |
 | :--- | :--- |
-| **Enforcement model** | Kernel-enforced per-syscall; a write/exec/network against a shaded path is denied by the kernel — including from a subprocess. |
+| **Enforcement model** | Kernel-enforced per-syscall; a write/exec/network against a shaded path is denied by the kernel : including from a subprocess. |
 | **Permissions (per compartment)** | `fs_read`, `fs_write`, `fs_exec`, `network`, `gpu`, `sys_info`. Compose per unit of work; default is read-only. |
 | **Latency** | Kernel rule application and snapshot cost depend on platform and worktree size; benchmark before making an SLA claim. |
 | **Memory footprint** | In-process; no guest OS, no per-unit container, negligible per-compartment rule state. |
@@ -121,7 +121,7 @@ loosened — which is what makes the invariant achievable.
 ## 5.1 How to wire it in practice
 
 The production path for a coding agent: run the agent through a
-`SandboxRunner` with a credential proxy into the model API — the agent cannot
+`SandboxRunner` with a credential proxy into the model API : the agent cannot
 read `~/.ssh`, `~/.aws`, or write outside its worktree, and it never touches a
 raw API key:
 
@@ -152,15 +152,15 @@ print(res.diffs)                             # audited agent mutations
 
 ## 5.2 Why this is different from what you run today
 
-- **E2B / Modal / Firecracker sandboxes** — remote execution: every safe step
+- **E2B / Modal / Firecracker sandboxes** : remote execution: every safe step
   crosses a network boundary to a remote VM, billing per-VM-second and shipping
   data out of process. Compart stays **colocated with your agent**, no network
   hop per step, no per-VM cost per user.
-- **Interpreter-level sandboxes** — clean API surface but **bypassable from
+- **Interpreter-level sandboxes** : clean API surface but **bypassable from
   inside**: every dangerous call must be re-checked, and a C-extension escape
   defeats the gate. Compart's kernel does the rejecting, including for
   subprocesses.
-- **Docker** — the same isolation behavior you are used to seeing in a stack,
+- **Docker** : the same isolation behavior you are used to seeing in a stack,
   without requiring a separate daemon or container service.
 
 If your buyer's security team currently answers "we will never let agents touch
@@ -181,5 +181,5 @@ we want partners that become customers when the numbers are real.
 
 Send your founder/CTO and an engineering lead to **design-partner@compart.dev**
 and we send back a **Day‑1 packet**: a wrapped microbenchmark, a test policy set
-writing for your worktree, an empty integration ticket — 30 minutes to first
+writing for your worktree, an empty integration ticket : 30 minutes to first
 results. No sales call, no long questionnaire: ship, and tell us what breaks.

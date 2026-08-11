@@ -35,8 +35,8 @@ Agents execute code you did not write and cannot fully predict: shell commands, 
 
 Containers and VMs isolate, but they are heavy: images to pull, runtimes to install, seconds of startup per run. Interpreter-level sandboxes are bypassable from inside. Compart sits at the OS level instead, where the kernel does the enforcing:
 
-- **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted — even through a subprocess or a direct syscall.
-- **Deny-by-default.** Credential files — SSH keys, cloud configs, git credentials, keychains, browser data — are blocked unless you opt in.
+- **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted : even through a subprocess or a direct syscall.
+- **Deny-by-default.** Credential files : SSH keys, cloud configs, git credentials, keychains, browser data : are blocked unless you opt in.
 - **Nothing to install.** No daemon, no VM, no container runtime. Compart uses what the OS already provides.
 - **Zero latency.** A sandbox is a few kernel rules, applied in milliseconds. Enforcement costs nothing at runtime.
 
@@ -44,7 +44,7 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 
 | | |
 | :--- | :--- |
-| Kernel-enforced isolation | Landlock (Linux 5.13+) or Seatbelt (macOS) applied at the OS level. Once applied, it cannot be loosened — only tightened. |
+| Kernel-enforced isolation | Landlock (Linux 5.13+) or Seatbelt (macOS) applied at the OS level. Once applied, it cannot be loosened : only tightened. |
 | Compartments | Named units of work with their own permissions, resource limits, and message routes. Compose pipelines, not walls. |
 | Deny-by-default policy | Worktree read-write, system paths read-only, everything else blocked. |
 | Credential protection | SSH keys, cloud configs, git credentials, keychains, and browser data denied by default. |
@@ -148,7 +148,7 @@ The enforcer wraps 30+ Python stdlib functions (`builtins.open`, `os.*`, `subpro
 
 ## Use cases
 
-Real scenarios with working code — sandboxing a CLI coding agent, REPL
+Real scenarios with working code : sandboxing a CLI coding agent, REPL
 execution, credential handling under prompt injection, file rollback, and
 fan-out agentic workloads: [`docs/USE_CASES.md`](docs/USE_CASES.md).
 
@@ -271,7 +271,7 @@ For the full SDK guide, see [sdk/README.md](sdk/README.md).
 Run AI-agent code inside kernel-enforced compartments from any major agent framework. Hooks are dependency-light: each framework is optional and the hook degrades to a plain duck-typed object when it is absent.
 
 ```python
-# LangGraph — wrap any node in a sandboxed compartment.
+# LangGraph : wrap any node in a sandboxed compartment.
 from compart.hooks import CompartGraphNode
 
 def crunch(state, ctx):
@@ -283,20 +283,20 @@ builder.add_edge(START, node.attach(builder))  # permissions ride on node metada
 ```
 
 ```python
-# LangChain — a Python REPL tool that runs inside Compart, not exec().
+# LangChain : a Python REPL tool that runs inside Compart, not exec().
 from compart.hooks import CompartPythonREPLTool
 tool = CompartPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
 tool.invoke("print(6 * 7)")
 ```
 
 ```python
-# CrewAI — replace the Docker code interpreter with a Compart one.
+# CrewAI : replace the Docker code interpreter with a Compart one.
 from compart.hooks import CompartCodeInterpreterTool
 agent = Agent(tools=[CompartCodeInterpreterTool()], ...)
 ```
 
 ```python
-# AutoGen — runs each code block in a Compart compartment.
+# AutoGen : runs each code block in a Compart compartment.
 from compart.hooks import CompartCodeExecutor, CodeBlock
 executor = CompartCodeExecutor()
 result = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
@@ -304,7 +304,7 @@ print(result.exit_code, result.output)
 ```
 
 ```python
-# Data / RAG agent — isolated workspace, network blocked, no exfiltration.
+# Data / RAG agent : isolated workspace, network blocked, no exfiltration.
 from compart.hooks import DataScienceSandboxHook
 hook = DataScienceSandboxHook()
 hook.mount_dataset("customers.csv")
@@ -313,7 +313,7 @@ print(res.diffs)   # BLAKE3 file diffs the agent caused
 ```
 
 ```python
-# Plain CLI coding agent — sandbox any shell command or CLI agent.
+# Plain CLI coding agent : sandbox any shell command or CLI agent.
 from compart.hooks import SandboxRunner
 res = SandboxRunner(workdir=".").run("claude -p 'fix the bug'")
 print(res.returncode, res.stdout, res.diffs)

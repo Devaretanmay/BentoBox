@@ -1,4 +1,4 @@
-"""Category C — data / RAG agent sandbox hook.
+"""Category C : data / RAG agent sandbox hook.
 
 :class:`DataScienceSandboxHook` gives Pandas/NumPy/Matplotlib data agents a
 purpose-built compartment:
@@ -36,7 +36,7 @@ __all__ = [
     "DataScienceSandboxHook",
 ]
 
-#: Default permission set for data agents — deliberately lacks ``network``.
+#: Default permission set for data agents : deliberately lacks ``network``.
 DATA_PERMISSIONS: tuple[str, ...] = ("fs_read", "fs_write", "fs_exec")
 
 
@@ -51,7 +51,7 @@ class DataSandboxConfig:
     permission
         Permissions granted to the data compartment.
     allow_network
-        Allow outbound network (default deny — prevents exfiltration).
+        Allow outbound network (default deny : prevents exfiltration).
     credential_rules
         Proxy routes for the allowed data sources.
     libraries

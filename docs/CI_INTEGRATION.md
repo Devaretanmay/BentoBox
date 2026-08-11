@@ -52,7 +52,7 @@ For **Jenkins**, **GitLab CI**, **CircleCI**, or **Bitbucket Pipelines**, invoke
 npm test
 pytest
 
-# AFTER (1-Word Prefix — Kernel Sandboxed & Accelerated):
+# AFTER (1-Word Prefix: Kernel Sandboxed & Accelerated):
 python3 -m compart.ci.runner "npm test"
 python3 -m compart.ci.runner "pytest"
 ```

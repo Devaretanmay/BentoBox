@@ -2,10 +2,10 @@
 
 Two entry points:
 
-* :class:`Compart` — a normal outer compartment. A kernel sandbox plus a runtime that
+* :class:`Compart` : a normal outer compartment. A kernel sandbox plus a runtime that
   runs inner compartments you register. Nothing is predefined: no compartments,
   no behaviour modules. Load a module explicitly with :meth:`register_module`.
-* :class:`AgentCompart` — an agent outer compartment (agent-oriented container). It auto-loads every
+* :class:`AgentCompart` : an agent outer compartment (agent-oriented container). It auto-loads every
   behaviour module (credential proxy, snapshots, compression) the moment
   it runs.
 
