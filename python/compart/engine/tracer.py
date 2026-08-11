@@ -47,10 +47,11 @@ class Tracer:
             return
         sep = "=" * 55
         ts = time.strftime("%H:%M:%S")
+        cid = self.box_id.replace('box_', 'comp_')
         lines = [
             "",
             f"  {_colorize(sep, 'cyan')}",
-            f"  {_colorize(f'Compart #{self.box_id}', 'bold')}    {_colorize(ts, 'dim')}",
+            f"  {_colorize(f'Compart #{cid}', 'bold')}    {_colorize(ts, 'dim')}",
             f"  {_colorize(sep, 'cyan')}",
         ]
         self._entries.extend(lines)
@@ -77,23 +78,23 @@ class Tracer:
 
         if event == "box.created":
             path = data.get("path", "")
-            return f"{prefix}  {_colorize('[ok]', 'green')} Box Created         {_colorize(path, 'dim')}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Compart Created     {_colorize(path, 'dim')}"
 
         if event == "box.entered":
             sandbox = data.get("sandbox_applied", False)
             sb = _colorize("sandbox on", "green") if sandbox else _colorize("sandbox off", "yellow")
-            return f"{prefix}  {_colorize('[ok]', 'green')} Box Entered         {sb}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Kernel Sandbox Active {sb}"
 
         if event == "box.destroyed":
-            return f"{prefix}  {_colorize('[ok]', 'green')} Box Destroyed"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Compart Released"
 
         if event == "box.insulated":
             profile = data.get("profile", "")
             modules = data.get("modules", 0)
-            return f"{prefix}  {_colorize('[ok]', 'green')} Box Insulated       profile={profile}, modules={modules}"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Runtime Insulated   profile={profile}, modules={modules}"
 
         if event == "box.released":
-            return f"{prefix}  {_colorize('[ok]', 'green')} Box Released"
+            return f"{prefix}  {_colorize('[ok]', 'green')} Runtime Released"
 
         if event == "task_profile":
             profile = data.get("profile", "code")

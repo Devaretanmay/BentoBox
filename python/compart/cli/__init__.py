@@ -1,0 +1,1 @@
+"""Compart CLI implementation."""

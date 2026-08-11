@@ -4,10 +4,10 @@ build-backend = "maturin"
 
 [project]
 name = "compart"
-version = "0.9.4"
+version = "1.0.1"
 description = "Compart - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs."
 requires-python = ">=3.10"
-license = { text = "BUSL-1.1" }
+license = { text = "ELv2" }
 keywords = ["ai-agents", "developer-tools", "sandbox", "isolation", "runtime"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -25,6 +25,8 @@ dependencies = [
     "blake3>=1.0",
 ]
 
+[project.scripts]
+compart = "compart.cli.main:cli"
 
 [project.urls]
 Homepage = "https://github.com/Devaretanmay/Compart"

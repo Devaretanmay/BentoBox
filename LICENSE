@@ -1,26 +1,19 @@
-Business Source License 1.1
+Elastic License 2.0
 
-Parameters:
+Copyright (c) 2026 Compart Labs / Tanmay Jayant Devare (https://github.com/Devaretanmay/Compart)
 
-Licensor:              Compart Labs (Devaretanmay) / Tanmay Jayant Devare
-Licensor's Website:    https://github.com/Devaretanmay/Compart
-Change Date:           January 1st, 2030
-Change License:        Apache License, Version 2.0
-Additional Use Grant:  Production use, personal use, academic use, and internal company use are permitted. Offering Compart as a managed commercial SaaS, competing commercial execution service, or commercial redistribution of Compart as a hosted product is NOT permitted under this Additional Use Grant without explicit authorization from Licensor.
+Acceptance
+By using, modifying, or redistributing all or any part of this software, you agree to be bound by the terms and conditions of this license.
 
---------------------------------------------------------------------------------
+Grant of Rights
+Subject to the conditions below, the Licensor hereby grants to you a non-exclusive, royalty-free, worldwide, non-sublicensable license to use, copy, modify, create derivative works, distribute, and sublicense the software.
 
-Licensor hereby grants you the right to copy, modify, create derivative works, use, and sublicense the Licensed Work, strictly in accordance with the Additional Use Grant specified above.
+Conditions
+You must comply with the following conditions:
 
-Under the Additional Use Grant:
-- Production use: Allowed
-- Personal & Academic use: Allowed
-- Internal company use: Allowed
-- Commercial SaaS offerings: NOT allowed
-- Competing commercial products: NOT allowed
-- Commercial redistribution: NOT allowed
+1. You may not provide the software to third parties as a hosted or managed service, where the service provides users with access to the software or significant functionality of the software.
+2. You may not alter, remove, or obscure any licensing, copyright, or other notices in the software.
+3. You must include a copy of this license and notice in all copies or substantial portions of the software.
 
-Change License & Date:
-On the Change Date (January 1st, 2030), this Business Source License 1.1 shall automatically terminate and the version of Compart licensed hereunder shall be governed by the Apache License, Version 2.0.
-
+Disclaimer
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

@@ -1,6 +1,13 @@
-# Compart
+# Compart v1.0.0
 
-**Sandbox any AI agent in seconds.**
+[![PyPI version](https://img.shields.io/pypi/v/compart.svg)](https://pypi.org/project/compart/)
+[![License: ELv2](https://img.shields.io/badge/License-ELv2-blue.svg)](LICENSE)
+
+**Source-Available Runtime to sandbox any AI agent in seconds.** 
+
+> **Upcoming Roadmap:** 
+> - `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS).
+> - `compart diff` PR Security Governance Action for GitHub.
 
 Kernel-enforced isolation for AI coding agents — zero setup, zero latency, zero escape.
 
@@ -52,7 +59,7 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 There are two entry points for the outer container:
 
 - **`Compart`** — a normal outer compartment. A kernel-level sandbox plus a runtime for the inner compartments **you** define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
-- **`AgentCompart`** — an agent outer compartment (pro tier). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
+- **`AgentCompart`** — an agent outer compartment (agent-oriented container). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
 
 In both, **inner compartments are always yours** — create them, wire them with `edge()`, and drop them into either outer compartment:
 

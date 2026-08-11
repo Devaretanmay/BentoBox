@@ -1,8 +1,8 @@
 [package]
 name = "compart-core"
-version = "0.9.4"
+version = "1.0.1"
 edition = "2021"
-license = "BUSL-1.1"
+license = "ELv2"
 description = "Compart - kernel-level sandbox with compartmentalized isolated execution (Rust core)"
 repository = "https://github.com/Devaretanmay/Compart"
 homepage = "https://github.com/Devaretanmay/Compart"
