@@ -1,10 +1,24 @@
-# Compart v1.0.0 API Reference
+# Compart v1.0.0 Documentation Map & API Reference
 
-Complete documentation for the Compart Python SDK, CLI, and TypeScript bindings.
+Welcome to the official Compart documentation.
 
 ---
 
-## 1. Python SDK Reference
+## 1. Documentation Index
+
+- **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python SDK.
+- **[Declarative CLI Guide](CLI.md)**: Infrastructure-as-Code workflow, `.compart/topology.json` schema, and Git PR security reviews.
+- **[Framework Integration Hooks](FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangChain, LangGraph, CrewAI, AutoGen, and Data/RAG agents.
+- **[Zero-Trust Credential Proxy](CREDENTIAL_PROXY.md)**: Path rewriting and secret masking for outbound LLM API requests.
+- **[BLAKE3 Snapshots & Worktree Rollback](SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and differential file restoration.
+- **[Output Crusher & Token Compression](COMPRESSION.md)**: Log crushing, JSON array compaction, and LLM token reduction.
+- **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
+- **[CI/CD Security & Acceleration](CI_INTEGRATION.md)**: GitHub Actions and CI runner security integration.
+- **[Real-World Use Cases](USE_CASES.md)**: Practical security scenarios and agent sandboxing patterns.
+
+---
+
+## 2. Python SDK Core API Reference
 
 ### `Compart(workdir=".", config=None, verbose=False)`
 Base outer compartment container.
@@ -36,40 +50,3 @@ Credential proxy route rule.
 - `header`: Header name to inject (default `"Authorization"`).
 - `format`: Format template (default `"Bearer {credential}"`).
 - `credential_source`: Environment variable source (e.g. `"env:OPENAI_API_KEY"`).
-
----
-
-## 2. CLI Reference (`compart`)
-
-| Command | Usage | Description |
-| :--- | :--- | :--- |
-| `compart init` | `compart init` | Initialize `.compart/` project and `topology.json`. |
-| `compart inspect` | `compart inspect [--json]` | View declared topology or dump JSON schema. |
-| `compart compartment create` | `compart compartment create <name>` | Declare an inner compartment. |
-| `compart connect` | `compart connect <src> <dst>` | Connect two declared compartments. |
-| `compart run` | `compart run` | Materialize declared topology into kernel runtime. |
-| `compart exec` | `compart exec -- <command>` | Ephemerally run a single command in a sandbox. |
-
----
-
-## 3. Framework Hooks Reference
-
-- **LangChain**: `from compart.hooks.langchain import CompartPythonREPLTool`
-- **CrewAI**: `from compart.hooks.crewai import CompartCodeInterpreterTool`
-- **AutoGen**: `from compart.hooks.autogen import CompartCodeExecutor`
-- **DataAgent**: `from compart.hooks.data_agent import CompartDataScienceSandbox`
-
----
-
-## 4. TypeScript SDK (Node.js)
-
-```typescript
-import { sandboxSupported, Runtime } from "@compart/sdk";
-
-if (sandboxSupported()) {
-  const runtime = new Runtime("./workspace");
-  // Execute sandboxed JS/TS code...
-}
-```
-
-> *Note: npm package `@compart/sdk` distribution pipeline is listed on the upcoming roadmap.*

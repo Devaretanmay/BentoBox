@@ -281,7 +281,19 @@ rt.runOrder()                 // ['fetch', 'build']
 rt.names()                    // ['fetch', 'build']
 ```
 
-For the full SDK guide, see [sdk/README.md](sdk/README.md).
+For the full SDK guide, see [sdk/README.md](sdk/README.md) and [`docs/TYPESCRIPT_SDK.md`](docs/TYPESCRIPT_SDK.md).
+
+## Documentation Map
+
+- **[Quickstart Guide](docs/QUICKSTART.md)**: 2-minute setup guide for CLI and Python SDK.
+- **[Declarative CLI Guide](docs/CLI.md)**: Infrastructure-as-Code workflow, `.compart/topology.json` schema, and Git PR security reviews.
+- **[Framework Integration Hooks](docs/FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangChain, LangGraph, CrewAI, AutoGen, and Data/RAG agents.
+- **[Zero-Trust Credential Proxy](docs/CREDENTIAL_PROXY.md)**: Path rewriting and secret masking for outbound LLM API requests.
+- **[BLAKE3 Snapshots & Worktree Rollback](docs/SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and differential file restoration.
+- **[Output Crusher & Token Compression](docs/COMPRESSION.md)**: Log crushing, JSON array compaction, and LLM token reduction.
+- **[TypeScript & Node.js SDK](docs/TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
+- **[CI/CD Security & Acceleration](docs/CI_INTEGRATION.md)**: GitHub Actions and CI runner security integration.
+- **[Real-World Use Cases](docs/USE_CASES.md)**: Security scenarios and agent sandboxing patterns.
 
 ## Framework hooks
 
