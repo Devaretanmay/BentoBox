@@ -1,21 +1,14 @@
-// macOS Seatbelt sandbox: generates a dynamic profile (Scheme S-expressions)
-// and applies it via the private-but-stable `sandbox_init()` API.
-
 use std::ffi::CString;
 use std::path::Path;
 
 use super::SandboxInfo;
 
-/// System paths that agents always need read-execute access to.
 const SYSTEM_READ_PATHS: &[&str] = &[
     "/usr", "/bin", "/sbin", "/etc", "/opt", "/System", "/Library", "/nix", "/private", "/var",
 ];
 
-/// Standard temp directories that agents need read-write access to.
 const TEMP_WRITE_PATHS: &[&str] = &["/tmp", "/var/tmp", "/private/tmp", "/private/var/tmp"];
 
-// Sensitive user paths kept DENIED by default (Seatbelt adds explicit deny
-// rules; Landlock simply never allows them).
 const DENIED_PATHS: &[&str] = &[
     ".ssh",
     ".aws",
@@ -84,9 +77,6 @@ fn generate_profile(worktree_path: &str, block_network: bool) -> String {
     sb.push_str("(allow mach-per-user-lookup)\n");
     sb.push_str("(allow mach-task-name)\n");
 
-    // dyld's CacheFinder issues file-read-data on the root directory "/"
-    // while locating the shared cache at process exec. Without this, every
-    // child process spawned after sandbox_init aborts with SIGABRT.
     sb.push_str("(allow file-read* (literal \"/\"))\n");
 
     push_file_read_write(&mut sb, worktree_path);
@@ -152,7 +142,6 @@ fn escape_path(path: &str) -> String {
     path.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-// Irreversible for the lifetime of the process tree.
 pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), String> {
     let profile = generate_profile(worktree_path, block_network);
 
@@ -212,8 +201,6 @@ mod tests {
 
     #[test]
     fn test_generate_profile_allows_root_read_for_dyld_cachefinder() {
-        // dyld's CacheFinder file-read-data on "/" at exec; without this rule
-        // every child process aborts with SIGABRT after sandbox_init.
         let profile = generate_profile("/tmp/test-worktree", true);
         assert!(profile.contains("(allow file-read* (literal \"/\"))"));
     }
@@ -250,3 +237,4 @@ mod tests {
         assert!(escape_path("/tmp/\\test").contains('\\'));
     }
 }
+

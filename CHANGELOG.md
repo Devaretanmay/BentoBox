@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to BentoBox are documented here.
+All notable changes to Compart are documented here.
 
 ## [0.9.4] - 2026-08-02
 
 ### Fixed
 
-- **Version drift.** `bentoworks.__version__` is now read from installed
+- **Version drift.** `compart.__version__` is now read from installed
   package metadata instead of a hardcoded constant that lagged behind
   releases.
 
@@ -15,7 +15,7 @@ All notable changes to BentoBox are documented here.
 ### Removed
 
 - **Dead code culled.** Dropped the unused C ABI (`src/c_api.rs`,
-  `include/bentobox.h`), the credential proxy's unused header-injection
+  `include/compart.h`), the credential proxy's unused header-injection
   machinery, the `profile` config knob, and a re-export shim module.
   No public Python/TS API change.
 
@@ -23,23 +23,23 @@ All notable changes to BentoBox are documented here.
 
 ### Removed
 
-- **Go SDK removed.** The `sdk/go/` module was dropped; BentoBox now ships
+- **Go SDK removed.** The `sdk/go/` module was dropped; Compart now ships
   Python and TypeScript SDKs only. `Cargo.toml` no longer emits a
-  `staticlib` archive, `include/bentobox.h` no longer references the Go
+  `staticlib` archive, `include/compart.h` no longer references the Go
   bindings, and all Go code samples were stripped from the docs.
 
 ### Changed
 
 - **Product rebrand.** The README is now a product landing page rather than a
   technical writeup: a one-line hero promise ("Sandbox any AI agent in
-  seconds"), a "Why BentoBox" section, benefit-led features, real use cases
+  seconds"), a "Why Compart" section, benefit-led features, real use cases
   (coding agents, builds/tests, deploys, pipelines), and an honest security
   model. SDK, CLI, and package metadata descriptions now carry the same
   product voice.
-- **CLI branding.** `bentoworks --version` and `--help` now surface the
-  tagline, and `bentoworks run`/`why` print a brand banner on interactive
+- **CLI branding.** `compart --version` and `--help` now surface the
+  tagline, and `compart run`/`why` print a brand banner on interactive
   terminals. Non-TTY output stays machine-friendly for scripts and CI.
-- **TypeScript SDK package metadata.** `@bentwork/sdk` descriptions updated;
+- **TypeScript SDK package metadata.** `@compart/sdk` descriptions updated;
   the publish layout is trimmed to the shipped macOS platform packages
   (`darwin-arm64`, `darwin-x64`) at version `0.9.2`.
 - **Version bumped to `0.9.2`** across the Rust core, Python package, and
@@ -49,12 +49,12 @@ All notable changes to BentoBox are documented here.
 
 ### Fixed
 
-- **CLI: `bentoworks run` now prints command output.** The compartment
+- **CLI: `compart run` now prints command output.** The compartment
   function returned a `subprocess.CompletedProcess` while the CLI only
   printed dict results, so `stdout`/`stderr` were silently swallowed. The
   CLI now captures and prints `Stdout:`/`Stderr:` blocks after the run
   summary.
-- **CLI: non-zero command exit codes now surface.** `bentoworks run "exit 3"`
+- **CLI: non-zero command exit codes now surface.** `compart run "exit 3"`
   previously reported `Status: success`; the CLI now exits with status `1`
   when the shell command fails.
 - **Credential proxy: absolute-form (`HTTP_PROXY`) requests now get
@@ -72,9 +72,9 @@ All notable changes to BentoBox are documented here.
 - **Docs restyled.** The README and SDK docs now follow the structure used
   by top YC developer-tool projects: a one-line value proposition, an
   above-the-fold quickstart, a "Why" section, a feature table, and a
-  professional footer. The stale `bentoworks.runtime` import in the
+  professional footer. The stale `compart.runtime` import in the
   "Advanced Users" example was replaced with the correct
-  `bentoworks.compartments` subclass pattern.
+  `compart.compartments` subclass pattern.
 - **Tests import the installed package.** The pytest `pythonpath = ["python"]`
   config was removed because the source tree no longer contains a compiled
   native core (`_core` ships inside the wheel). Install the package

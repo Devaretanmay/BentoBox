@@ -5,6 +5,7 @@ pub enum OpaqueKind {
     Base64Blob,
     LongString,
     HtmlChunk,
+    #[allow(dead_code)]
     Other(String),
 }
 
@@ -45,6 +46,8 @@ impl Row {
     pub fn new(cells: Vec<CellValue>) -> Self {
         Self(cells)
     }
+
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -69,6 +72,7 @@ pub enum Compaction {
         buckets: Vec<Bucket>,
         original_count: usize,
     },
+    #[allow(dead_code)]
     OpaqueRef {
         ccr_hash: String,
         byte_size: usize,
@@ -78,6 +82,13 @@ pub enum Compaction {
 }
 
 impl Compaction {
+    pub fn was_compacted(&self) -> bool {
+        matches!(
+            self,
+            Compaction::Table { .. } | Compaction::Buckets { .. } | Compaction::OpaqueRef { .. }
+        )
+    }
+
     pub fn kept_row_count(&self) -> usize {
         match self {
             Compaction::Table { rows, .. } => rows.len(),
@@ -92,13 +103,6 @@ impl Compaction {
             Compaction::Buckets { original_count, .. } => *original_count,
             Compaction::OpaqueRef { .. } | Compaction::Untouched(_) => 0,
         }
-    }
-
-    pub fn was_compacted(&self) -> bool {
-        matches!(
-            self,
-            Compaction::Table { .. } | Compaction::Buckets { .. } | Compaction::OpaqueRef { .. }
-        )
     }
 }
 

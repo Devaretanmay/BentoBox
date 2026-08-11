@@ -1,4 +1,4 @@
-"""Tests for the framework integration hooks (bentoworks.hooks).
+"""Tests for the framework integration hooks (compart.hooks).
 
 All hooks are exercised with ``sandbox=False`` because the kernel sandbox
 (Landlock / Seatbelt) is irreversible per process: applying it inside pytest
@@ -10,9 +10,10 @@ are tested for real. Stdlib-unittest, no framework dependencies required.
 import asyncio
 import os
 import shutil
+import tempfile
 import unittest
 
-from bentoworks.hooks.base import (
+from compart.hooks.base import (
     DEFAULT_PERMISSIONS,
     VALID_PERMISSIONS,
     ExecutionResult,
@@ -21,15 +22,15 @@ from bentoworks.hooks.base import (
     index_workdir,
     validate_permissions,
 )
-from bentoworks.hooks.langchain import BentoBoxGraphNode, BentoPythonREPLTool
-from bentoworks.hooks.crewai import BentoBoxCodeInterpreterTool, CrewAICodeExecutor
-from bentoworks.hooks.autogen import BentoBoxCodeExecutor, CodeBlock, CodeResult
-from bentoworks.hooks.data_agent import DataSandboxConfig, DataScienceSandboxHook
+from compart.hooks.langchain import CompartGraphNode, CompartPythonREPLTool
+from compart.hooks.crewai import CompartCodeInterpreterTool, CrewAICodeExecutor
+from compart.hooks.autogen import CompartCodeExecutor, CodeBlock, CodeResult
+from compart.hooks.data_agent import DataSandboxConfig, DataScienceSandboxHook
 
 
 class TempCase(unittest.TestCase):
     def setUp(self):
-        self.base = "/tmp/bentobox_hooks_test"
+        self.base = os.path.join(tempfile.gettempdir(), "compart_hooks_test")
         self.workdir = os.path.join(self.base, "run")
         shutil.rmtree(self.base, ignore_errors=True)
         os.makedirs(self.workdir, exist_ok=True)
@@ -141,20 +142,20 @@ class TestSandboxRunner(TempCase):
 
 class TestLangchainTool(TempCase):
     def test_runs_code(self):
-        tool = BentoPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = CompartPythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("2", tool._run("print(1 + 1)"))
 
     def test_sanitizes_input(self):
-        tool = BentoPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = CompartPythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("42", tool._run("```python\nprint(40 + 2)\n```"))
 
     def test_invoke(self):
-        tool = BentoPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = CompartPythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("7", tool.invoke("print(3 + 4)"))
 
     def test_rejects_bad_permission(self):
         with self.assertRaises(ValueError):
-            BentoPythonREPLTool(workdir=self.workdir, permission=["banana"])
+            CompartPythonREPLTool(workdir=self.workdir, permission=["banana"])
 
 
 class TestLanggraphNode(TempCase):
@@ -162,14 +163,14 @@ class TestLanggraphNode(TempCase):
         def crunch(state, ctx):
             return {"result": state["input"] + 1}
 
-        node = BentoBoxGraphNode(crunch, workdir=self.workdir, sandbox=False).as_node()
+        node = CompartGraphNode(crunch, workdir=self.workdir, sandbox=False).as_node()
         self.assertEqual(node({"input": 1}), {"result": 2})
 
     def test_node_error_propagates(self):
         def boom(state, ctx):
             raise RuntimeError("kaboom")
 
-        node = BentoBoxGraphNode(boom, workdir=self.workdir, sandbox=False).as_node()
+        node = CompartGraphNode(boom, workdir=self.workdir, sandbox=False).as_node()
         result = node({})
         self.assertIn("error", result)
         self.assertIn("kaboom", result["error"])
@@ -183,7 +184,7 @@ class TestLanggraphNode(TempCase):
                 self.nodes[name] = (action, metadata)
 
         builder = FakeBuilder()
-        g = BentoBoxGraphNode(
+        g = CompartGraphNode(
             lambda state, ctx: {"done": True}, workdir=self.workdir, sandbox=False,
         )
         name = g.attach(builder, name="work", metadata={"permissions": ["fs_read", "fs_exec"]})
@@ -193,7 +194,7 @@ class TestLanggraphNode(TempCase):
         self.assertTrue(callable(action))
 
     def test_attach_missing_builder_raises(self):
-        g = BentoBoxGraphNode(lambda state, ctx: {}, workdir=self.workdir, sandbox=False)
+        g = CompartGraphNode(lambda state, ctx: {}, workdir=self.workdir, sandbox=False)
         with self.assertRaises(TypeError):
             g.attach(None)
 
@@ -203,7 +204,7 @@ class TestLanggraphNode(TempCase):
                 self.meta = metadata
 
         builder = FakeBuilder()
-        g = BentoBoxGraphNode(
+        g = CompartGraphNode(
             lambda state, ctx: {}, workdir=self.workdir, sandbox=False,
             permission=["fs_read", "fs_write"],
         )
@@ -213,15 +214,15 @@ class TestLanggraphNode(TempCase):
 
 class TestCrewAI(TempCase):
     def test_code_interpreter_runs(self):
-        tool = BentoBoxCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = CompartCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("crew hi", tool._run(code="print('crew hi')"))
 
     def test_callable_contract(self):
-        tool = BentoBoxCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = CompartCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("callable", tool("print('callable')"))
 
     def test_error_surface(self):
-        tool = BentoBoxCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = CompartCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("ValueError", tool._run(code="raise ValueError('boom')"))
 
     def test_executor(self):
@@ -232,7 +233,7 @@ class TestCrewAI(TempCase):
 
 class TestAutoGen(TempCase):
     def test_python_blocks(self):
-        ex = BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False)
+        ex = CompartCodeExecutor(workdir=self.workdir, sandbox=False)
         result = ex.execute_code_blocks([CodeBlock("python", "print('autogen')")])
         self.assertIsInstance(result, CodeResult)
         self.assertEqual(result.exit_code, 0)
@@ -240,37 +241,37 @@ class TestAutoGen(TempCase):
         self.assertTrue(result)
 
     def test_shell_blocks(self):
-        result = BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks(
+        result = CompartCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks(
             [CodeBlock("bash", "echo shell-block")]
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIn("shell-block", result.output)
 
     def test_empty_blocks(self):
-        result = BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks([])
+        result = CompartCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks([])
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.output, "")
 
     def test_async_execution(self):
         result = asyncio.run(
-            BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False).aexecute_code_blocks(
+            CompartCodeExecutor(workdir=self.workdir, sandbox=False).aexecute_code_blocks(
                 [CodeBlock("python", "print('async')")]
             )
         )
         self.assertIn("async", result.output)
 
     def test_restart(self):
-        BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False).restart()
+        CompartCodeExecutor(workdir=self.workdir, sandbox=False).restart()
 
     def test_extractor_parses_markdown(self):
-        executor = BentoBoxCodeExecutor(workdir=self.workdir, sandbox=False)
+        executor = CompartCodeExecutor(workdir=self.workdir, sandbox=False)
         blocks = executor.code_extractor.extract_code_blocks("```python\nprint(1)\n```")
         self.assertGreater(len(blocks), 0)
 
 
 class TestDataSandbox(TempCase):
     def test_isolated_workspace(self):
-        hook = DataScienceSandboxHook(workdir=self.workdir)
+        hook = DataScienceSandboxHook(workdir=self.workdir, sandbox=False)
         self.assertTrue(os.path.isdir(hook.workspace))
         self.assertTrue(hook.block_network)
         hook.cleanup()
@@ -279,7 +280,7 @@ class TestDataSandbox(TempCase):
         csv_path = self._write("orders.csv", "id,amount\n1,2\n2,3\n")
         safe = os.path.join(self.base, "safe")
         os.makedirs(safe, exist_ok=True)
-        hook = DataScienceSandboxHook(workdir=safe)
+        hook = DataScienceSandboxHook(workdir=safe, sandbox=False)
         self.assertEqual(hook.mount_dataset(csv_path), ["orders.csv"])
         res = hook.run(
             "import csv, json\n"
@@ -293,18 +294,18 @@ class TestDataSandbox(TempCase):
         hook.cleanup()
 
     def test_missing_dataset_raises(self):
-        hook = DataScienceSandboxHook(workdir=self.workdir)
+        hook = DataScienceSandboxHook(workdir=self.workdir, sandbox=False)
         with self.assertRaises(ValueError):
             hook.mount_dataset(os.path.join(self.base, "nope.csv"))
         hook.cleanup()
 
     def test_allow_network_flag(self):
-        hook = DataScienceSandboxHook(workdir=self.workdir, allow_network=True)
+        hook = DataScienceSandboxHook(workdir=self.workdir, allow_network=True, sandbox=False)
         self.assertFalse(hook.block_network)
         hook.cleanup()
 
     def test_install_empty(self):
-        hook = DataScienceSandboxHook(workdir=self.workdir)
+        hook = DataScienceSandboxHook(workdir=self.workdir, sandbox=False)
         self.assertEqual(hook.install([]).returncode, 0)
         hook.cleanup()
 

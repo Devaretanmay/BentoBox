@@ -30,20 +30,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
-name = "bentoworks-core"
-version = "0.9.4"
-dependencies = [
- "aho-corasick",
- "blake3",
- "flate2",
- "landlock",
- "pyo3",
- "regex",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "blake3"
 version = "1.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -72,6 +58,20 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+
+[[package]]
+name = "compart-core"
+version = "0.9.4"
+dependencies = [
+ "aho-corasick",
+ "blake3",
+ "flate2",
+ "landlock",
+ "pyo3",
+ "regex",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "constant_time_eq"

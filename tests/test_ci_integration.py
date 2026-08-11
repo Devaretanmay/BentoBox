@@ -1,21 +1,21 @@
-"""Unit tests for BentoBox CI Integration."""
+"""Unit tests for Compart CI Integration."""
 
 import os
 import unittest
-from bentoworks.ci.runner import BentoCIRunner, run_ci_step
+from compart.ci.runner import CompartCIRunner, run_ci_step
 
 
 class TestCIIntegration(unittest.TestCase):
 
     def test_ci_runner_executes_simple_command(self):
-        runner = BentoCIRunner(workdir=".", block_network=True, sandbox=False)
-        res = runner.run_step("echo 'Hello CI BentoBox'")
+        runner = CompartCIRunner(workdir=".", block_network=True, sandbox=False)
+        res = runner.run_step("echo 'Hello CI Compart'")
         self.assertEqual(res["status"], "success")
         self.assertEqual(res["returncode"], 0)
-        self.assertIn("Hello CI BentoBox", res["stdout"])
+        self.assertIn("Hello CI Compart", res["stdout"])
 
     def test_ci_runner_captures_failure_exit_code(self):
-        runner = BentoCIRunner(workdir=".", block_network=True, sandbox=False)
+        runner = CompartCIRunner(workdir=".", block_network=True, sandbox=False)
         res = runner.run_step("exit 42")
         self.assertEqual(res["returncode"], 42)
 

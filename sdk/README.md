@@ -1,14 +1,14 @@
-# BentoBox SDKs
+# Compart SDKs
 
 **One Rust core, two thin language wrappers.**
 
-BentoBox implements kernel sandboxing, output compression, and the
+Compart implements kernel sandboxing, output compression, and the
 compartment runtime once in Rust. The Python and TypeScript SDKs expose the
 supported native bindings directly:
 
 ```
-bentoworks-core (Rust)
- |-- pyo3 module  (bentoworks._core)     -> Python SDK (published on PyPI)
+compart-core (Rust)
+ |-- pyo3 module  (compart._core)     -> Python SDK (published on PyPI)
  `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
 
@@ -20,7 +20,7 @@ All SDKs require the Rust core built once (from the repository root):
 cargo build --release
 ```
 
-This produces `target/release/libbentoworks_core.dylib`/`.so`, and the
+This produces `target/release/libcompart_core.dylib`/`.so`, and the
 rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
@@ -31,37 +31,37 @@ packages have been built and uploaded at the same version:
 ```bash
 cd sdk/typescript
 npm install
-npm run build   # compiles the napi addon (bentoworks-native.<platform>-<arch>.node)
+npm run build   # compiles the napi addon (compart-native.<platform>-<arch>.node)
 npm test
 ```
 
 ```ts
-import * as bentobox from '@bentwork/sdk'
+import * as compart from '@compart/sdk'
 
-bentobox.version()                    // "0.9.4"
-bentobox.sandboxSupported()           // true
-const out = bentobox.compress(text)
+compart.version()                    // "0.9.4"
+compart.sandboxSupported()           // true
+const out = compart.compress(text)
 
 // Compartment runtime handle (parse once, route many).
 // configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }
 // edgesJSON: '[['a','b']]'
-const rt = new bentobox.Runtime(configs, edgesJSON)
+const rt = new compart.Runtime(configs, edgesJSON)
 rt.canRoute('a', 'b')        // true
 rt.runOrder()                // ['a', 'b', ...]
 rt.names()                   // ['a', 'b', ...]
 ```
 
-## Python SDK: `python/bentoworks/`
+## Python SDK: `python/compart/`
 
-Published on PyPI as `bentoworks` — the same kernel-enforced isolation,
+Published on PyPI as `compart` — the same kernel-enforced isolation,
 compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash
-pip install bentoworks
+pip install compart
 ```
 
 ```python
-from bentoworks import BentoBox
+from compart import Compart
 ```
 
 ## Notes

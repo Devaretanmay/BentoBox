@@ -1,7 +1,7 @@
 {
-  "name": "@bentwork/sdk",
+  "name": "@compart/sdk",
   "version": "0.9.4",
-  "description": "BentoBox TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
+  "description": "Compart TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -17,21 +17,21 @@
     "prepack": "npm run build:target"
   },
   "napi": {
-    "name": "bentoworks-native",
+    "name": "compart-native",
     "triples": {
       "defaults": true
     },
-    "binaryName": "bentoworks-native"
+    "binaryName": "compart-native"
   },
   "optionalDependencies": {
-    "@bentwork/sdk-darwin-arm64": "0.9.4",
-    "@bentwork/sdk-darwin-x64": "0.9.4"
+    "@compart/sdk-darwin-arm64": "0.9.4",
+    "@compart/sdk-darwin-x64": "0.9.4"
   },
   "engines": {
     "node": ">= 16.0.0"
   },
   "keywords": [
-    "bentobox",
+    "compart",
     "sandbox",
     "kernel",
     "isolation",
@@ -44,14 +44,14 @@
     "compartment"
   ],
   "license": "BUSL-1.1",
-  "author": "BentoBox Labs (Devaretanmay) <tanmaydevare@gmail.com>",
+  "author": "Compart Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Devaretanmay/BentoBox.git"
+    "url": "https://github.com/Devaretanmay/Compart.git"
   },
-  "homepage": "https://github.com/Devaretanmay/BentoBox#readme",
+  "homepage": "https://github.com/Devaretanmay/Compart#readme",
   "bugs": {
-    "url": "https://github.com/Devaretanmay/BentoBox/issues"
+    "url": "https://github.com/Devaretanmay/Compart/issues"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"

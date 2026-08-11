@@ -1,4 +1,4 @@
-# BentoBox Design Partner Program
+# Compart Design Partner Program
 
 > Give your enterprise buyers a containment story their security team can audit,
 > and let your agents execute at kernel speed instead of container speed.
@@ -12,7 +12,7 @@ most agent products contain that code with containers or microVMs — secure wal
 but **heavy**: images to pull, runtimes to install, seconds of startup for every
 agent step, and a fleet you have to scale, patch, and pay for.
 
-BentoBox flips the trade. It enforces the same boundary that your **operating
+Compart flips the trade. It enforces the same boundary that your **operating
 system kernel** already provides — Landlock on Linux, Seatbelt on macOS. A
 sandbox is a few kernel rules **applied in milliseconds**, with no marginal cost
 at runtime: no daemon, no container image, or VM to boot; the SDK and native
@@ -33,7 +33,7 @@ Why this matters for a design partner:
 
 ## 2. Why Zero-Latency Kernel Sandboxing Beats Heavy Containers
 
-| Dimension | BentoBox (Landlock / Seatbelt) | Docker | MicroVM (Firecracker/Lambda-style) |
+| Dimension | Compart (Landlock / Seatbelt) | Docker | MicroVM (Firecracker/Lambda-style) |
 | :--- | :--- | :--- | :--- |
 | Isolation enforced by | The OS kernel, per syscall | Kernel + daemon + user namespaces | Separate hypervisor (strongest) |
 | **Per-step / session startup** | Depends on runner and process startup | **~2.5 s+** — pull image, daemon, mount | **~125 ms–1 s** — boot from snapshot w/ warm pool |
@@ -42,9 +42,9 @@ Why this matters for a design partner:
 | Bypass surface | Kernel rejects the syscall itself (subprocess included) | Namespace escape is a known attack class | Hardest to escape, heaviest to run |
 | Per-user agent scale & cost | Sub-millisecond per compartment | Pay per container creation + daemon | Pay per VM + warm-pool orchestration |
 
-BentoBox does not remove the microVM from your stack — it removes the **need**
+Compart does not remove the microVM from your stack — it removes the **need**
 to pay for a container/VM on every low-risk step. For genuinely privileged work,
-keep the VM **behind the same BentoBox policy**. You get VM-grade isolation where
+keep the VM **behind the same Compart policy**. You get VM-grade isolation where
 you actually need it and near-free isolation everywhere else, with fewer moving
 parts than running containers for every step.
 
@@ -54,9 +54,9 @@ parts than running containers for every step.
 
 ---
 
-## 3. What BentoBox Provides
+## 3. What Compart Provides
 
-1. **Dedicated maintainers channel.** A private Slack/Discord with the BentoBox
+1. **Dedicated maintainers channel.** A private Slack/Discord with the Compart
    engineers — a working relationship, not a support ticket queue.
 
 2. **Custom Landlock / Seatbelt policies.** We design the rule sets for *your*
@@ -84,7 +84,7 @@ parts than running containers for every step.
    for the first 12 weeks, with the engineers who will actually ship it, so the
    product reacts to reality.
 
-3. **Public attestation.** A logo, a "sandboxed with BentoBox" badge, and a line
+3. **Public attestation.** A logo, a "sandboxed with Compart" badge, and a line
    in the docs noting the integration that handled in pre-production. Low friction,
    honest, and reviewable.
 
@@ -108,10 +108,10 @@ loosened — which is what makes the invariant achievable.
 | **Permissions (per compartment)** | `fs_read`, `fs_write`, `fs_exec`, `network`, `gpu`, `sys_info`. Compose per unit of work; default is read-only. |
 | **Latency** | Kernel rule application and snapshot cost depend on platform and worktree size; benchmark before making an SLA claim. |
 | **Memory footprint** | In-process; no guest OS, no per-unit container, negligible per-compartment rule state. |
-| **Network control** | Full, localhost-only, or blocked, per box. Default **no outbound exfiltration route**. |
+| **Network control** | Full, localhost-only, or blocked, per outer compartment. Default **no outbound exfiltration route**. |
 | **Credential proxy** | Route rules `prefix` + `upstream` rewrite the request and inject API keys from env (`credential_source: "env:VAR"`). The agent **never holds a raw secret**; a localhost reverse-proxy strips hop-by-hop headers. |
 | **Snapshots & rollback** | BLAKE3 content-addressed index of the worktree before execution; **roll back only the files that changed**; deleted files are restored from a snapshot index. Auditable per agent run. |
-| **Framework hooks (1-line)** | `BentoPythonREPLTool` (LangChain), `BentoBoxGraphNode` (LangGraph), `BentoBoxCodeInterpreterTool` (CrewAI), `BentoBoxCodeExecutor` (AutoGen), `DataScienceSandboxHook` (data/RAG). |
+| **Framework hooks (1-line)** | `CompartPythonREPLTool` (LangChain), `CompartGraphNode` (LangGraph), `CompartCodeInterpreterTool` (CrewAI), `CompartCodeExecutor` (AutoGen), `DataScienceSandboxHook` (data/RAG). |
 | **SDKs** | Python and TypeScript over a single Rust core. |
 | **Compression** | Long compartment output is compressed before it is stored or returned. |
 | **License** | BUSL‑1.1 under the repository LICENSE; any separate commercial terms require a signed agreement. |
@@ -126,8 +126,8 @@ read `~/.ssh`, `~/.aws`, or write outside its worktree, and it never touches a
 raw API key:
 
 ```
-from bentoworks.hooks import SandboxRunner
-from bentoworks.sandbox.proxy import RouteConfig
+from compart.hooks import SandboxRunner
+from compart.sandbox.proxy import RouteConfig
 
 SandboxRunner(workdir=".", block_network=True,
               credential_rules=[RouteConfig(
@@ -154,17 +154,17 @@ print(res.diffs)                             # audited agent mutations
 
 - **E2B / Modal / Firecracker sandboxes** — remote execution: every safe step
   crosses a network boundary to a remote VM, billing per-VM-second and shipping
-  data out of process. BentoBox stays **colocated with your agent**, no network
+  data out of process. Compart stays **colocated with your agent**, no network
   hop per step, no per-VM cost per user.
 - **Interpreter-level sandboxes** — clean API surface but **bypassable from
   inside**: every dangerous call must be re-checked, and a C-extension escape
-  defeats the gate. BentoBox's kernel does the rejecting, including for
+  defeats the gate. Compart's kernel does the rejecting, including for
   subprocesses.
 - **Docker** — the same isolation behavior you are used to seeing in a stack,
   without requiring a separate daemon or container service.
 
 If your buyer's security team currently answers "we will never let agents touch
-our warehouse" with a no, BentoBox is the technical step up to turn that into a
+our warehouse" with a no, Compart is the technical step up to turn that into a
 reason. Hand them the kernel rules to inspect, and let the agent be audited.
 
 ---
@@ -179,7 +179,7 @@ we want partners that become customers when the numbers are real.
 
 ## 7. Next step
 
-Send your founder/CTO and an engineering lead to **design-partner@bentoworks.dev**
+Send your founder/CTO and an engineering lead to **design-partner@compart.dev**
 and we send back a **Day‑1 packet**: a wrapped microbenchmark, a test policy set
 writing for your worktree, an empty integration ticket — 30 minutes to first
 results. No sales call, no long questionnaire: ship, and tell us what breaks.

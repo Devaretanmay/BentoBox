@@ -2,26 +2,27 @@
 
 import os
 import shutil
+import tempfile
 import unittest
 from unittest.mock import patch
 
 
 class TestBoxLifecycle(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = "/tmp/bentobox_test"
+        self.tmpdir = os.path.join(tempfile.gettempdir(), "compart_test")
         os.makedirs(self.tmpdir, exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_init_state_is_created(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         self.assertEqual(b.state, "created")
         self.assertFalse(b.is_active)
 
     def test_enter_creates_workspace(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         self.assertFalse(os.path.exists(b.box_dir))
         b.enter(block_network=False, sandbox=False)
@@ -30,7 +31,7 @@ class TestBoxLifecycle(unittest.TestCase):
         b.exit()
 
     def test_exit_destroys_workspace(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         b.enter(block_network=False, sandbox=False)
         box_dir = b.box_dir
@@ -39,7 +40,7 @@ class TestBoxLifecycle(unittest.TestCase):
         self.assertFalse(os.path.exists(box_dir))
 
     def test_double_exit_raises(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         b.enter(block_network=False, sandbox=False)
         b.exit()
@@ -47,7 +48,7 @@ class TestBoxLifecycle(unittest.TestCase):
             b.exit()
 
     def test_enter_after_exit_raises(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
         b = Box(workdir=self.tmpdir)
         b.enter(block_network=False, sandbox=False)
         b.exit()
@@ -55,11 +56,11 @@ class TestBoxLifecycle(unittest.TestCase):
             b.enter(sandbox=False)
 
     def test_unsupported_native_sandbox_is_not_reported_as_applied(self):
-        from bentoworks.sandbox.box import Box
+        from compart.sandbox.box import Box
 
         b = Box(workdir=self.tmpdir)
         apply_fn = lambda *_args: False
         check_fn = lambda: {"supported": "false", "platform": "test", "details": "unsupported"}
-        with patch("bentoworks.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
+        with patch("compart.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
             self.assertFalse(b.enter(sandbox=True))
         b.exit()

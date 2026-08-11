@@ -1,10 +1,10 @@
-# BentoBox — Target Startup Intelligence & Ready-to-Send Outreach
+# Compart — Target Startup Intelligence & Ready-to-Send Outreach
 
 **Lead Growth & DevRel · GTM Brief** — targets **Category A** (Autonomous Coding Agents) and **Category C** (Enterprise Data / RAG Agents).
 
 Companion asset — the design-partner one-pager: [`docs/DESIGN_PARTNERS.md`](DESIGN_PARTNERS.md).
 
-Product framing used throughout: BentoBox executes agent code with **kernel-enforced process controls** — Landlock (Linux) / Seatbelt (macOS), with a credential proxy and BLAKE3 file snapshots. Startup and rollback costs depend on the platform and worktree size. One-line hooks exist for LangChain / LangGraph / CrewAI / AutoGen / data agents, plus a generic `SandboxRunner` for sandboxing any CLI coding agent.
+Product framing used throughout: Compart executes agent code with **kernel-enforced process controls** — Landlock (Linux) / Seatbelt (macOS), with a credential proxy and BLAKE3 file snapshots. Startup and rollback costs depend on the platform and worktree size. One-line hooks exist for LangChain / LangGraph / CrewAI / AutoGen / data agents, plus a generic `SandboxRunner` for sandboxing any CLI coding agent.
 
 **Confidence key.** `Confirmed` = public evidence (docs/blog/press). `Likely` = inferred from product surface. Founder LinkedIn/X shown only where verified, otherwise flagged "not confirmed". **★** = strongest sandbox fit. This is a live snapshot; re-verify before outreach.
 
@@ -160,7 +160,7 @@ benchmark rather than a sales call.
 **Filled example / Category A:**
 
 ```
-Hey @AlistairPullen — Cosine's cloud spins a microVM (~125ms) per session; BentoBox
+Hey @AlistairPullen — Cosine's cloud spins a microVM (~125ms) per session; Compart
 runs low-risk agent steps in-process via OS-kernel sandbox (Landlock/Seatbelt) in
 <1ms, no container. Made a LangGraph hook. 10-min benchmark against Genie? — Jasper
 ```
@@ -178,7 +178,7 @@ Want a 5-min benchmark on your stack?
 
 ```
 Hi @[founder] — data agents on sensitive data need containment buyers can audit.
-Bento AI sandboxes agent code with the OS kernel (no container), blocks egress,
+Compart sandboxes agent code with the OS kernel (no container), blocks egress,
 proxies your creds, and rolls back changes with BLAKE3. Opens safe VPC-less embeds.
 Worth a look?
 ```
@@ -201,7 +201,7 @@ daemon to run. That latency is a hit to `[their product]`'s e2e loop and its gro
 margin per task. Containers and VMs also miss the real problem: a buyer who cannot
 verify "the agent cannot touch what it shouldn't" will block the deal.
 
-BentoBox executes agent code inside compartments **your OS kernel already
+Compart executes agent code inside compartments **your OS kernel already
 provides** — Landlock on Linux, Seatbelt on macOS. The sandbox is a couple of
 kernel rules applied in-process, with no daemon or container service to operate; the SDK and native toolchain still need to be installed:
 container, no VM, no daemon. Deny-by-default, so `~/.ssh`/`~/.aws` is unreachable
@@ -217,7 +217,7 @@ endpoint, you point agent traffic at it, and I send the diff and the latency
 comparison. No sales deck — just a measurement you can replay in your own
 vendor run‑off. Sound useful?
 
-— `[My name]` · BentoBox · `[email]` | `[calendar link]`
+— `[My name]` · Compart · `[email]` | `[calendar link]`
 
 **Sending notes:** Use the full name first, one value-first paragraph, and a
 concrete CTA; send at a local morning; follow with the design-partner one-pager
@@ -264,8 +264,8 @@ Linux / Seatbelt on macOS** — as an optional, behind-a-flag integration:
 ## Offer to maintainers
 
 I'll implement and land this as an optional integration (a 1-line hook) and
-maintain it, at no cost to `[repo]`. I maintain the open-source BentoBox
-kernel-sandbox library (`github.com/Devaretanmay/BentoBox`).
+maintain it, at no cost to `[repo]`. I maintain the open-source Compart
+kernel-sandbox library (`github.com/Devaretanmay/Compart`).
 
 Interested? I'll open a proper PR/draft and you review, or I can start with a
 discussion post cook-through. Happy to keep it minimal: a new sandbox option with

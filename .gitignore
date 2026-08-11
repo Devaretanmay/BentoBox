@@ -14,8 +14,8 @@ build/
 .pytest_cache/
 .venv/
 
-# BentoBox transient state
-.bentoworks/
+# Compart transient state
+.compart/
 
 # Language SDK artifacts
 sdk/typescript/node_modules/

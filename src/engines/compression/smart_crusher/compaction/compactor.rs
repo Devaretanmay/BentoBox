@@ -39,8 +39,9 @@ impl Default for CompactConfig {
     }
 }
 
+#[allow(dead_code)]
 pub fn compact(items: &[Value], cfg: &CompactConfig) -> Compaction {
-    compact_inner(items, cfg, None, 0)
+    compact_with_store(items, cfg, None)
 }
 
 pub fn compact_with_store(

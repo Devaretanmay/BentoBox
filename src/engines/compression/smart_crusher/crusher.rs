@@ -68,6 +68,7 @@ impl SmartCrusher {
         }
     }
 
+    #[allow(dead_code)]
     pub fn without_compaction(config: SmartCrusherConfig) -> Self {
         let anchor_selector = AnchorSelector::new(AnchorConfig::default());
         let scorer = Box::<BM25Scorer>::default();
@@ -83,6 +84,7 @@ impl SmartCrusher {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_scorer(
         config: SmartCrusherConfig,
         scorer: Box<dyn RelevanceScorer + Send + Sync>,
@@ -100,6 +102,7 @@ impl SmartCrusher {
         }
     }
 
+    #[allow(dead_code)]
     pub fn ccr_store(&self) -> Option<&Arc<InMemoryCcrStore>> {
         self.ccr_store.as_ref()
     }
@@ -358,11 +361,11 @@ impl SmartCrusher {
             let canonical = canonical_array_json(items);
             let h = hash_canonical(&canonical);
             let marker = serde_json::to_string(&serde_json::json!({
-                "_bentobox_pager": {
+                "_compart_pager": {
                     "hash": h,
                     "total_items": items.len(),
                     "valid_indices": format!("{}..{}", self.config.preview_count, items.len().saturating_sub(1)),
-                    "instruction": format!("Call bentobox_expand('{}', index) to retrieve specific rows", h)
+                    "instruction": format!("Call compart_expand('{}', index) to retrieve specific rows", h)
                 }
             })).unwrap_or_default();
             if let Some(store) = &self.ccr_store {
@@ -452,11 +455,11 @@ impl SmartCrusher {
             let canonical = canonical_array_json(items);
             let h = hash_canonical(&canonical);
             let marker = serde_json::to_string(&serde_json::json!({
-                "_bentobox_pager": {
+                "_compart_pager": {
                     "hash": h,
                     "total_items": items.len(),
                     "valid_indices": format!("{}..{}", result.len(), items.len().saturating_sub(1)),
-                    "instruction": format!("Call bentobox_expand('{}', index) to retrieve specific rows", h)
+                    "instruction": format!("Call compart_expand('{}', index) to retrieve specific rows", h)
                 }
             })).unwrap_or_default();
             if let Some(store) = &self.ccr_store {
@@ -1003,7 +1006,7 @@ mod tests {
         let h = result.ccr_hash.expect("ccr_hash populated on drop");
         assert_eq!(h.len(), 12);
         assert!(
-            result.dropped_summary.contains("_bentobox_pager"),
+            result.dropped_summary.contains("_compart_pager"),
             "got: {}",
             result.dropped_summary
         );
@@ -1190,7 +1193,7 @@ mod tests {
         assert!(result.items.len() < items.len(), "lossy path didn't fire");
         assert!(result.ccr_hash.is_some(), "default should produce a hash");
         assert!(
-            result.dropped_summary.contains("_bentobox_pager"),
+            result.dropped_summary.contains("_compart_pager"),
             "default should produce a marker: {:?}",
             result.dropped_summary
         );

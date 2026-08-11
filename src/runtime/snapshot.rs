@@ -18,7 +18,7 @@ const DEFAULT_EXCLUDE: &[&str] = &[
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
-    ".bentoworks",
+    ".compart",
     ".hg",
     ".svn",
     "target",

@@ -3,10 +3,11 @@
 import json
 import os
 import shutil
+import tempfile
 import uuid
 import unittest
 
-from bentoworks.sandbox.snapshot import SnapshotManager, _file_hash
+from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
 
 def _write(path: str, content: str) -> str:
@@ -20,7 +21,7 @@ class _SnapshotTestBase(unittest.TestCase):
 
     def setUp(self):
         uid = uuid.uuid4().hex[:8]
-        self.tmpdir = f"/tmp/bw_snap_ut_{uid}"
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"compart_snap_ut_{uid}")
         self.workdir = os.path.join(self.tmpdir, "work")
         self.snapdir = os.path.join(self.tmpdir, "snapshots")
         os.makedirs(self.workdir)
@@ -194,7 +195,7 @@ class TestSnapshotExcludePatterns(_SnapshotTestBase):
 
     def setUp(self):
         uid = uuid.uuid4().hex[:8]
-        self.tmpdir = f"/tmp/bw_exclude_ut_{uid}"
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"compart_exclude_ut_{uid}")
         self.workdir = os.path.join(self.tmpdir, "work")
         self.snapdir = os.path.join(self.tmpdir, "snapshots")
         os.makedirs(self.workdir)

@@ -2,17 +2,17 @@ use napi_derive::napi;
 
 #[napi]
 pub fn version() -> String {
-    bentoworks_core::version().to_string()
+    compart_core::version().to_string()
 }
 
 #[napi]
 pub fn sandbox_supported() -> bool {
-    bentoworks_core::sandbox::check_supported()
+    compart_core::sandbox::check_supported()
 }
 
 #[napi]
 pub fn compress(content: String) -> String {
-    bentoworks_core::compress::compress_content(&content)
+    compart_core::compress(&content)
 }
 
 fn parse<T: serde::de::DeserializeOwned>(input: &str) -> napi::Result<T> {
@@ -23,12 +23,12 @@ fn parse<T: serde::de::DeserializeOwned>(input: &str) -> napi::Result<T> {
 pub fn runtime_check_permission(policy_json: String, required_json: String) -> napi::Result<bool> {
     let policy: serde_json::Value = parse(&policy_json)?;
     let required: Vec<String> = parse(&required_json)?;
-    Ok(bentoworks_core::runtime::enforcer::check_permission_json(&policy, &required).is_ok())
+    Ok(compart_core::runtime::enforcer::check_permission_json(&policy, &required).is_ok())
 }
 
 #[napi]
 pub fn runtime_check_command(cmd: String) -> napi::Result<bool> {
-    Ok(bentoworks_core::runtime::enforcer::check_command(&cmd).is_ok())
+    Ok(compart_core::runtime::enforcer::check_command(&cmd).is_ok())
 }
 
 #[napi]
@@ -42,7 +42,7 @@ pub fn runtime_snapshot(
         None => Vec::new(),
     };
     let set: std::collections::HashSet<String> = exclude.into_iter().collect();
-    let mgr = bentoworks_core::runtime::snapshot::SnapshotManager::new(
+    let mgr = compart_core::runtime::snapshot::SnapshotManager::new(
         &workdir,
         &snapshot_dir,
         if set.is_empty() { None } else { Some(set) },
@@ -52,7 +52,7 @@ pub fn runtime_snapshot(
 
 #[napi]
 pub fn runtime_restore(workdir: String, snapshot_dir: String) -> napi::Result<i32> {
-    let mgr = bentoworks_core::runtime::snapshot::SnapshotManager::new(&workdir, &snapshot_dir, None);
+    let mgr = compart_core::runtime::snapshot::SnapshotManager::new(&workdir, &snapshot_dir, None);
     Ok(mgr.restore().map_err(napi::Error::from_reason)? as i32)
 }
 
@@ -80,7 +80,7 @@ pub fn runtime_can_route(configs_json: String, from: String, to: String) -> napi
 
 #[napi]
 pub fn runtime_credential_rewrite(routes_json: String, path: String) -> napi::Result<Option<String>> {
-    let routes: Vec<bentoworks_core::runtime::credential::RouteConfig> = parse(&routes_json)?;
+    let routes: Vec<compart_core::runtime::credential::RouteConfig> = parse(&routes_json)?;
     for r in &routes {
         if r.matches(&path) {
             return Ok(Some(r.rewrite_path(&path)));
@@ -92,21 +92,21 @@ pub fn runtime_credential_rewrite(routes_json: String, path: String) -> napi::Re
 /// Resolve a credential source like `env:OPENAI_API_KEY`.
 #[napi]
 pub fn runtime_credential_resolve(source: String) -> napi::Result<String> {
-    let route = bentoworks_core::runtime::credential::RouteConfig {
+    let route = compart_core::runtime::credential::RouteConfig {
         credential_source: source,
         ..Default::default()
     };
     Ok(route.resolve_credential())
 }
 
-fn build_runtime(configs: &str, edges: &[(String, String)]) -> napi::Result<bentoworks_core::runtime::compartments::Runtime> {
+fn build_runtime(configs: &str, edges: &[(String, String)]) -> napi::Result<compart_core::runtime::compartments::Runtime> {
     #[derive(serde::Deserialize)]
     struct Spec {
         #[serde(default)]
-        configs: Vec<bentoworks_core::runtime::compartments::CompartmentConfig>,
+        configs: Vec<compart_core::runtime::compartments::CompartmentConfig>,
     }
     let spec: Spec = parse(configs)?;
-    let mut rt = bentoworks_core::runtime::compartments::Runtime::new();
+    let mut rt = compart_core::runtime::compartments::Runtime::new();
     for cfg in spec.configs {
         rt.add(cfg).map_err(napi::Error::from_reason)?;
     }
@@ -119,7 +119,7 @@ fn build_runtime(configs: &str, edges: &[(String, String)]) -> napi::Result<bent
 /// Opaque pre-built compartment runtime; not thread-safe.
 #[napi]
 pub struct Runtime {
-    inner: bentoworks_core::runtime::compartments::Runtime,
+    inner: compart_core::runtime::compartments::Runtime,
 }
 
 #[napi]

@@ -7,4 +7,4 @@ test-rust:
 	cargo test --all-targets
 
 test-python:
-	python3 -m pytest tests/ -q
+	PYTHONPATH=python python3 -m pytest tests/ -q

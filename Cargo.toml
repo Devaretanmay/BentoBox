@@ -1,17 +1,17 @@
 [package]
-name = "bentoworks-core"
+name = "compart-core"
 version = "0.9.4"
 edition = "2021"
 license = "BUSL-1.1"
-description = "BentoBox - kernel-level sandbox with compartmentalized isolated execution (Rust core)"
-repository = "https://github.com/Devaretanmay/BentoBox"
-homepage = "https://github.com/Devaretanmay/BentoBox"
-documentation = "https://docs.rs/crate/bentoworks-core"
+description = "Compart - kernel-level sandbox with compartmentalized isolated execution (Rust core)"
+repository = "https://github.com/Devaretanmay/Compart"
+homepage = "https://github.com/Devaretanmay/Compart"
+documentation = "https://docs.rs/crate/compart-core"
 keywords = ["ai", "mcp", "compression", "execution", "sandbox"]
 categories = ["development-tools", "command-line-utilities"]
 
 [lib]
-name = "bentoworks_core"
+name = "compart_core"
 crate-type = ["cdylib", "lib"]
 
 [features]

@@ -1,36 +1,36 @@
-# BentoBox
+# Compart
 
 **Sandbox any AI agent in seconds.**
 
 Kernel-enforced isolation for AI coding agents — zero setup, zero latency, zero escape.
 
-BentoBox runs any agent — or any command it shells out to — inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories — and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
+Compart runs any agent — or any command it shells out to — inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories — and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
 
 ```python
-from bentoworks import BentoBox
-from bentoworks.compartments import Compartment, CompartmentConfig
+from compart import Compart
+from compart.compartments import Compartment, CompartmentConfig
 
-box = BentoBox()
-box.add(Compartment(
+compart = Compart()
+compart.add(Compartment(
     name="build",
     fn=lambda ctx: {"status": "ok"},
     config=CompartmentConfig(permissions=["fs_read", "fs_exec"]),
 ))
-result = box.run()
+result = compart.run()
 print(result.status)  # "success"
 ```
 
 ---
 
-## Why BentoBox?
+## Why Compart?
 
 Agents execute code you did not write and cannot fully predict: shell commands, tests, builds, deploys. Every run is a chance to read credentials, modify files, or touch the network.
 
-Containers and VMs isolate, but they are heavy: images to pull, runtimes to install, seconds of startup per run. Interpreter-level sandboxes are bypassable from inside. BentoBox sits at the OS level instead, where the kernel does the enforcing:
+Containers and VMs isolate, but they are heavy: images to pull, runtimes to install, seconds of startup per run. Interpreter-level sandboxes are bypassable from inside. Compart sits at the OS level instead, where the kernel does the enforcing:
 
 - **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted — even through a subprocess or a direct syscall.
 - **Deny-by-default.** Credential files — SSH keys, cloud configs, git credentials, keychains, browser data — are blocked unless you opt in.
-- **Nothing to install.** No daemon, no VM, no container runtime. BentoBox uses what the OS already provides.
+- **Nothing to install.** No daemon, no VM, no container runtime. Compart uses what the OS already provides.
 - **Zero latency.** A sandbox is a few kernel rules, applied in milliseconds. Enforcement costs nothing at runtime.
 
 ## What you get
@@ -41,7 +41,7 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 | Compartments | Named units of work with their own permissions, resource limits, and message routes. Compose pipelines, not walls. |
 | Deny-by-default policy | Worktree read-write, system paths read-only, everything else blocked. |
 | Credential protection | SSH keys, cloud configs, git credentials, keychains, and browser data denied by default. |
-| Network control | Full access or localhost-only, per box. |
+| Network control | Full access or localhost-only, per compartment. |
 | Snapshots & rollback | Hash-based file snapshots; restore only the files that changed. Deleted files come back. |
 | Credential proxy | Route rules rewrite request paths and inject API keys from the environment. |
 | Output compression | Long compartment output is compressed before it is stored or returned. |
@@ -49,33 +49,33 @@ Containers and VMs isolate, but they are heavy: images to pull, runtimes to inst
 
 ## How it works
 
-The box is the box — the lid is part of it. There are two entry points:
+There are two entry points for the outer container:
 
-- **`BentoBox`** — just the box. A kernel-level sandbox plus a runtime for the compartments **you** define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
-- **`AgentBentoBox`** — a box with the lid on. It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
+- **`Compart`** — a normal outer compartment. A kernel-level sandbox plus a runtime for the inner compartments **you** define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
+- **`AgentCompart`** — an agent outer compartment (pro tier). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
 
-In both, **compartments are always yours** — create them, wire them with `edge()`, and drop them into either box:
+In both, **inner compartments are always yours** — create them, wire them with `edge()`, and drop them into either outer compartment:
 
 ```
-BentoBox / AgentBentoBox
-|-- Box (kernel-level sandbox — the lid is part of the box)
-|   |-- Isolated workspace (.bentoworks/boxes/)
+Compart / AgentCompart (Outer Compartment Container)
+|-- Kernel Sandbox (Seatbelt on macOS / Landlock on Linux)
+|   |-- Isolated workspace (.compart/boxes/)
 |   |-- File system policy
 |   |-- Network policy
 |   |-- Process restrictions
 |   `-- Insulation (task profile + behaviour modules)
 |
-`-- Compartment Runtime (you define these)
+`-- Compartment Runtime (you define these inner compartments)
     |-- Compartment "test"   -> permissions: [fs_read, fs_exec]
     |-- Compartment "build"  -> permissions: [fs_read, fs_write, fs_exec]
     `-- Compartment "deploy" -> permissions: [fs_read, fs_write]
 ```
 
-The **Box** is the secure execution environment; insulation is folded into it. **Compartments** are isolated units of work with their own policies that you register. The runtime has no opinion about what compartments do. It only coordinates their lifecycle, enforces their policies, and routes messages.
+The outer **compartment** is the secure execution environment; insulation is folded directly into it. **Inner compartments** are isolated units of work with their own policies that you register. The runtime has no opinion about what compartments do. It only coordinates their lifecycle, enforces their policies, and routes messages.
 
 ## Use it anywhere
 
-BentoBox is agent-agnostic and process-agnostic. If it runs in a terminal, BentoBox can sandbox it:
+Compart is agent-agnostic and process-agnostic. If it runs in a terminal, Compart can sandbox it:
 
 - **Coding agents** — Claude Code, Codex, opencode, or any CLI agent. The agent reads your repo and writes code, but cannot touch `~/.ssh`, `~/.aws`, or anything outside its granted paths.
 - **Builds & tests** — `npm run build`, `pytest`, `cargo build`, with read-only system paths and no network unless granted.
@@ -87,14 +87,14 @@ BentoBox is agent-agnostic and process-agnostic. If it runs in a terminal, Bento
 Multi-compartment pipeline with message passing:
 
 ```python
-from bentoworks import BentoBox
-from bentoworks.compartments import Compartment, CompartmentConfig
+from compart import Compart
+from compart.compartments import Compartment, CompartmentConfig
 
-box = BentoBox()
-box.add(Compartment(name="fetch", fn=fetch_fn, config=CompartmentConfig(permissions=["fs_read"])))
-box.add(Compartment(name="build", fn=build_fn, config=CompartmentConfig(permissions=["fs_read", "fs_write"])))
-box.edge("fetch", "build")
-result = box.run(entry="fetch", request="Fetch and build")
+compart = Compart()
+compart.add(Compartment(name="fetch", fn=fetch_fn, config=CompartmentConfig(permissions=["fs_read"])))
+compart.add(Compartment(name="build", fn=build_fn, config=CompartmentConfig(permissions=["fs_read", "fs_write"])))
+compart.edge("fetch", "build")
+result = compart.run(entry="fetch", request="Fetch and build")
 ```
 
 Each compartment gets its own `CompartmentConfig`:
@@ -112,7 +112,7 @@ the enforcer and must not be treated as an OS boundary for hostile code.
 Subclass `Compartment` and override `run`:
 
 ```python
-from bentoworks.compartments import Compartment, CompartmentConfig
+from compart.compartments import Compartment, CompartmentConfig
 
 class SecurityScan(Compartment):
     config = CompartmentConfig(permissions=["fs_read", "network"])
@@ -130,7 +130,7 @@ Deny by default. Each compartment declares what it can access:
 ```python
 config = CompartmentConfig(permissions=["fs_read"])  # read-only
 
-with SandboxEnforcer(box._current_policy):
+with SandboxEnforcer(compart._current_policy):
     open("file", "r")  # allowed
     open("file", "w")  # PermissionError - no fs_write
     os.remove("file")  # PermissionError
@@ -155,13 +155,13 @@ One Rust core, two language wrappers. All compartment runtime logic — permissi
 | Command blocklist | `SandboxEnforcer` | `runtimeCheckCommand` |
 | Filesystem snapshots | `SnapshotManager` | `runtimeSnapshot` / `runtimeRestore` |
 | Credential routing | `CredentialProxy` / `RouteConfig` | `runtimeCredentialRewrite` / `runtimeCredentialResolve` |
-| Config validation | `BentoBox` / `CompartmentConfig` | `runtimeValidate` |
-| Message routing | `box.edge()` / `box.run()` | `runtimeCanRoute` |
-| Opaque runtime handle | `BentoBox` | `new Runtime(...)` |
+| Config validation | `Compart` / `CompartmentConfig` | `runtimeValidate` |
+| Message routing | `compart.edge()` / `compart.run()` | `runtimeCanRoute` |
+| Opaque runtime handle | `Compart` | `new Runtime(...)` |
 
 ```bash
-pip install bentoworks                    # Python; native wheels depend on platform
-npm install @bentwork/sdk                  # TypeScript; publish platform addons first
+pip install compart                    # Python; native wheels depend on platform
+npm install @compart/sdk                  # TypeScript; publish platform addons first
 ```
 
 ### Python
@@ -170,7 +170,7 @@ The enforcer makes identical allow/deny decisions in every SDK, using the same p
 
 ```python
 import os
-from bentoworks.sandbox.enforcer import SandboxEnforcer
+from compart.sandbox.enforcer import SandboxEnforcer
 
 policy = {"name": "readonly", "permissions": ["fs_read"]}
 with SandboxEnforcer(policy):
@@ -182,7 +182,7 @@ with SandboxEnforcer(policy):
 Snapshots & rollback — a hash-based snapshot records every file (excluding build/vendor dirs) and its blake3 hash; `restore()` copies back only the files whose hash changed:
 
 ```python
-from bentoworks.sandbox.snapshot import SnapshotManager
+from compart.sandbox.snapshot import SnapshotManager
 
 snap = SnapshotManager(workdir="/path/project", snapshot_dir="/tmp/.snapshots")
 snap.snapshot()          # returns file count
@@ -194,7 +194,7 @@ snap.cleanup()
 Credential proxy — `RouteConfig` matches a request path prefix and rewrites it to an upstream base URL, injecting a credential resolved from the environment. In Python the proxy runs as a real local HTTP server (set `HTTP_PROXY` to route through it); TypeScript exposes the same matching/rewriting decision logic without the server transport.
 
 ```python
-from bentoworks.sandbox.proxy import CredentialProxy, RouteConfig
+from compart.sandbox.proxy import CredentialProxy, RouteConfig
 
 proxy = CredentialProxy(routes=[
     RouteConfig(
@@ -215,11 +215,11 @@ The proxy matches the **path component** of each request, so it handles both ori
 Compartment configs & message routing — routing enforces **both** directions: the source's `allow_outbound_to` and the destination's `allow_inbound_from`. The default whitelist is `["*"]` (wildcard); an explicitly empty list denies everything.
 
 ```python
-from bentoworks import BentoBox
-from bentoworks.compartments import Compartment, CompartmentConfig
+from compart import Compart
+from compart.compartments import Compartment, CompartmentConfig
 
-box = BentoBox()
-box.add(Compartment(
+compart = Compart()
+compart.add(Compartment(
     name="fetch",
     fn=lambda ctx: {"fetched": True},
     config=CompartmentConfig(
@@ -227,7 +227,7 @@ box.add(Compartment(
         allow_outbound_to=["build"],
     ),
 ))
-box.add(Compartment(
+compart.add(Compartment(
     name="build",
     fn=lambda ctx: {"built": True},
     config=CompartmentConfig(
@@ -235,23 +235,23 @@ box.add(Compartment(
         allow_inbound_from=["fetch"],
     ),
 ))
-box.edge("fetch", "build")
-result = box.run()
+compart.edge("fetch", "build")
+result = compart.run()
 ```
 
 ### TypeScript
 
 ```ts
-import * as bentobox from '@bentwork/sdk'
+import * as compart from '@compart/sdk'
 
-bentobox.runtimeCheckPermission(
+compart.runtimeCheckPermission(
   JSON.stringify({ permissions: ['fs_read'] }),
   JSON.stringify(['fs_read']),
 ) // true
 
-bentobox.runtimeCheckCommand('rm -rf /') // false
+compart.runtimeCheckCommand('rm -rf /') // false
 
-const rt = new bentobox.Runtime(configs, JSON.stringify([['fetch', 'build']]))
+const rt = new compart.Runtime(configs, JSON.stringify([['fetch', 'build']]))
 rt.canRoute('fetch', 'build') // true
 rt.runOrder()                 // ['fetch', 'build']
 rt.names()                    // ['fetch', 'build']
@@ -267,40 +267,40 @@ hook degrades to a plain duck-typed object when it is absent.
 
 ```python
 # LangGraph — wrap any node in a sandboxed compartment.
-from bentoworks.hooks import BentoBoxGraphNode
+from compart.hooks import CompartGraphNode
 
 def crunch(state, ctx):
     open(f"{ctx.workdir}/out.txt", "w").write(state["value"].upper())
     return {"done": True}
 
-node = BentoBoxGraphNode(crunch, workdir=".")
+node = CompartGraphNode(crunch, workdir=".")
 builder.add_edge(START, node.attach(builder))  # permissions ride on node metadata
 ```
 
 ```python
-# LangChain — a Python REPL tool that runs inside BentoBox, not exec().
-from bentoworks.hooks import BentoPythonREPLTool
-tool = BentoPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
+# LangChain — a Python REPL tool that runs inside Compart, not exec().
+from compart.hooks import CompartPythonREPLTool
+tool = CompartPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
 tool.invoke("print(6 * 7)")
 ```
 
 ```python
-# CrewAI — replace the Docker code interpreter with a BentoBox one.
-from bentoworks.hooks import BentoBoxCodeInterpreterTool
-agent = Agent(tools=[BentoBoxCodeInterpreterTool()], ...)
+# CrewAI — replace the Docker code interpreter with a Compart one.
+from compart.hooks import CompartCodeInterpreterTool
+agent = Agent(tools=[CompartCodeInterpreterTool()], ...)
 ```
 
 ```python
-# AutoGen — runs each code block in a BentoBox compartment.
-from bentoworks.hooks import BentoBoxCodeExecutor, CodeBlock
-executor = BentoBoxCodeExecutor()
+# AutoGen — runs each code block in a Compart compartment.
+from compart.hooks import CompartCodeExecutor, CodeBlock
+executor = CompartCodeExecutor()
 result = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
 print(result.exit_code, result.output)
 ```
 
 ```python
 # Data / RAG agent — isolated workspace, network blocked, no exfiltration.
-from bentoworks.hooks import DataScienceSandboxHook
+from compart.hooks import DataScienceSandboxHook
 hook = DataScienceSandboxHook()
 hook.mount_dataset("customers.csv")
 res = hook.run("import pandas as pd; df = pd.read_csv('customers.csv'); print(df.shape)")
@@ -309,7 +309,7 @@ print(res.diffs)   # BLAKE3 file diffs the agent caused
 
 ```python
 # Plain CLI coding agent — sandbox any shell command or CLI agent.
-from bentoworks.hooks import SandboxRunner
+from compart.hooks import SandboxRunner
 res = SandboxRunner(workdir=".").run("claude -p 'fix the bug'")
 print(res.returncode, res.stdout, res.diffs)
 ```

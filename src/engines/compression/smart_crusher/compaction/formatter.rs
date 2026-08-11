@@ -7,6 +7,7 @@ pub trait Formatter: Send + Sync {
 
     fn format(&self, c: &Compaction) -> String;
 
+    #[allow(dead_code)]
     fn estimate_bytes(&self, c: &Compaction) -> usize {
         self.format(c).len()
     }

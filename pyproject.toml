@@ -3,9 +3,9 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "bentoworks"
+name = "compart"
 version = "0.9.4"
-description = "BentoBox - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs."
+description = "Compart - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs."
 requires-python = ">=3.10"
 license = { text = "BUSL-1.1" }
 keywords = ["ai-agents", "developer-tools", "sandbox", "isolation", "runtime"]
@@ -27,17 +27,17 @@ dependencies = [
 
 
 [project.urls]
-Homepage = "https://github.com/Devaretanmay/BentoBox"
-Repository = "https://github.com/Devaretanmay/BentoBox"
-Issues = "https://github.com/Devaretanmay/BentoBox/issues"
+Homepage = "https://github.com/Devaretanmay/Compart"
+Repository = "https://github.com/Devaretanmay/Compart"
+Issues = "https://github.com/Devaretanmay/Compart/issues"
 
 [tool.maturin]
 features = ["pyo3-binding"]
 python-source = "python"
-module-name = "bentoworks._core"
+module-name = "compart._core"
 
 [tool.pytest.ini_options]
-# Tests import the installed bentoworks package, not the source tree.
+# Tests import the installed compart package, not the source tree.
 # (The source tree intentionally contains no compiled _core.*.so; the native
 # module ships inside the wheel, so importing source here would silently lose
 # the sandbox/compression core.)

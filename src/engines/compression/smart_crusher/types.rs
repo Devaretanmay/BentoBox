@@ -50,6 +50,7 @@ pub struct CrushabilityAnalysis {
 }
 
 impl CrushabilityAnalysis {
+    #[allow(dead_code)]
     pub fn skip(reason: impl Into<String>) -> Self {
         CrushabilityAnalysis {
             crushable: false,
@@ -101,6 +102,7 @@ pub struct CrushResult {
 }
 
 impl CrushResult {
+    #[allow(dead_code)]
     pub fn passthrough(content: impl Into<String>) -> Self {
         let s = content.into();
         CrushResult {
