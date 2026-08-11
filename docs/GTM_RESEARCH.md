@@ -6,7 +6,7 @@ Companion asset : the design-partner one-pager: [`docs/DESIGN_PARTNERS.md`](DESI
 
 Product framing used throughout: Compart executes agent code with **kernel-enforced process controls** : Landlock (Linux) / Seatbelt (macOS), with a credential proxy and BLAKE3 file snapshots. Startup and rollback costs depend on the platform and worktree size. One-line hooks exist for LangChain / LangGraph / CrewAI / AutoGen / data agents, plus a generic `SandboxRunner` for sandboxing any CLI coding agent.
 
-**Confidence key.** `Confirmed` = public evidence (docs/blog/press). `Likely` = inferred from product surface. Founder LinkedIn/X shown only where verified, otherwise flagged "not confirmed". **★** = strongest sandbox fit. This is a live snapshot; re-verify before outreach.
+**Confidence key.** `Confirmed` = public evidence (docs/blog/press). `Likely` = inferred from product surface. Founder LinkedIn/X shown only where verified, otherwise flagged "not confirmed". **(Top Fit)** = strongest sandbox fit. This is a live snapshot; re-verify before outreach.
 
 ---
 
@@ -16,7 +16,7 @@ Product framing used throughout: Compart executes agent code with **kernel-enfor
 
 ---
 
-#### A1. Factory : factory.ai ★
+#### A1. Factory : factory.ai (Top Fit)
 - **What** "Droids": autonomous software-engineering agents (Code / Review / Test / Project) plus a CLI agent for local/airgapped use. Sequoia-led (~$20M).
 - **Founders** Matan Grinberg (CEO), Eno Reyes (Co-founder/CTO). LinkedIn URLs not confirmed.
 - **Architecture** `Confirmed` : already does OS-kernel sandboxing: **Seatbelt on macOS, bubblewrap + seccomp on Linux/WSL2**, per-command by default.
@@ -79,7 +79,7 @@ Product framing used throughout: Compart executes agent code with **kernel-enfor
 
 ---
 
-#### C1. TextQL : textql.com ★
+#### C1. TextQL : textql.com (Top Fit)
 - **What** Enterprise data-analyst agents ("Ana") that turn plain-language questions into SQL, dashboards, and reports across a customer's warehouse : without data migration. ~$21M total (Blackstone-led Series A).
 - **Founders** Ethan Ding (CEO, LinkedIn, X @TheEthanDing); Mark Hay (CTO, LinkedIn); Spencer Hubert (Head of Engineering, LinkedIn).
 - **Architecture** `Confirmed` : deploys its own warehouse **inside the customer's private environment** (air-gapped AWS/Azure/GCP); agent transforms run on serverless/sandbox compute.
@@ -96,7 +96,7 @@ Product framing used throughout: Compart executes agent code with **kernel-enfor
 - **Founders** Illiana Reed (CEO); Isabella Reed (COO, X @isabella_patane); Miguel Salinas (CTO, LinkedIn, X @Vercantez).
 - **Value prop** Banking/fintech embeds get blocked on "your SaaS can see our data." A sandbox with a credential proxy to the *customer's* DB, blocked egress, and rollback of generated dataframes removes the data-out objection and speeds VPC-less enterprise embeds.
 
-#### C4. Cognee : cognee.ai ★
+#### C4. Cognee : cognee.ai (Top Fit)
 - **What** Open-source agentic-RAG/memory engine ("ECL") : graph memory for AI agents. $7.5M seed.
 - **Founders** Vasilije Markovic (CEO/Founder, LinkedIn); Boris Arzentar (Co-founder).
 - **Architecture** `Confirmed` : a **Python library that runs inside the customer's stack** (LangGraph, n8n, Claude SDK); no managed sandbox.
