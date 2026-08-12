@@ -178,24 +178,34 @@ fan-out agentic workloads: [`docs/USE_CASES.md`](docs/USE_CASES.md).
 
 One Rust core, two language wrappers. All compartment runtime logic (permission enforcement, the command blocklist, filesystem snapshots, credential proxy routing, and message routing) is implemented once in Rust and exposed identically in Python and TypeScript.
 
-| Capability | Python | TypeScript |
+## SDKs & Language Bindings
+
+One Rust native core, two language surface layers. All compartment runtime logic (permission enforcement, command blocklist, filesystem snapshots, credential proxy routing, and message routing) is implemented once in Rust (`src/`) and exposed identically in Python and TypeScript.
+
+| Capability | Python (`compart` - Live) | TypeScript (`@compart/sdk` - Upcoming) |
 | :--- | :--- | :--- |
+| **Status** | **Available on PyPI (`pip install compart`)** | **Upcoming NPM Release (`@compart/sdk`)** |
 | Permission checks | `SandboxEnforcer` | `runtimeCheckPermission` |
 | Command blocklist | `SandboxEnforcer` | `runtimeCheckCommand` |
 | Filesystem snapshots | `SnapshotManager` | `runtimeSnapshot` / `runtimeRestore` |
-| Credential routing | `CredentialProxy` / `RouteConfig` | `runtimeCredentialRewrite` / `runtimeCredentialResolve` |
+| Credential routing | `CredentialProxy` / `RouteConfig` | `runtimeCredentialRewrite` |
 | Config validation | `Compart` / `CompartmentConfig` | `runtimeValidate` |
 | Message routing | `compart.edge()` / `compart.run()` | `runtimeCanRoute` |
-| Opaque runtime handle | `Compart` | `new Runtime(...)` |
+| Native Runtime Handle | `Compart` | `new Runtime(...)` |
+
+### Installation
 
 ```bash
-pip install compart                    # Python; native wheels depend on platform
-npm install @compart/sdk                  # TypeScript; publish platform addons first
+# Python (Live on PyPI)
+pip install compart
+
+# TypeScript / Node.js (Upcoming Release)
+# npm install @compart/sdk
 ```
 
-### Python
+### Python SDK Example
 
-The enforcer makes identical allow/deny decisions in every SDK, using the same permission names: `fs_read`, `fs_write`, `fs_exec`, `network`, `gpu`, `sys_info`.
+The enforcer makes identical allow/deny decisions using standard permission tokens (`fs_read`, `fs_write`, `fs_exec`, `network`):
 
 ```python
 import os
@@ -208,85 +218,31 @@ with SandboxEnforcer(policy):
     os.system("rm -rf /")                 # PermissionError: blocked command
 ```
 
-Snapshots & rollback: a hash-based snapshot records every file (excluding build/vendor dirs) and its blake3 hash; `restore()` copies back only the files whose hash changed:
+### TypeScript / Node.js SDK Example (Upcoming Release)
 
-```python
-from compart.sandbox.snapshot import SnapshotManager
-
-snap = SnapshotManager(workdir="/path/project", snapshot_dir="/tmp/.snapshots")
-snap.snapshot()          # returns file count
-# ... run work that may modify files ...
-restored = snap.restore()  # roll back changed files
-snap.cleanup()
-```
-
-Credential proxy: `RouteConfig` matches a request path prefix and rewrites it to an upstream base URL, injecting a credential resolved from the environment. In Python the proxy runs as a real local HTTP server (set `HTTP_PROXY` to route through it); TypeScript exposes the same matching/rewriting decision logic without the server transport.
-
-```python
-from compart.sandbox.proxy import CredentialProxy, RouteConfig
-
-proxy = CredentialProxy(routes=[
-    RouteConfig(
-        prefix="/openai",
-        upstream="https://api.openai.com",
-        credential_source="env:OPENAI_API_KEY",
-    ),
-])
-proxy.start()
-proxy.set_env()  # sets HTTP_PROXY / HTTPS_PROXY to the local proxy
-# ... requests to /openai/... are rewritten and get Authorization injected ...
-proxy.restore_env()
-proxy.stop()
-```
-
-The proxy matches the **path component** of each request, so it handles both origin-form (`GET /openai/v1/chat`) and absolute-form (`GET http://api.example.com/openai/v1/chat`) transparently. Query strings survive the rewrite, and unmatched absolute-form requests pass through untouched.
-
-Compartment configs & message routing: routing enforces both directions: the source's `allow_outbound_to` and the destination's `allow_inbound_from`. The default whitelist is `["*"]` (wildcard); an explicitly empty list denies everything.
-
-```python
-from compart import Compart
-from compart.compartments import Compartment, CompartmentConfig
-
-compart = Compart()
-compart.add(Compartment(
-    name="fetch",
-    fn=lambda ctx: {"fetched": True},
-    config=CompartmentConfig(
-        permissions=["fs_read", "network"],
-        allow_outbound_to=["build"],
-    ),
-))
-compart.add(Compartment(
-    name="build",
-    fn=lambda ctx: {"built": True},
-    config=CompartmentConfig(
-        permissions=["fs_read", "fs_write"],
-        allow_inbound_from=["fetch"],
-    ),
-))
-compart.edge("fetch", "build")
-result = compart.run()
-```
-
-### TypeScript
+The `@compart/sdk` native NAPI-RS bindings interface directly with the Rust engine:
 
 ```ts
 import * as compart from '@compart/sdk'
 
-compart.runtimeCheckPermission(
-  JSON.stringify({ permissions: ['fs_read'] }),
-  JSON.stringify(['fs_read']),
-) // true
+// Native OS sandbox check
+if (compart.sandboxSupported()) {
+  // Permission verification
+  const allowed = compart.runtimeCheckPermission(
+    JSON.stringify({ permissions: ['fs_read'] }),
+    JSON.stringify(['fs_read']),
+  )
 
-compart.runtimeCheckCommand('rm -rf /') // false
+  // Native command blocklist check
+  const safe = compart.runtimeCheckCommand('rm -rf /') // false (blocked)
 
-const rt = new compart.Runtime(configs, JSON.stringify([['fetch', 'build']]))
-rt.canRoute('fetch', 'build') // true
-rt.runOrder()                 // ['fetch', 'build']
-rt.names()                    // ['fetch', 'build']
+  // Topology runtime handle
+  const rt = new compart.Runtime(configs, JSON.stringify([['fetch', 'build']]))
+  console.log(rt.runOrder()) // ['fetch', 'build']
+}
 ```
 
-For the full SDK guide, see [sdk/README.md](sdk/README.md) and [`docs/TYPESCRIPT_SDK.md`](docs/TYPESCRIPT_SDK.md).
+For the complete TypeScript SDK reference, see [`docs/TYPESCRIPT_SDK.md`](docs/TYPESCRIPT_SDK.md).
 
 ## Documentation Map
 
