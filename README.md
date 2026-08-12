@@ -3,6 +3,9 @@
 [![PyPI version](https://img.shields.io/pypi/v/compart.svg)](https://pypi.org/project/compart/)
 [![License: ELv2](https://img.shields.io/badge/License-ELv2-blue.svg)](LICENSE)
 
+> **Upcoming Roadmap:** 
+> - `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS).
+
 **Compart is the control layer for AI agents and workflows.**
 
 *Compart lets you define, isolate, control, and observe what agents and workflows can access and do.*

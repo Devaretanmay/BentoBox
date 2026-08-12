@@ -1,5 +1,7 @@
 # TypeScript & Node.js Native SDK (`@compart/sdk`)
 
+> **Upcoming Roadmap:** The `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS) is planned for upcoming distribution.
+
 The TypeScript SDK provides high-performance Node.js bindings to the Compart Rust core via NAPI-RS.
 
 ---
