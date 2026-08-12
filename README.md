@@ -3,15 +3,23 @@
 [![PyPI version](https://img.shields.io/pypi/v/compart.svg)](https://pypi.org/project/compart/)
 [![License: ELv2](https://img.shields.io/badge/License-ELv2-blue.svg)](LICENSE)
 
-**Source-Available Runtime to sandbox any AI agent in seconds.** 
+**The Control & Management Layer for AI Agents.**
 
-> **Upcoming Roadmap:** 
-> - `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS).
-> - `compart diff` PR Security Governance Action for GitHub.
+*Git manages WHAT CHANGED. Compart manages WHAT THE AGENT CAN DO.*
 
-Kernel-enforced isolation for AI coding agents: zero setup, zero latency, zero escape.
+> **AI agents are moving from chat into real workflows, tools, codebases, and production systems. Compart gives developers a control layer to run them safely.**
 
-Compart runs any agent, or any command it shells out to, inside compartments enforced directly by your OS kernel: Landlock on Linux, Seatbelt on macOS. Policy is deny-by-default. An agent sees its worktree, read-only system paths, and temp directories, and nothing else, unless a compartment's policy grants it. No containers, no VMs, no daemon, no image pulls, no seconds of startup per run.
+Don't replace your existing agent stack (Claude Code, Cursor, Codex, LangGraph, CrewAI, MCP tools). **Put it under Compart.**
+
+```text
+Claude Code ──────┐
+Codex ────────────┤
+Cursor ───────────┤
+LangGraph ────────┼──> COMPART (Topology, Policies, Proxy) ──> YOUR OS KERNEL
+CrewAI ───────────┤
+MCP Tools ────────┤
+Custom Scripts ───┘
+```
 
 ```python
 from compart import Compart
@@ -31,14 +39,17 @@ print(result.status)  # "success"
 
 ## Why Compart?
 
-Agents execute code you did not write and cannot fully predict: shell commands, tests, builds, deploys. Every run is a chance to read credentials, modify files, or touch the network.
+Every developer and team is starting to run AI agents: Claude Code, Cursor, AutoGen, custom scripts, or MCP tool runners. But as agents move from simple chat into real codebases and production systems, they execute code and shell commands you did not write and cannot predict.
 
-Containers and VMs isolate, but they are heavy: images to pull, runtimes to install, seconds of startup per run. Interpreter-level sandboxes are bypassable from inside. Compart sits at the OS level instead, where the kernel does the enforcing:
+Containers and cloud MicroVMs (Docker, E2B, Modal) isolate agents, but they add seconds of startup lag, require cloud servers, and break local file paths. Python-level interpreter sandboxes are bypassable from inside.
 
-- **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted : even through a subprocess or a direct syscall.
-- **Deny-by-default.** Credential files : SSH keys, cloud configs, git credentials, keychains, browser data : are blocked unless you opt in.
-- **Nothing to install.** No daemon, no VM, no container runtime. Compart uses what the OS already provides.
-- **Zero latency.** A sandbox is a few kernel rules, applied in milliseconds. Enforcement costs nothing at runtime.
+Compart sits directly between your AI agents and your operating system kernel:
+
+- **Git manages WHAT CHANGED. Compart manages WHAT THE AGENT CAN DO.**
+- **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted: even through a subprocess or direct syscall.
+- **Deny-by-default credential protection.** SSH keys (`~/.ssh`), cloud configs (`~/.aws`), git credentials, keychains, and browser data are blocked by default.
+- **Zero latency.** Sandboxing rules are applied in sub-milliseconds natively on your OS kernel (Landlock on Linux, Seatbelt on macOS).
+- **Declarative topology.** Manage permissions as code in `.compart/topology.json` so security rules are reviewable in Git PRs.
 
 ## What you get
 
