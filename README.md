@@ -312,6 +312,7 @@ For the full SDK guide, see [sdk/README.md](sdk/README.md) and [`docs/TYPESCRIPT
 
 ## Documentation Map
 
+- **[Product Validation Guide](docs/VALIDATION_GUIDE.md)**: 60-second test suite comparing agent execution with and without Compart.
 - **[Quickstart Guide](docs/QUICKSTART.md)**: 2-minute setup guide for CLI and Python SDK.
 - **[Declarative CLI Guide](docs/CLI.md)**: Infrastructure-as-Code workflow, `.compart/topology.json` schema, and Git PR security reviews.
 - **[Framework Integration Hooks](docs/FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangChain, LangGraph, CrewAI, AutoGen, and Data/RAG agents.
