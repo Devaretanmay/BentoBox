@@ -81,102 +81,77 @@ Compart sits directly between your AI agents and your operating system kernel:
 | Output compression | Long compartment output is compressed before it is stored or returned. |
 | One core, two SDKs | Python and TypeScript wrappers over a single Rust core. |
 
-## How it works
+## Agent Workspace & Product Experience
 
-There are two entry points for the outer container:
+Compart presents your agent stack as a structured **Agent Workspace**:
 
-- **`Compart`**: a normal outer compartment. A kernel-level sandbox plus a runtime for the inner compartments you define. Nothing ships predefined: no compartments, no behaviour modules. Opt in with `register_module()`.
-- **`AgentCompart`**: an agent outer compartment (agent-oriented container). It auto-loads every behaviour module (credential proxy, snapshots, output compression) when it runs, so an agent gets the full insulated runtime.
-
-In both, inner compartments are always yours: create them, wire them with `edge()`, and drop them into either outer compartment:
-
-```
-Compart / AgentCompart (Outer Compartment Container)
-|-- Kernel Sandbox (Seatbelt on macOS / Landlock on Linux)
-|   |-- Isolated workspace (.compart/boxes/)
-|   |-- File system policy
-|   |-- Network policy
-|   |-- Process restrictions
-|   `-- Insulation (task profile + behaviour modules)
-|
-`-- Compartment Runtime (you define these inner compartments)
-    |-- Compartment "test"   -> permissions: [fs_read, fs_exec]
-    |-- Compartment "build"  -> permissions: [fs_read, fs_write, fs_exec]
-    `-- Compartment "deploy" -> permissions: [fs_read, fs_write]
+```text
+COMPART
+   │
+   ├── Agents & Workflows (Claude Code, Cursor, LangGraph, CrewAI, MCP)
+   ├── Workspace Topology (.compart/topology.json)
+   ├── Permissions & Boundaries (File, Network, Credentials)
+   └── OS Kernel Sandbox (Landlock on Linux / Seatbelt on macOS)
 ```
 
-The outer **compartment** is the secure execution environment; insulation is folded directly into it. **Inner compartments** are isolated units of work with their own policies that you register. The runtime has no opinion about what compartments do. It only coordinates their lifecycle, enforces their policies, and routes messages.
+### The Agent Session View
 
-## Use it anywhere
+When an agent runs under Compart, execution is tracked as an **Agent Session**:
 
-Compart is agent-agnostic and process-agnostic. If it runs in a terminal, Compart can sandbox it:
+```text
+Agent Session #42
+────────────────────────────────────────────────────────────────
+Agent       : Claude Code
+Task        : Fix authentication bug
+Workflow    : Research -> Build -> Test -> Review
+Compartment : Builder
+Permissions : [fs_read repo, fs_write src/, fs_exec tests, network blocked]
+Activity    :
+  [OK] Read auth.py
+  [OK] Modified auth.py
+  [OK] Executed pytest (14 passed)
+  [BLOCKED BY KERNEL] Attempted network request to external host
+Changes     : +42 / -18 lines
+Status      : Complete
+```
 
-- **Coding agents**: Claude Code, Codex, opencode, or any CLI agent. The agent reads your repo and writes code, but cannot touch `~/.ssh`, `~/.aws`, or anything outside its granted paths.
-- **Builds & tests**: `npm run build`, `pytest`, `cargo build`, with read-only system paths and no network unless granted.
-- **Deploys**: a deploy compartment that can read source and write output, but never reaches credentials.
-- **Multi-step pipelines**: fetch -> build -> deploy, with message passing and routing rules enforced in both directions.
+---
 
-## Quick Start
+## Security Model & Boundary Definitions
 
-### Declarative CLI Workflow (Infrastructure-as-Code)
+Compart enforces security at three distinct, explicit layers:
 
-Initialize a project, declare compartments, and run materialization:
+| Layer | Type | Scope | Description |
+| :--- | :--- | :--- | :--- |
+| **Kernel Boundary** | **OS Process Sandbox** | Hard OS Boundary | Applied via Linux Landlock or macOS Seatbelt directly at the OS kernel. Restricts process syscalls, filesystem paths, and network access across the process and all child subprocesses. |
+| **Compartment Policy** | **Workflow Boundary** | Logical Topology | Defines granular permissions (`fs_read`, `fs_write`, `fs_exec`, `network`) and allowed communication edges between inner workflow steps. |
+| **Python Enforcer** | **Interpreter Guard** | Application Level | Intercepts Python stdlib calls (`builtins.open`, `os.*`, `subprocess.*`) inside Python-based compartment functions. |
+
+---
+
+## Declarative Agent Workspace CLI
+
+Manage your agent workspace topology as code:
 
 ```bash
+# 1. Initialize an agent workspace
 compart init
+
+# 2. Define workflow compartments
 compart compartment create Research
 compart compartment create Builder
+
+# 3. Wire agent communication edges
 compart connect Research Builder
+
+# 4. Inspect workspace topology
 compart inspect
+
+# 5. Run agent workspace under kernel isolation
 compart run
 ```
 
-For detailed CLI usage and Git PR review workflows, see [`docs/CLI.md`](docs/CLI.md).
-
-### Python SDK Workflow
-
-Multi-compartment pipeline with message passing:
-
-```python
-from compart import Compart
-from compart.compartments import Compartment, CompartmentConfig
-
-compart = Compart()
-compart.add(Compartment(name="fetch", fn=fetch_fn, config=CompartmentConfig(permissions=["fs_read"])))
-compart.add(Compartment(name="build", fn=build_fn, config=CompartmentConfig(permissions=["fs_read", "fs_write"])))
-compart.edge("fetch", "build")
-result = compart.run(entry="fetch", request="Fetch and build")
-```
-
-Each compartment gets its own `CompartmentConfig`:
-
-- **permissions**: `fs_read`, `fs_write`, `fs_exec`, `network`, `gpu`, `sys_info`
-- **Resource limits**: `timeout_s`, `memory_mb`, `storage_mb`, `cpu_percent`
-- **Communication whitelist**: `allow_inbound_from`, `allow_outbound_to`
-
-The `SandboxEnforcer` is an interpreter-level guard for Python code. The native
-kernel sandbox is process-wide; compartment-specific permissions are enforced by
-the enforcer and must not be treated as an OS boundary for hostile code.
-
-### Custom compartments
-
-Subclass `Compartment` and override `run`:
-
-```python
-from compart.compartments import Compartment, CompartmentConfig
-
-class SecurityScan(Compartment):
-    config = CompartmentConfig(permissions=["fs_read", "network"])
-
-    def run(self, ctx):
-        return {"status": "clean"}
-```
-
-Requires Python 3.10+.
-
-## The security model
-
-Deny by default. Each compartment declares what it can access:
+Your workspace configuration is stored in `.compart/topology.json`, making security permission changes reviewable in Git PRs (`git diff`).
 
 ```python
 config = CompartmentConfig(permissions=["fs_read"])  # read-only
