@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compart — The Control Layer for AI Agents & Workflows</title>
+    <meta name="description" content="Compart is the control layer for AI agents and workflows. Define, isolate, control, and observe what agents can access and do with sub-millisecond OS kernel enforcement.">
+    <meta property="og:title" content="Compart — The Control Layer for AI Agents">
+    <meta property="og:description" content="Git manages WHAT CHANGED. Compart manages WHAT THE AGENT CAN DO. Native OS kernel sandboxing on Linux Landlock and macOS Seatbelt.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://compart.dev">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Background Ambient Glows -->
+    <div class="glow-bg glow-purple"></div>
+    <div class="glow-bg glow-cyan"></div>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="#" class="brand-logo">
+                <span class="logo-icon">❖</span>
+                <span class="logo-text">Compart</span>
+                <span class="badge-tag">v1.0.1</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#session">Agent Session</a>
+                <a href="#topology">Topology Builder</a>
+                <a href="#integrations">Integrations</a>
+                <a href="#docs">Docs</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="https://github.com/Devaretanmay/Compart" target="_blank" class="btn btn-secondary">
+                    <svg class="github-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+                <a href="#quickstart" class="btn btn-primary">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-container">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                The Control Layer for AI Agents & Workflows
+            </div>
+            
+            <h1 class="hero-title">
+                Git manages <span class="gradient-text-alt">WHAT CHANGED</span>.<br>
+                Compart manages <span class="gradient-text">WHAT THE AGENT CAN DO</span>.
+            </h1>
+            
+            <p class="hero-subtitle">
+                AI agents are moving from chat into real workflows, tools, codebases, and production systems. Compart gives developers a control layer to define, isolate, control, and observe agent execution safely.
+            </p>
+
+            <div class="hero-cta-group">
+                <div class="command-box">
+                    <span class="prompt">$</span>
+                    <code id="install-cmd">pip install compart</code>
+                    <button class="copy-btn" onclick="copyInstallCmd()">Copy</button>
+                </div>
+                <a href="https://pypi.org/project/compart/" target="_blank" class="btn btn-outline">
+                    View on PyPI v1.0.1
+                </a>
+            </div>
+
+            <!-- Architecture Control Diagram -->
+            <div class="architecture-card">
+                <div class="arch-header">
+                    <span class="arch-title">AGENT STACK INTEGRATION</span>
+                    <span class="arch-subtitle">Don't replace your agent stack. Put it under Compart.</span>
+                </div>
+                <div class="arch-flow">
+                    <div class="arch-column">
+                        <div class="agent-chip">Claude Code</div>
+                        <div class="agent-chip">Cursor</div>
+                        <div class="agent-chip">Codex / OpenCode</div>
+                        <div class="agent-chip">LangGraph / CrewAI</div>
+                        <div class="agent-chip">MCP Tools</div>
+                    </div>
+                    <div class="arch-arrow">➔</div>
+                    <div class="arch-core-box">
+                        <div class="core-logo">COMPART CONTROL LAYER</div>
+                        <div class="core-grid">
+                            <span>Topology</span>
+                            <span>Policies</span>
+                            <span>Compartments</span>
+                            <span>Credentials</span>
+                            <span>Network</span>
+                            <span>Snapshots</span>
+                        </div>
+                    </div>
+                    <div class="arch-arrow">➔</div>
+                    <div class="arch-column">
+                        <div class="os-box">
+                            <span class="os-title">OS KERNEL</span>
+                            <span class="os-detail">Landlock (Linux)</span>
+                            <span class="os-detail">Seatbelt (macOS)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Proposition Matrix -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Compart?</h2>
+                <p>Existing platforms give your agent an isolated box. Compart gives you control over your agents and workflows.</p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comp-card muted">
+                    <h3>Unsandboxed Local Execution</h3>
+                    <div class="comp-metric negative">0ms Boot • ZERO Security</div>
+                    <p>Agents execute with full access to host <code>~/.ssh</code>, <code>~/.aws</code>, environment variables, and local databases. One prompt injection leaks host secrets.</p>
+                </div>
+
+                <div class="comp-card muted">
+                    <h3>Docker / Cloud MicroVMs</h3>
+                    <div class="comp-metric warning">5s – 30s Boot • Heavy Infrastructure</div>
+                    <p>Isolates execution, but adds heavy container startup lag, requires background daemons, breaks local path mounts, and incurs cloud subscription fees.</p>
+                </div>
+
+                <div class="comp-card highlighted">
+                    <div class="card-badge">COMPART CONTROL LAYER</div>
+                    <h3>Compart Sub-Millisecond Kernel Layer</h3>
+                    <div class="comp-metric positive">Sub-Millisecond • OS Kernel Isolation</div>
+                    <p>Applies native OS kernel rules (Landlock on Linux, Seatbelt on macOS) directly to process execution. Deny-by-default credential protection with zero Docker overhead.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Experience: Agent Session View -->
+    <section class="section alt-bg" id="session">
+        <div class="container">
+            <div class="section-header">
+                <h2>The Product Experience: Agent Session</h2>
+                <p>Observe agent activities, file edits, permission checks, and blocked exploits in real time.</p>
+            </div>
+
+            <div class="session-mockup">
+                <div class="mockup-header">
+                    <div class="mockup-dots">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                    <div class="mockup-title">COMPART AGENT SESSION #42</div>
+                    <div class="mockup-status live">● LIVE SESSION</div>
+                </div>
+
+                <div class="mockup-body">
+                    <div class="session-meta-grid">
+                        <div><span class="meta-label">Agent:</span> Claude Code</div>
+                        <div><span class="meta-label">Task:</span> Fix authentication bug</div>
+                        <div><span class="meta-label">Workflow:</span> Research ➔ Builder ➔ Tester</div>
+                        <div><span class="meta-label">Compartment:</span> BuilderUnit</div>
+                        <div><span class="meta-label">Permissions:</span> <span class="perm-tag">fs_read repo</span> <span class="perm-tag">fs_write src/</span> <span class="perm-tag">fs_exec tests</span> <span class="perm-tag blocked">network denied</span></div>
+                    </div>
+
+                    <div class="session-log" id="session-log">
+                        <div class="log-line success"><span class="log-tag">[OK]</span> Read workspace tree: auth.py, config.py, tests/</div>
+                        <div class="log-line success"><span class="log-tag">[OK]</span> Executed static analysis: 0 syntax errors</div>
+                        <div class="log-line warning"><span class="log-tag">[MODIFIED]</span> Updated auth.py (+42 / -18 lines)</div>
+                        <div class="log-line blocked"><span class="log-tag">[BLOCKED BY KERNEL]</span> Path traversal attempt to ~/.ssh/id_rsa [Permission Denied]</div>
+                        <div class="log-line blocked"><span class="log-tag">[BLOCKED BY KERNEL]</span> Outbound TCP connection attempt to api.untrusted.com [Denied]</div>
+                        <div class="log-line success"><span class="log-tag">[OK]</span> Executed pytest: 14 passed in 0.42s</div>
+                        <div class="log-line diff"><span class="log-tag">[BLAKE3 DIFF]</span> 1 file modified (auth.py hash: 8f92a10c)</div>
+                    </div>
+
+                    <div class="session-controls">
+                        <button class="ctrl-btn active">Pause Agent</button>
+                        <button class="ctrl-btn">Inspect Diff</button>
+                        <button class="ctrl-btn danger">Rollback Session</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Topology Builder -->
+    <section class="section" id="topology">
+        <div class="container">
+            <div class="section-header">
+                <h2>Interactive Workspace Topology Builder</h2>
+                <p>Define your agent workspace topology as code. Permissions are saved in <code>.compart/topology.json</code> and reviewable in Git PRs.</p>
+            </div>
+
+            <div class="topology-editor">
+                <div class="editor-sidebar">
+                    <h3>Workspace Compartments</h3>
+                    <div class="compartment-creator">
+                        <input type="text" id="comp-name-input" placeholder="Compartment name (e.g. Research)" value="Research">
+                        <button class="btn btn-sm btn-primary" onclick="addCompartment()">+ Add Compartment</button>
+                    </div>
+
+                    <div class="compartment-list" id="compartment-list">
+                        <!-- Rendered by app.js -->
+                    </div>
+                </div>
+
+                <div class="editor-code">
+                    <div class="code-header">
+                        <span>.compart/topology.json</span>
+                        <button class="copy-btn" onclick="copyTopologyJson()">Copy JSON</button>
+                    </div>
+                    <pre><code id="topology-json-display"></code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Integrations Grid -->
+    <section class="section alt-bg" id="integrations">
+        <div class="container">
+            <div class="section-header">
+                <h2>Drop-In Framework Integrations</h2>
+                <p>Compart integrates cleanly with every popular agent framework, CLI tool, and MCP server.</p>
+            </div>
+
+            <div class="integration-grid">
+                <div class="integration-card">
+                    <div class="card-icon">⚡</div>
+                    <h3>LangChain & LangGraph</h3>
+                    <p>Wrap graph execution nodes in isolated compartments with <code>CompartGraphNode</code> and <code>CompartPythonREPLTool</code>.</p>
+                </div>
+
+                <div class="integration-card">
+                    <div class="card-icon">🤖</div>
+                    <h3>CrewAI</h3>
+                    <p>Replace Docker code execution with sub-millisecond kernel sandboxing using <code>CompartCodeInterpreterTool</code>.</p>
+                </div>
+
+                <div class="integration-card">
+                    <div class="card-icon">🔄</div>
+                    <h3>AutoGen</h3>
+                    <p>Execute multi-turn agent code blocks safely inside <code>CompartCodeExecutor</code>.</p>
+                </div>
+
+                <div class="integration-card">
+                    <div class="card-icon">🛡️</div>
+                    <h3>Zero-Trust Credential Proxy</h3>
+                    <p>Intercept outbound API calls and inject API keys in memory via <code>RouteConfig</code> without exposing raw secrets to prompts.</p>
+                </div>
+
+                <div class="integration-card">
+                    <div class="card-icon">📸</div>
+                    <h3>BLAKE3 Workspace Snapshots</h3>
+                    <p>Track exact workspace file changes and perform instant differential rollbacks with <code>SnapshotManager</code>.</p>
+                </div>
+
+                <div class="integration-card">
+                    <div class="card-icon">🗜️</div>
+                    <h3>Rust Token Compressor</h3>
+                    <p>Compress verbose log outputs by 80-99% using native BM25 text crushing before returning context to LLMs.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quickstart Code Tabs -->
+    <section class="section" id="quickstart">
+        <div class="container">
+            <div class="section-header">
+                <h2>Quickstart Workflows</h2>
+                <p>Start managing your AI agents in under 60 seconds.</p>
+            </div>
+
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('cli')">Declarative CLI</button>
+                    <button class="tab-btn" onclick="switchTab('python')">Python SDK</button>
+                    <button class="tab-btn" onclick="switchTab('typescript')">TypeScript SDK (Upcoming)</button>
+                </div>
+
+                <div class="tab-content active" id="tab-cli">
+                    <pre><code># 1. Initialize an agent workspace
+compart init
+
+# 2. Define workflow compartments
+compart compartment create Research
+compart compartment create Builder
+
+# 3. Wire agent communication edges
+compart connect Research Builder
+
+# 4. Inspect declared topology
+compart inspect
+
+# 5. Execute under OS kernel isolation
+compart run</code></pre>
+                </div>
+
+                <div class="tab-content" id="tab-python">
+                    <pre><code>from compart import AgentCompart, Compartment
+from compart.compartments import CompartmentConfig
+
+# Initialize agent outer container with auto-loaded proxy & snapshots
+agent = AgentCompart(workdir=".")
+
+# Add inner compartment with explicit permissions
+agent.add(Compartment(
+    name="Builder",
+    fn=lambda ctx: print("Building code safely..."),
+    config=CompartmentConfig(permissions=["fs_read", "fs_write", "fs_exec"])
+))
+
+# Execute workload
+result = agent.run()
+print(f"Status: {result.status} | Files changed: {result.diffs}")</code></pre>
+                </div>
+
+                <div class="tab-content" id="tab-typescript">
+                    <pre><code>import * as compart from '@compart/sdk'
+
+// Native OS kernel sandbox check
+if (compart.sandboxSupported()) {
+  // Permission verification
+  const allowed = compart.runtimeCheckPermission(
+    JSON.stringify({ permissions: ['fs_read'] }),
+    JSON.stringify(['fs_read']),
+  )
+
+  // Command blocklist check
+  const safe = compart.runtimeCheckCommand('rm -rf /') // false (blocked)
+
+  // Topology runtime handle
+  const rt = new compart.Runtime(configs, JSON.stringify([['fetch', 'build']]))
+  console.log(rt.runOrder()) // ['fetch', 'build']
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-container">
+            <div class="footer-brand">
+                <div class="brand-logo">
+                    <span class="logo-icon">❖</span>
+                    <span class="logo-text">Compart</span>
+                </div>
+                <p>The Control & Management Layer for AI Agents & Workflows.</p>
+                <p class="copyright">&copy; 2026 Compart Labs. Source-Available under Elastic License 2.0 (ELv2).</p>
+            </div>
+
+            <div class="footer-links">
+                <div class="link-col">
+                    <h4>Documentation</h4>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/docs/QUICKSTART.md" target="_blank">Quickstart</a>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/docs/CLI.md" target="_blank">CLI Guide</a>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/docs/FRAMEWORK_HOOKS.md" target="_blank">Framework Hooks</a>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/docs/VALIDATION_GUIDE.md" target="_blank">Validation Suite</a>
+                </div>
+                <div class="link-col">
+                    <h4>Community & Code</h4>
+                    <a href="https://github.com/Devaretanmay/Compart" target="_blank">GitHub Repository</a>
+                    <a href="https://pypi.org/project/compart/" target="_blank">PyPI Package (v1.0.1)</a>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/LICENSE" target="_blank">ELv2 License</a>
+                    <a href="https://github.com/Devaretanmay/Compart/blob/main/SECURITY.md" target="_blank">Security Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
