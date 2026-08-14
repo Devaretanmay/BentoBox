@@ -1,6 +1,6 @@
 # Compart CLI Reference & User Guide
 
-The Compart CLI is a declarative runtime manager for isolated agent execution. It provides an Infrastructure-as-Code workflow for configuring, versioning, and materializing kernel sandboxes.
+The Compart CLI is the control layer manager for AI agents and workflows. It provides a transparent wrapper and declarative workspace topology manager for kernel-enforced agent execution.
 
 ---
 
@@ -10,44 +10,49 @@ Running `compart init` creates a hidden `.compart/` control plane in your projec
 
 ```text
 .compart/
-├── topology.json    <-- Declarative desired state (versioned in Git)
-├── state/          <-- Local workspace runtime state
-├── logs/           <-- Execution logs
-└── snapshots/      <-- File diff snapshots
+├── topology.json    <-- Declarative workspace topology (versioned in Git)
+├── sessions/        <-- Persisted AgentSession objects
+├── state/           <-- Local workspace runtime state
+├── logs/            <-- Execution logs
+└── snapshots/       <-- BLAKE3 file diff snapshots
 ```
-
-The `.compart/topology.json` file describes the desired execution state. The actual OS kernel sandbox remains strictly ephemeral and is materialized only when `compart run` is invoked.
 
 ---
 
-## 2. Declarative Schema (`topology.json`)
+## 2. Transparent Agent Wrapper Commands
 
-```json
-{
-  "name": "my_agent_project",
-  "compartments": {
-    "Research": {
-      "permissions": ["fs_read"]
-    },
-    "Builder": {
-      "permissions": ["fs_read", "fs_write", "fs_exec"]
-    }
-  },
-  "connections": [
-    ["Research", "Builder"]
-  ]
-}
+### `compart wrap`
+Transparently govern any CLI agent (Claude Code, Cursor, Codex, custom scripts) in a managed `AgentSession` under OS kernel sandbox isolation.
+
+```bash
+compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude -p "fix the bug"
 ```
 
-### Fields:
-- **`name`**: Project name (defaults to current directory name).
-- **`compartments`**: Object mapping inner compartment names to permission configurations.
-  - **`permissions`**: List of permissions (`"fs_read"`, `"fs_write"`, `"fs_exec"`, `"network"`).
-- **`connections`**: List of directed communication edges `[source, target]`.
+### `compart sessions`
+List all recorded agent sessions in the workspace.
+
+```bash
+compart sessions
+```
+
+### `compart session inspect <session_id>`
+Inspect structured activity logs and BLAKE3 file diffs for a given session.
+
+```bash
+compart session inspect sess_1723635840000
+compart session inspect sess_1723635840000 --json
+```
+
+### `compart session rollback <session_id>`
+Roll back the workspace files to the exact state prior to that session.
+
+```bash
+compart session rollback sess_1723635840000
+```
 
 ---
 
-## 3. Command Reference
+## 3. Declarative Topology Commands
 
 ### `compart init`
 Initialize a new `.compart/` project directory and default `topology.json`.
@@ -92,17 +97,3 @@ Execute a single command inside an ephemeral kernel sandbox without initializing
 ```bash
 compart exec -- python3 script.py
 ```
-
----
-
-## 4. Git PR Security Review Workflow
-
-Because `topology.json` is stored as standard JSON inside `.compart/`, you can check it into Git. Pull requests will explicitly show security permission changes in code reviews:
-
-```diff
- "Research": {
--  "permissions": ["fs_read"]
-+  "permissions": ["fs_read", "network"]
- }
-```
-This allows security teams to catch unauthorized permission expansions before code is merged.

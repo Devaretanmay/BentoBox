@@ -134,27 +134,26 @@ Compart enforces security at three distinct, explicit layers:
 
 ## Declarative Agent Workspace CLI
 
-Manage your agent workspace topology as code:
+Manage your agent workspace topology and govern CLI agents transparently:
 
 ```bash
 # 1. Initialize an agent workspace
 compart init
 
-# 2. Define workflow compartments
-compart compartment create Research
-compart compartment create Builder
+# 2. Transparently govern any CLI agent in a managed AgentSession under OS kernel sandbox
+compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude -p "fix the bug"
 
-# 3. Wire agent communication edges
-compart connect Research Builder
+# 3. List recorded agent sessions
+compart sessions
 
-# 4. Inspect workspace topology
-compart inspect
+# 4. Inspect a structured AgentSession log
+compart session inspect sess_1723635840000
 
-# 5. Run agent workspace under kernel isolation
-compart run
+# 5. Roll back workspace to state prior to a session
+compart session rollback sess_1723635840000
 ```
 
-Your workspace configuration is stored in `.compart/topology.json`, making security permission changes reviewable in Git PRs (`git diff`).
+For detailed CLI usage, see [`docs/CLI.md`](docs/CLI.md) and [`docs/AGENT_SESSION.md`](docs/AGENT_SESSION.md).
 
 ```python
 config = CompartmentConfig(permissions=["fs_read"])  # read-only
