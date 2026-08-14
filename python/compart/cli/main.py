@@ -181,13 +181,31 @@ def cmd_exec(args):
 
 def cmd_wrap(args):
     """Transparently wrap any CLI agent command in a managed AgentSession under kernel isolation."""
-    if not args.cmd:
-        print("Error: No command provided to wrap. Example: compart wrap -- claude -p 'fix bug'")
-        sys.exit(1)
-
-    cmd_str = shlex.join(args.cmd)
     agent_name = args.agent or "Claude Code"
-    task = args.task or cmd_str
+    task = args.task
+    cmd_str = ""
+
+    if args.claude is not None:
+        agent_name = "Claude Code"
+        raw_task = args.claude.strip()
+        if raw_task.startswith("[") and raw_task.endswith("]"):
+            raw_task = raw_task[1:-1].strip()
+        task = raw_task or task or "Claude Code Execution Task"
+        if not args.cmd:
+            cmd_str = f"claude -p {shlex.quote(task)}"
+
+    if not cmd_str and args.cmd:
+        cmd_str = shlex.join(args.cmd)
+        if not task:
+            task = cmd_str
+
+    if not cmd_str:
+        print("Error: No command or task provided to wrap.")
+        print("Usage examples:")
+        print("  compart wrap -c \"Fix auth bug\"")
+        print("  compart wrap -c [Fix auth bug]")
+        print("  compart wrap -- claude -p \"Fix auth bug\"")
+        sys.exit(1)
 
     mgr = SessionManager(workdir=".")
     session = mgr.create_session(
@@ -281,8 +299,9 @@ def main():
     exec_parser = subparsers.add_parser("exec", help="Run an ephemeral command inside a sandbox")
     exec_parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command to run")
 
-    # compart wrap [--agent AGENT] [--task TASK] -- <command>
+    # compart wrap [-c TASK] [--agent AGENT] [--task TASK] -- <command>
     wrap_parser = subparsers.add_parser("wrap", help="Transparently govern any CLI agent in a managed AgentSession")
+    wrap_parser.add_argument("-c", "--claude", nargs="?", const="", help="Claude Code shortcut with task in quotes or [brackets]")
     wrap_parser.add_argument("--agent", default="Claude Code", help="Agent name (default: 'Claude Code')")
     wrap_parser.add_argument("--task", default="", help="Task description")
     wrap_parser.add_argument("--verbose", action="store_true", help="Enable lifecycle tracer")

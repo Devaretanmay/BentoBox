@@ -140,8 +140,10 @@ Manage your agent workspace topology and govern CLI agents transparently:
 # 1. Initialize an agent workspace
 compart init
 
-# 2. Transparently govern any CLI agent in a managed AgentSession under OS kernel sandbox
-compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude -p "fix the bug"
+# 2. Transparently govern Claude Code under OS kernel sandbox with -c shorthand:
+compart wrap -c "Fix authentication bug"
+# or with task in brackets:
+compart wrap -c [Fix authentication bug]
 
 # 3. List recorded agent sessions
 compart sessions
