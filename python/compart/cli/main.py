@@ -184,6 +184,7 @@ def cmd_wrap(args):
     agent_name = args.agent or "Claude Code"
     task = args.task
     cmd_str = ""
+    env_vars = {}
 
     if args.claude is not None:
         agent_name = "Claude Code"
@@ -194,6 +195,26 @@ def cmd_wrap(args):
         if not args.cmd:
             cmd_str = f"claude -p {shlex.quote(task)}"
 
+    elif getattr(args, "opencode", None) is not None:
+        agent_name = "OpenCode"
+        raw_task = args.opencode.strip()
+        if raw_task.startswith("[") and raw_task.endswith("]"):
+            raw_task = raw_task[1:-1].strip()
+        task = raw_task or task or "OpenCode Execution Task"
+
+        # Isolate OpenCode XDG directories inside .compart/xdg/
+        xdg_base = os.path.abspath(os.path.join(".compart", "xdg"))
+        for sub in ["config", "data", "cache", "state"]:
+            os.makedirs(os.path.join(xdg_base, sub), exist_ok=True)
+        env_vars.update({
+            "XDG_CONFIG_HOME": os.path.join(xdg_base, "config"),
+            "XDG_DATA_HOME": os.path.join(xdg_base, "data"),
+            "XDG_CACHE_HOME": os.path.join(xdg_base, "cache"),
+            "XDG_STATE_HOME": os.path.join(xdg_base, "state"),
+        })
+        if not args.cmd:
+            cmd_str = f"opencode run {shlex.quote(task)}" if task else "opencode --help"
+
     if not cmd_str and args.cmd:
         cmd_str = shlex.join(args.cmd)
         if not task:
@@ -203,8 +224,8 @@ def cmd_wrap(args):
         print("Error: No command or task provided to wrap.")
         print("Usage examples:")
         print("  compart wrap -c \"Fix auth bug\"")
-        print("  compart wrap -c [Fix auth bug]")
-        print("  compart wrap -- claude -p \"Fix auth bug\"")
+        print("  compart wrap -o \"Fix auth bug\"")
+        print("  compart wrap -- opencode run \"explain repo\"")
         sys.exit(1)
 
     mgr = SessionManager(workdir=".")
@@ -221,8 +242,14 @@ def cmd_wrap(args):
     runner = SandboxRunner(workdir=".", verbose=args.verbose)
     result = runner.run(
         cmd_str,
-        permissions=["fs_read", "fs_write", "fs_exec"]
+        permissions=["fs_read", "fs_write", "fs_exec"],
+        env=env_vars if env_vars else None,
     )
+
+    if result.stdout:
+        print("\n--- Agent Output ---")
+        print(result.stdout)
+        print("--------------------")
 
     session.log_action("EXECUTE", cmd_str, status="OK" if result.success else "FAILED", details=f"returncode={result.returncode}")
     session.complete(returncode=result.returncode, diffs=result.diffs)
@@ -299,9 +326,10 @@ def main():
     exec_parser = subparsers.add_parser("exec", help="Run an ephemeral command inside a sandbox")
     exec_parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command to run")
 
-    # compart wrap [-c TASK] [--agent AGENT] [--task TASK] -- <command>
+    # compart wrap [-c TASK] [-o TASK] [--agent AGENT] [--task TASK] -- <command>
     wrap_parser = subparsers.add_parser("wrap", help="Transparently govern any CLI agent in a managed AgentSession")
     wrap_parser.add_argument("-c", "--claude", nargs="?", const="", help="Claude Code shortcut with task in quotes or [brackets]")
+    wrap_parser.add_argument("-o", "--opencode", nargs="?", const="", help="OpenCode shortcut with task in quotes or [brackets]")
     wrap_parser.add_argument("--agent", default="Claude Code", help="Agent name (default: 'Claude Code')")
     wrap_parser.add_argument("--task", default="", help="Task description")
     wrap_parser.add_argument("--verbose", action="store_true", help="Enable lifecycle tracer")
