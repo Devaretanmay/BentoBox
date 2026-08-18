@@ -33,7 +33,7 @@ Govern any CLI agent (Claude Code, Cursor, Codex, custom scripts) transparently 
 
 ```bash
 # Wrap Claude Code under Compart control
-compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude -p "fix the bug"
+compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude
 
 # Wrap a python agent script
 compart wrap --agent "DataAgent" --task "Analyze data" -- python3 agent.py

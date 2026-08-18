@@ -44,7 +44,7 @@ runner = SandboxRunner(
     )],
 )
 
-res = runner.run("claude -p 'fix the failing test'", snapshot=True)
+res = runner.run("claude", snapshot=True)
 print(res.returncode, res.stdout, res.stderr, res.diffs)
 ```
 
