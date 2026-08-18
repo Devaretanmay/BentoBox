@@ -4,8 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "compart"
-version = "1.0.3"
-description = "Compart - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs."
+version = "1.0.4"
+description = "Compart — the agent workspace for developers. Kernel-enforced isolation, zero configuration, Git-style workflows."
 requires-python = ">=3.10"
 license = { text = "ELv2" }
 keywords = ["ai-agents", "developer-tools", "sandbox", "isolation", "runtime"]
