@@ -9,6 +9,7 @@ import uuid
 
 from compart.compart import Compart, AgentCompart
 from compart.compartments import Compartment, CompartmentConfig
+from compart.sandbox.credential_module import CredentialModule
 
 
 def _make_repo(path: str):
@@ -69,7 +70,6 @@ class TestCompartInit(unittest.TestCase):
 
     def test_plain_box_can_opt_in_a_module(self):
         """register_module() lets a plain box opt in to behaviour modules."""
-        from compart.sandbox.credential_module import CredentialModule
         box = Compart(workdir=self.tmpdir)
         box.register_module(CredentialModule)
         box._box.insulate("Fix the bug")

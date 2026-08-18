@@ -12,7 +12,6 @@ print("=== Compart Control Layer Demo: AgentSession & Transparent Wrapper ===")
 
 mgr = SessionManager(workdir=".")
 
-# 1. Create a managed AgentSession
 session = mgr.create_session(
     agent_name="Claude Code",
     task="Fix authentication bug in auth.py",
@@ -20,12 +19,10 @@ session = mgr.create_session(
     permissions=["fs_read", "fs_write", "fs_exec"]
 )
 
-# 2. Log activity actions
 session.log_action("READ", "src/auth.py", status="OK")
 session.log_action("EXECUTE", "pytest tests/test_auth.py", status="OK", details="14 passed")
 session.log_action("EXECUTE", "curl http://external-eval.com", status="BLOCKED_BY_KERNEL", details="network egress denied")
 
-# 3. Complete session with mock diff
 session.complete(returncode=0, diffs=[{"path": "src/auth.py", "status": "modified"}])
 mgr.save_session(session)
 

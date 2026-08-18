@@ -13,22 +13,17 @@ import shutil
 import sys
 import tempfile
 import textwrap
-
 import pytest
+import yaml
 
+from compart.cli.main import _topo_sort
 from compart.config import load_config
 from compart.engine.execution import Execution, ExecutionKind, ExecutionManager, ExecutionStatus
 from compart.engine.pty_supervisor import PtySupervisor
 
 
-# ── config.py: null YAML section guards ────────────────────────────────────
-
 def test_config_null_compartments_section():
     """compartments: (no body) must not raise AttributeError."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
     tmp = tempfile.mkdtemp()
     try:
         p = os.path.join(tmp, "config.yaml")
@@ -44,10 +39,6 @@ def test_config_null_compartments_section():
 
 def test_config_null_agents_section():
     """agents: (no body) must not crash."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
     tmp = tempfile.mkdtemp()
     try:
         p = os.path.join(tmp, "config.yaml")
@@ -67,10 +58,6 @@ def test_config_null_agents_section():
 
 def test_config_null_workflows_section():
     """workflows: (no body) must not crash."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
     tmp = tempfile.mkdtemp()
     try:
         p = os.path.join(tmp, "config.yaml")
@@ -90,10 +77,6 @@ def test_config_null_workflows_section():
 
 def test_config_depends_on_null():
     """depends_on: (no value) must default to empty list, not None."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
     tmp = tempfile.mkdtemp()
     try:
         p = os.path.join(tmp, "config.yaml")
@@ -118,8 +101,6 @@ def test_config_depends_on_null():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── pty_supervisor.py: empty argv guard ────────────────────────────────────
-
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not on Windows")
 def test_pty_supervisor_empty_argv_attach():
     sup = PtySupervisor(workdir=".")
@@ -133,8 +114,6 @@ def test_pty_supervisor_empty_argv_capture():
     with pytest.raises(ValueError, match="argv must not be empty"):
         sup.capture([])
 
-
-# ── execution.py: snapshot_dir persists through JSON round-trip ────────────
 
 def test_snapshot_dir_persists():
     tmp = tempfile.mkdtemp()
@@ -150,20 +129,14 @@ def test_snapshot_dir_persists():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── main.py: session.started_at=None safe in dur calculation ───────────────
-
 def test_status_started_at_none_safe():
     """Duration calculation in cmd_status must not crash when started_at is None."""
-    # Replicate the fixed calculation
     started_at = None
     finished_at = 1000.0
     dur = round(((finished_at or 0) - (started_at or 0)), 1)
     assert dur == 1000.0
 
 
-# ── main.py: workflow node bad command string is handled ────────────────────
-
 def test_topo_sort_empty_nodes():
     """_topo_sort must return empty list for empty input without crashing."""
-    from compart.cli.main import _topo_sort
     assert _topo_sort([]) == []

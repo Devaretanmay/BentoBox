@@ -1,10 +1,9 @@
-"""Tests for config.py — YAML workspace config loader."""
-
 import os
 import shutil
 import tempfile
 import textwrap
 import pytest
+import yaml
 
 from compart.config import (
     load_config,
@@ -25,10 +24,6 @@ def test_load_defaults_when_no_file():
 
 def test_load_yaml_compartments():
     """Parses compartment definitions from YAML."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
 
     tmp = tempfile.mkdtemp()
     try:
@@ -62,11 +57,6 @@ def test_load_yaml_compartments():
 
 def test_policy_for_agent():
     """policy_for_agent returns correct permissions for configured agents."""
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed")
-
     tmp = tempfile.mkdtemp()
     try:
         cfg_path = os.path.join(tmp, "config.yaml")

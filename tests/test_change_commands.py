@@ -68,7 +68,6 @@ def _exec_status(ws, eid) -> str:
     return ExecutionManager(workdir=str(ws)).get(eid).status
 
 
-# ── compart diff ───────────────────────────────────────────────────────────
 
 
 def test_diff_shows_change_sets(ws, capsys):
@@ -125,7 +124,6 @@ def test_diff_json(ws, capsys):
     assert data["executions"][0]["execution_id"] == "exec_a"
 
 
-# ── compart apply / undo ───────────────────────────────────────────────────
 
 
 def test_apply_marks_applied(ws, capsys):
@@ -146,11 +144,11 @@ def test_apply_single_execution(ws, capsys):
         cmd_apply(_ApplyArgs(execution="exec_b"))
     assert exc.value.code == 0
     assert _exec_status(ws, "exec_b") == ExecutionStatus.APPLIED
-    assert _exec_status(ws, "exec_a") == ExecutionStatus.COMPLETED  # untouched
+    assert _exec_status(ws, "exec_a") == ExecutionStatus.COMPLETED
 
 
 def test_apply_nothing_to_apply(ws, capsys):
-    _seed_execution(ws, "exec_a", [])  # no changes recorded
+    _seed_execution(ws, "exec_a", [])
 
     cmd_apply(_ApplyArgs())
 
@@ -161,7 +159,6 @@ def test_apply_conflict_refused_then_forced(ws, capsys):
     _seed_execution(ws, "exec_a", [{"path": "src/shared.py", "status": "modified"}], finished_at=100.0)
     _seed_execution(ws, "exec_b", [{"path": "src/shared.py", "status": "modified"}], finished_at=200.0)
 
-    # Both touch src/shared.py -> conflict surfaced, nothing applied.
     with pytest.raises(SystemExit) as exc:
         cmd_apply(_ApplyArgs())
     assert exc.value.code == 1
@@ -170,7 +167,6 @@ def test_apply_conflict_refused_then_forced(ws, capsys):
     assert "src/shared.py" in out
     assert _exec_status(ws, "exec_a") == ExecutionStatus.COMPLETED
 
-    # --force applies anyway.
     with pytest.raises(SystemExit) as exc:
         cmd_apply(_ApplyArgs(execution="exec_a", force=True))
     assert exc.value.code == 0
@@ -185,12 +181,10 @@ def test_undo_reverses_last_apply(ws, capsys):
         cmd_apply(_ApplyArgs())
     assert _exec_status(ws, "exec_b") == ExecutionStatus.APPLIED
 
-    # Undo (no arg) reverses the most recently applied change set.
     cmd_undo(_UndoArgs())
     assert _exec_status(ws, "exec_b") == ExecutionStatus.COMPLETED
     assert _exec_status(ws, "exec_a") == ExecutionStatus.APPLIED
 
-    # Undo a specific execution.
     cmd_undo(_UndoArgs(execution="exec_a"))
     assert _exec_status(ws, "exec_a") == ExecutionStatus.COMPLETED
 
@@ -212,7 +206,6 @@ def test_undo_not_applied_exits(ws, capsys):
     assert "not applied" in capsys.readouterr().out
 
 
-# ── compart restore + session rollback ─────────────────────────────────────
 
 
 def _session_with_checkpoint(ws, snap_dir=None):
@@ -229,7 +222,6 @@ def test_restore_restores_workspace_from_checkpoint(ws, capsys):
     (ws / "file.txt").write_text("original")
     sess, _ = _session_with_checkpoint(ws)
 
-    # Simulate the session mutating the worktree after its snapshot.
     (ws / "file.txt").write_text("changed by agent")
     (ws / "new.txt").write_text("created by agent")
 

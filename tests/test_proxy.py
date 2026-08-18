@@ -6,7 +6,7 @@ import threading
 
 import pytest
 
-from compart.sandbox.proxy import CredentialProxy, RouteConfig
+from compart.sandbox.proxy import CredentialProxy, RouteConfig, _request_path
 
 
 class _CaptureUpstream(http.server.BaseHTTPRequestHandler):
@@ -124,8 +124,6 @@ def test_query_string_preserved_on_rewrite(proxy, upstream):
 
 def test_route_config_path_forms_match():
     """The path parser handles origin, absolute, and bare forms."""
-    from compart.sandbox.proxy import _request_path
-
     assert _request_path("/openai/v1/chat") == "/openai/v1/chat"
     assert _request_path("http://api.example.com/openai/v1/chat") == "/openai/v1/chat"
     assert _request_path("https://api.example.com/openai") == "/openai"

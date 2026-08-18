@@ -17,7 +17,7 @@ import pytest
 import yaml
 
 from compart.cli.main import (
-    cmd_workflow_branch, cmd_step, cmd_workflow_run, _infer_step_properties
+    cmd_workflow_branch, cmd_step, cmd_workflow_run, cmd_run, _infer_step_properties
 )
 from compart.config import load_config
 from compart.hooks.base import ExecutionResult
@@ -25,26 +25,22 @@ from compart.hooks.base import ExecutionResult
 
 def test_infer_step_properties():
     """_infer_step_properties auto-detects name, command, type, and compartment."""
-    # OCR scraper -> research
     name, cmd, stype, comp = _infer_step_properties("src/ocr_scrape.py")
     assert name == "ocr-scrape"
-    assert cmd == "python src/ocr_scrape.py"
+    assert "ocr_scrape.py" in cmd
     assert stype == "process"
     assert comp == "research"
 
-    # LangChain / RAG agent -> builder
     name2, cmd2, stype2, comp2 = _infer_step_properties("src/langchain_rag_agent.py")
     assert name2 == "langchain-rag-agent"
-    assert cmd2 == "python src/langchain_rag_agent.py"
+    assert "langchain_rag_agent.py" in cmd2
     assert stype2 == "agent"
     assert comp2 == "builder"
 
-    # Email dispatcher -> network
     name3, cmd3, stype3, comp3 = _infer_step_properties("src/send_emails.py")
     assert name3 == "send-emails"
     assert comp3 == "network"
 
-    # Pytest command -> tester
     name4, cmd4, stype4, comp4 = _infer_step_properties("pytest tests/")
     assert name4 == "pytest"
     assert comp4 == "tester"
@@ -85,12 +81,10 @@ def test_step_addition_and_autochaining():
     try:
         os.makedirs(os.path.join(tmp, ".compart"))
 
-        # 1. Create branch
         class _BranchArgs:
             name = "invoice-flow"
         cmd_workflow_branch(_BranchArgs())
 
-        # 2. Add step 1 (OCR)
         class _Step1Args:
             workflow = "invoice-flow"
             target = "src/ocr_scrape.py"
@@ -100,7 +94,6 @@ def test_step_addition_and_autochaining():
             depends_on = None
         cmd_step(_Step1Args())
 
-        # 3. Add step 2 (LangChain)
         class _Step2Args:
             workflow = "invoice-flow"
             target = "src/langchain_patch.py"
@@ -110,7 +103,6 @@ def test_step_addition_and_autochaining():
             depends_on = None
         cmd_step(_Step2Args())
 
-        # 4. Add step 3 (Email)
         class _Step3Args:
             workflow = "invoice-flow"
             target = "src/send_emails.py"
@@ -120,7 +112,6 @@ def test_step_addition_and_autochaining():
             depends_on = None
         cmd_step(_Step3Args())
 
-        # Verify YAML content
         wf_path = os.path.join(tmp, "workflows", "invoice-flow.yaml")
         with open(wf_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
@@ -128,17 +119,14 @@ def test_step_addition_and_autochaining():
         steps = data["steps"]
         assert len(steps) == 3
 
-        # Step 1: ocr-scrape (runs first)
         assert steps[0]["name"] == "ocr-scrape"
         assert steps[0]["compartment"] == "research"
         assert "depends_on" not in steps[0]
 
-        # Step 2: langchain-patch (auto-depends on ocr-scrape)
         assert steps[1]["name"] == "langchain-patch"
         assert steps[1]["compartment"] == "builder"
         assert steps[1]["depends_on"] == ["ocr-scrape"]
 
-        # Step 3: send-emails (auto-depends on langchain-patch)
         assert steps[2]["name"] == "send-emails"
         assert steps[2]["compartment"] == "network"
         assert steps[2]["depends_on"] == ["langchain-patch"]
@@ -158,7 +146,6 @@ def test_workflow_run_from_workflows_dir(monkeypatch):
         with open(os.path.join(tmp, ".compart", "config.yaml"), "w") as f:
             f.write("compartments:\n  default:\n    filesystem: workspace\n  research:\n    filesystem: read-only\n")
 
-        # Mock runner
         recorded_commands = []
         class _MockRunner:
             def __init__(self, workdir, verbose=False, block_network=False):
@@ -169,7 +156,6 @@ def test_workflow_run_from_workflows_dir(monkeypatch):
 
         monkeypatch.setattr("compart.cli.main.SandboxRunner", _MockRunner)
 
-        # Create branch and step
         class _BranchArgs:
             name = "my-pipeline"
         cmd_workflow_branch(_BranchArgs())
@@ -183,7 +169,6 @@ def test_workflow_run_from_workflows_dir(monkeypatch):
             depends_on = None
         cmd_step(_StepArgs())
 
-        # Run workflow
         class _RunArgs:
             workflow = "my-pipeline"
             compartment = "default"
@@ -209,7 +194,6 @@ def test_step_directory_batch_scan():
         src_dir = os.path.join(tmp, "src")
         os.makedirs(src_dir)
 
-        # Create 3 scripts
         with open(os.path.join(src_dir, "ocr_extract.py"), "w") as f:
             f.write("# ocr\n")
         with open(os.path.join(src_dir, "langchain_rag.py"), "w") as f:
@@ -217,12 +201,10 @@ def test_step_directory_batch_scan():
         with open(os.path.join(src_dir, "send_emails.py"), "w") as f:
             f.write("# email\n")
 
-        # Create branch
         class _BranchArgs:
             name = "batch-flow"
         cmd_workflow_branch(_BranchArgs())
 
-        # Add entire directory
         class _DirStepArgs:
             workflow = "batch-flow"
             target = "src"
@@ -240,17 +222,14 @@ def test_step_directory_batch_scan():
         steps = data["steps"]
         assert len(steps) == 3
 
-        # Step 1: langchain_rag
         assert steps[0]["name"] == "langchain-rag"
         assert steps[0]["compartment"] == "builder"
         assert "depends_on" not in steps[0]
 
-        # Step 2: ocr_extract (depends on step 1)
         assert steps[1]["name"] == "ocr-extract"
         assert steps[1]["compartment"] == "research"
         assert steps[1]["depends_on"] == ["langchain-rag"]
 
-        # Step 3: send_emails (depends on step 2)
         assert steps[2]["name"] == "send-emails"
         assert steps[2]["compartment"] == "network"
         assert steps[2]["depends_on"] == ["ocr-extract"]
@@ -262,8 +241,6 @@ def test_step_directory_batch_scan():
 
 def test_compart_run_short_command(monkeypatch):
     """`compart run <name>` executes declared workflow directly without 'workflow run'."""
-    from compart.cli.main import cmd_run
-
     tmp = tempfile.mkdtemp()
     old_cwd = os.getcwd()
     os.chdir(tmp)

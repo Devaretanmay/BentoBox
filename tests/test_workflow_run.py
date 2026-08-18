@@ -99,7 +99,6 @@ def _load_executions(ws) -> list[dict]:
     return records
 
 
-# ── Topological ordering ───────────────────────────────────────────────────
 
 
 def _node(name, depends_on=()):
@@ -118,7 +117,6 @@ def test_topo_sort_cycle_detection():
         _topo_sort(nodes)
 
 
-# ── Declared workflow DAG ──────────────────────────────────────────────────
 
 
 def test_workflow_run_declared_dag(ws, fake_runner, capsys):
@@ -130,7 +128,6 @@ def test_workflow_run_declared_dag(ws, fake_runner, capsys):
     assert "COMPART WORKFLOW: feature-development" in out
     assert "3 node(s)" in out
 
-    # Nodes ran in dependency order, each as its own Execution.
     order = [i.called_with["command"] for i in _FakeRunner.instances]
     assert order == ["opencode run --task research", "claude -p build", "pytest -q"]
 
@@ -142,8 +139,8 @@ def test_workflow_run_declared_dag(ws, fake_runner, capsys):
     assert research["kind"] == "INTERACTIVE"
     assert research["compartment_id"] == "research"
     assert research["status"] == "COMPLETED"
-    assert "network" in research["policy"]["permissions"]  # network allowed
-    assert "fs_write" not in research["policy"]["permissions"]  # read-only
+    assert "network" in research["policy"]["permissions"]
+    assert "fs_write" not in research["policy"]["permissions"]
 
     build = by_cmd[("claude", "-p", "build")]
     assert build["kind"] == "INTERACTIVE"
@@ -168,9 +165,9 @@ def test_workflow_run_dependency_failure_skips_dependents(ws, fake_runner, capsy
 
     records = _load_executions(ws)
     by_comp = {r["compartment_id"]: r["status"] for r in records}
-    assert by_comp["research"] == "COMPLETED"  # independent branch ran
+    assert by_comp["research"] == "COMPLETED"
     assert by_comp["default"] == "FAILED"
-    assert by_comp["tester"] == "SKIPPED"  # depends on the failed build node
+    assert by_comp["tester"] == "SKIPPED"
 
 
 def test_workflow_run_unknown_name(ws, capsys):
@@ -179,7 +176,7 @@ def test_workflow_run_unknown_name(ws, capsys):
     assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "not found" in out
-    assert "feature-development" in out  # lists declared workflows
+    assert "feature-development" in out
 
 
 def test_workflow_run_unknown_compartment(ws, capsys):
@@ -199,7 +196,7 @@ def test_workflow_run_unknown_compartment(ws, capsys):
     assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "unknown compartment 'nope'" in out
-    assert _load_executions(ws) == []  # nothing recorded for a bad workflow
+    assert _load_executions(ws) == []
 
 
 def test_workflow_run_cycle_detected(ws, capsys):
@@ -224,7 +221,6 @@ def test_workflow_run_cycle_detected(ws, capsys):
     assert "cycle detected" in capsys.readouterr().out
 
 
-# ── File fallback ──────────────────────────────────────────────────────────
 
 
 def test_workflow_run_file_fallback(ws, fake_runner, capsys):

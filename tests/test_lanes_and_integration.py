@@ -37,15 +37,12 @@ def test_integration_engine_candidate_and_conflicts():
     try:
         lane_mgr = LaneManager(workdir=tmp_dir)
 
-        # Create Lane 1: auth-fix
         lane_mgr.create_lane(name="auth-fix", agent_id="Claude Code")
         lane_mgr.record_diff("auth-fix", [{"path": "src/auth.py", "status": "modified"}])
 
-        # Create Lane 2: logging
         lane_mgr.create_lane(name="logging", agent_id="OpenCode")
         lane_mgr.record_diff("logging", [{"path": "src/logger.py", "status": "added"}])
 
-        # Combine lanes into Candidate
         eng = IntegrationEngine(workdir=tmp_dir)
         cand = eng.create_candidate(["auth-fix", "logging"])
 

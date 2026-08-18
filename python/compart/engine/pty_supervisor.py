@@ -39,6 +39,11 @@ import tty
 from dataclasses import dataclass, field
 from typing import Optional, Sequence
 
+try:
+    from compart._core import sandbox_apply as _core_sandbox_apply
+except ImportError:
+    _core_sandbox_apply = None
+
 _logger = logging.getLogger("compart.pty_supervisor")
 
 
@@ -236,14 +241,12 @@ class PtySupervisor:
 
     def _apply_policy_child(self) -> None:
         """Apply the compartment policy inside the child process (pre-exec)."""
-        try:
-            from compart._core import sandbox_apply  # type: ignore[import]
-            permissions = self.compartment_policy.get("permissions", [])
-            sandbox_apply(self.workdir, "network" not in permissions)
-        except ImportError:
-            pass
-        except Exception as exc:
-            _logger.warning("Could not apply sandbox policy in child: %s", exc)
+        if _core_sandbox_apply is not None:
+            try:
+                permissions = self.compartment_policy.get("permissions", [])
+                _core_sandbox_apply(self.workdir, "network" not in permissions)
+            except Exception as exc:
+                _logger.warning("Could not apply sandbox policy in child: %s", exc)
 
     @staticmethod
     def _get_winsize(fd: int) -> bytes:

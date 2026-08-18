@@ -23,14 +23,11 @@ print("Activity Log:")
 
 runner = SandboxRunner(workdir=".")
 
-# 1. Reading file
 print("  [OK] Read auth.py")
 
-# 2. Workspace file edit
 res = runner.run("python3 -c \"open('auth.py', 'w').write('# Fixed auth bug')\"")
 print(f"  [OK] Modified auth.py ({len(res.diffs)} file change detected)")
 
-# 3. Attempting host SSH key read (blocked)
 try:
     with open(os.path.expanduser("~/.ssh/id_rsa"), "r") as f:
         print("  [EXPLOIT]: SSH Key leaked!")

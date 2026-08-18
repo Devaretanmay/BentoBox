@@ -14,7 +14,6 @@ def restricted_fs_action(ctx):
     except Exception as exc:
         print("BLOCKED BY KERNEL SANDBOX:", exc)
 
-# Compartment configured with strictly fs_read only
 compart.add(Compartment(
     name="RestrictedUnit",
     fn=restricted_fs_action,

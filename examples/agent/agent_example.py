@@ -3,7 +3,6 @@
 from compart import AgentCompart, Compartment
 from compart.compartments import CompartmentConfig
 
-# AgentCompart auto-loads Credential Proxy, Snapshots, and Log Crusher
 agent = AgentCompart(workdir=".")
 
 def agent_action(ctx):

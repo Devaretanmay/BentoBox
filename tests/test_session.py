@@ -45,14 +45,12 @@ def test_session_manager_lifecycle():
         sess.complete(returncode=0)
         mgr.save_session(sess)
 
-        # Retrieve session
         loaded = mgr.get_session(sess.session_id)
         assert loaded is not None
         assert loaded.agent == "TestAgent"
         assert loaded.agent_name == "TestAgent"
         assert loaded.status == SessionStatus.COMPLETED
 
-        # List sessions
         all_sessions = mgr.list_sessions()
         assert len(all_sessions) >= 1
         assert all_sessions[0].session_id == sess.session_id

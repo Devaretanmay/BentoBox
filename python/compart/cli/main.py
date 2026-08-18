@@ -1,5 +1,6 @@
 import argparse
 import shutil
+import subprocess
 import sys
 import json
 import logging
@@ -571,8 +572,7 @@ def cmd_run(args):
                 def dummy_fn(ctx, n=name):
                     print(f"[{n}] Executing inside kernel sandbox...")
                     return {"status": "ok"}
-                from compart.compartments import CompartmentConfig as _CompConfig
-                compart.add(Compartment(name=name, fn=dummy_fn, config=_CompConfig(permissions=perms)))
+                compart.add(Compartment(name=name, fn=dummy_fn, config=CompartmentConfig(permissions=perms)))
             for edge in topology.get("connections", []):
                 if isinstance(edge, (list, tuple)) and len(edge) >= 2:
                     compart.edge(edge[0], edge[1])
@@ -1133,11 +1133,6 @@ def cmd_workflow_branch(args):
 
 def cmd_step(args):
     """Add step(s) to a workflow branch with smart auto-inferred properties."""
-    try:
-        import yaml
-    except ImportError:
-        print("Error: PyYAML is required for workflow commands. Install with: pip install pyyaml")
-        sys.exit(1)
     ws_root = find_workspace_root() or os.path.abspath(".")
     wf_name = args.workflow.strip()
     target = args.target.strip()
@@ -1243,8 +1238,6 @@ def cmd_workflow_run(args):
         return
 
     if target.endswith((".yaml", ".yml")) and os.path.exists(target):
-        import yaml
-        from compart.config import WorkflowConfig, WorkflowNodeConfig
         with open(target, encoding="utf-8") as f:
             wdata = yaml.safe_load(f) or {}
         wname = wdata.get("name") or os.path.splitext(os.path.basename(target))[0]
@@ -1335,7 +1328,6 @@ def _git_commit_execution(
     user_message: Optional[str] = None,
 ) -> bool:
     """Stage an execution's changed files and create a Git commit with RFC-5322 metadata trailers."""
-    import subprocess
     if not shutil.which("git"):
         print("  Error: 'git' command not found in PATH.")
         return False

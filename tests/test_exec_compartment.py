@@ -72,12 +72,10 @@ def _load_executions(workspace) -> list[dict]:
     return records
 
 
-# ── Compartment resolution ────────────────────────────────────────────────
 
 
 def test_resolve_compartment_explicit_override_wins(workspace):
     cfg = load_config(os.path.join(str(workspace), ".compart", "config.yaml"))
-    # claude defaults to coding, but the explicit override must win.
     assert _resolve_compartment(cfg, "claude", "research").name == "research"
 
 
@@ -95,7 +93,6 @@ def test_resolve_compartment_unknown_override_exits(workspace, capsys):
     assert "Unknown compartment 'nope'" in capsys.readouterr().out
 
 
-# ── PROCESS path (plain commands) ─────────────────────────────────────────
 
 
 class _FakeRunner:
@@ -135,7 +132,7 @@ def test_cmd_exec_process_records_execution(workspace, fake_runner, monkeypatch)
 
     runner = _FakeRunner.instances[0]
     assert runner.called_with["permissions"] == ["fs_read", "fs_write", "fs_exec"]
-    assert runner.kwargs["block_network"] is True  # default network is restricted
+    assert runner.kwargs["block_network"] is True
 
 
 def test_cmd_exec_process_compartment_override(workspace, fake_runner, monkeypatch):
@@ -145,12 +142,11 @@ def test_cmd_exec_process_compartment_override(workspace, fake_runner, monkeypat
     records = _load_executions(workspace)
     assert len(records) == 1
     assert records[0]["compartment_id"] == "research"
-    # research is read-only + network allowed: no fs_write, network granted.
     assert "fs_write" not in records[0]["policy"]["permissions"]
     assert "network" in records[0]["policy"]["permissions"]
 
     runner = _FakeRunner.instances[0]
-    assert runner.kwargs["block_network"] is False  # research network is allowed
+    assert runner.kwargs["block_network"] is False
 
 
 def test_cmd_exec_process_sets_execution_marker_env(workspace, fake_runner, monkeypatch):
@@ -169,7 +165,7 @@ def test_cmd_exec_unknown_compartment_exits(workspace, fake_runner, monkeypatch,
         cmd_exec(_Args(cmd=["echo", "hi"], compartment="bogus"))
     assert exc.value.code == 1
     assert "Unknown compartment 'bogus'" in capsys.readouterr().out
-    assert _load_executions(workspace) == []  # nothing recorded
+    assert _load_executions(workspace) == []
 
 
 def test_cmd_exec_no_command_exits(workspace, monkeypatch):
@@ -179,7 +175,6 @@ def test_cmd_exec_no_command_exits(workspace, monkeypatch):
     assert exc.value.code == 1
 
 
-# ── INTERACTIVE path (agent launches) ─────────────────────────────────────
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")
@@ -242,10 +237,9 @@ def test_launch_agent_missing_binary_exits_127(workspace, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _launch_agent("compart_no_such_agent_xyz", str(workspace))
     assert exc.value.code == 127
-    assert _load_executions(workspace) == []  # nothing recorded for failed launch
+    assert _load_executions(workspace) == []
 
 
-# ── End-to-end CLI (real sandbox in a child process) ──────────────────────
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")

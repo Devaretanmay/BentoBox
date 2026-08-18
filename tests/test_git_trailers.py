@@ -7,11 +7,14 @@ Covers:
 - `compart commit` and `compart apply --commit`
 """
 
+import io
+import json
 import os
 import shutil
 import subprocess
 import tempfile
 import textwrap
+from contextlib import redirect_stdout
 
 import pytest
 
@@ -119,10 +122,6 @@ def test_diff_with_trailers_in_json(monkeypatch):
             unapplied = False
             trailers = True
             json = True
-
-        import io
-        from contextlib import redirect_stdout
-        import json
 
         buf = io.StringIO()
         with redirect_stdout(buf):

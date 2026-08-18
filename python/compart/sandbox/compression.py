@@ -8,16 +8,13 @@ from .behaviour import BehaviourModule, register
 
 _logger = logging.getLogger("compart.compression")
 
-_CORE = None
+try:
+    from compart._core import route_and_compress as _CORE
+except ImportError:
+    _CORE = None
+
 
 def _get_core():
-    global _CORE
-    if _CORE is None:
-        try:
-            from compart._core import route_and_compress as _rc
-            _CORE = _rc
-        except ImportError:
-            _CORE = None
     return _CORE
 
 

@@ -28,10 +28,10 @@ _logger = logging.getLogger("compart.engine.execution")
 
 
 class ExecutionKind:
-    INTERACTIVE = "INTERACTIVE"  # Full PTY — claude, codex, opencode
-    WORKFLOW = "WORKFLOW"        # Multi-step graph — LangGraph, CrewAI
-    PROCESS = "PROCESS"         # One-shot process — pytest, arbitrary shell
-    SERVICE = "SERVICE"         # Long-running — MCP server
+    INTERACTIVE = "INTERACTIVE"
+    WORKFLOW = "WORKFLOW"
+    PROCESS = "PROCESS"
+    SERVICE = "SERVICE"
 
 
 class ExecutionStatus:
@@ -42,8 +42,8 @@ class ExecutionStatus:
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
-    APPLIED = "APPLIED"   # change set promoted to workspace baseline
-    SKIPPED = "SKIPPED"  # workflow node skipped due to failed dependency
+    APPLIED = "APPLIED"
+    SKIPPED = "SKIPPED"
 
 
 @dataclass
@@ -51,8 +51,8 @@ class Execution:
     """First-class domain object representing one governed workload."""
 
     execution_id: str
-    kind: str                           # ExecutionKind constant
-    command: List[str]                  # argv, e.g. ["claude"] or ["pytest", "-q"]
+    kind: str
+    command: List[str]
     workspace_id: str = "default"
     compartment_id: str = "default"
     lane_id: str = "default"
@@ -62,7 +62,7 @@ class Execution:
     started_at: Optional[float] = None
     finished_at: Optional[float] = None
     returncode: Optional[int] = None
-    snapshot_dir: Optional[str] = None  # pre-execution worktree snapshot (for undo/restore)
+    snapshot_dir: Optional[str] = None
     policy: Dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_write", "fs_exec"]})
     events: List[Dict[str, Any]] = field(default_factory=list)
     changes: List[Dict[str, Any]] = field(default_factory=list)
@@ -134,7 +134,6 @@ class ExecutionManager:
         os.makedirs(self.executions_dir, exist_ok=True)
 
     def _path(self, execution_id: str) -> str:
-        # Sanitize execution_id to prevent directory traversal
         safe_id = os.path.basename(execution_id)
         if safe_id.endswith(".json"):
             safe_id = safe_id[:-5]

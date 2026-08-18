@@ -23,14 +23,12 @@ def builder_agent(ctx):
     for m in msgs:
         print(f"  Executing task: {m.data}")
 
-# Research compartment: fs_read only
 compart.add(Compartment(
     name="ResearchAgent",
     fn=research_agent,
     config=CompartmentConfig(permissions=["fs_read"], allow_outbound_to=["BuilderAgent"])
 ))
 
-# Builder compartment: fs_read, fs_write
 compart.add(Compartment(
     name="BuilderAgent",
     fn=builder_agent,

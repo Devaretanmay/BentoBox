@@ -5,7 +5,6 @@ import subprocess
 import tempfile
 import time
 
-# Ensure python path has the package
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO_DIR, "python"))
 
@@ -22,7 +21,6 @@ print("     REAL-WORLD COMPART LIFECYCLE & MULTI-AGENT WORKSPACE SIMULATION   ",
 print("======================================================================", flush=True)
 print(flush=True)
 
-# ── 1. Create a clean project repository ──────────────────────────────────
 tmp_project = tempfile.mkdtemp(prefix="compart_demo_project_")
 print(f"[1] Setting up new repository: {tmp_project}", flush=True)
 subprocess.run(["git", "init", "-b", "main"], cwd=tmp_project, check=True, capture_output=True)
@@ -37,20 +35,16 @@ subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=tmp_project, check
 old_cwd = os.getcwd()
 os.chdir(tmp_project)
 
-# ── 2. Initialize Compart in the workspace ────────────────────────────────
 print("\n[2] Initializing workspace (`compart init`)...", flush=True)
 class EmptyArgs: pass
 cmd_init(EmptyArgs())
 
-# ── 3. Simulate Agent 1 (Claude Code) generating feature code ──────────────
 print("\n[3] Simulating Agent 1 (Claude Code) in 'builder' compartment...", flush=True)
 exec_mgr = ExecutionManager(workdir=tmp_project)
 
-# Snapshot before agent work
 snap_claude = os.path.join(tmp_project, ".compart", "snapshots", "exec_claude_auth")
 SnapshotManager(workdir=tmp_project, snapshot_dir=snap_claude).snapshot()
 
-# Agent creates auth.py
 with open(os.path.join(tmp_project, "auth.py"), "w") as f:
     f.write('def authenticate(token):\n    return token == "secret-token"\n')
 
@@ -83,11 +77,9 @@ ex_opencode.complete(returncode=0, changes=ex_opencode.changes)
 exec_mgr.save(ex_opencode)
 print(f"    [OK] Agent 2 completed: Execution #{ex_opencode.execution_id} (1 test file created)", flush=True)
 
-# ── 5. Inspect Workspace Status ───────────────────────────────────────────
 print("\n[5] Checking workspace status (`compart status`)...", flush=True)
 cmd_status(EmptyArgs())
 
-# ── 6. Review Diffs and Metadata Trailers ──────────────────────────────────
 print("\n[6] Reviewing change sets and RFC-5322 Git Trailers (`compart diff --trailers`)...", flush=True)
 class DiffArgs:
     execution = None
@@ -96,7 +88,6 @@ class DiffArgs:
     json = False
 cmd_diff(DiffArgs())
 
-# ── 7. Apply & Commit to Git with Trailers ─────────────────────────────────
 print("\n[7] Applying and Committing both agent changes to Git (`compart commit --all`)...", flush=True)
 class CommitArgs:
     message = "feat(auth): add token authentication and test suite"
@@ -108,17 +99,14 @@ try:
 except SystemExit:
     pass
 
-# ── 8. Verify the Git Commit & Trailers ────────────────────────────────────
 print("\n[8] Verifying Git commit history (`git log -n 2`):", flush=True)
 log_output = subprocess.run(["git", "log", "-n", "2"], cwd=tmp_project, capture_output=True, text=True).stdout
 print(log_output, flush=True)
 
-# ── 9. Simulate a Rogue Agent Corrupting Files & Instant Recovery ──────────
 print("[9] Simulating a rogue agent making breaking changes...", flush=True)
 snap_rogue = os.path.join(tmp_project, ".compart", "snapshots", "exec_rogue_99")
 SnapshotManager(workdir=tmp_project, snapshot_dir=snap_rogue).snapshot()
 
-# Rogue agent breaks main.py and corrupts auth.py
 with open(os.path.join(tmp_project, "main.py"), "w") as f:
     f.write("# CORRUPTED: SYNTAX ERROR %%%!!!\n")
 with open(os.path.join(tmp_project, "auth.py"), "w") as f:
@@ -153,7 +141,6 @@ print(f"    -> auth.py AFTER undo: {restored_auth}", flush=True)
 assert "def app():" in restored_main, "main.py failed to restore!"
 assert "def authenticate" in restored_auth, "auth.py failed to restore!"
 
-# Cleanup
 os.chdir(old_cwd)
 shutil.rmtree(tmp_project, ignore_errors=True)
 

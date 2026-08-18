@@ -36,7 +36,6 @@ from compart.hooks.base import ExecutionResult
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# ── 1. Cross-Agent Merge Conflict Detection ──────────────────────────────────
 
 def test_cross_agent_conflict_detection():
     """When two agents modify the same file, apply warns about conflict unless --force is used."""
@@ -46,19 +45,16 @@ def test_cross_agent_conflict_detection():
         os.makedirs(os.path.join(tmp, ".compart"))
         mgr = ExecutionManager(workdir=tmp)
 
-        # Agent A modified server.py
         ex_a = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"], compartment_id="coding")
         ex_a.changes = [{"path": "server.py", "status": "modified"}]
         ex_a.complete(0, changes=ex_a.changes)
         mgr.save(ex_a)
 
-        # Agent B also modified server.py
         ex_b = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["opencode"], compartment_id="research")
         ex_b.changes = [{"path": "server.py", "status": "modified"}, {"path": "utils.py", "status": "added"}]
         ex_b.complete(0, changes=ex_b.changes)
         mgr.save(ex_b)
 
-        # Applying Agent B without force should detect conflict with Agent A
         buf = io.StringIO()
         with redirect_stdout(buf):
             applied = _apply_execution(mgr, ex_b, force=False)
@@ -69,7 +65,6 @@ def test_cross_agent_conflict_detection():
         assert "server.py" in out
         assert ex_a.execution_id in out
 
-        # Applying with force succeeds
         buf_force = io.StringIO()
         with redirect_stdout(buf_force):
             applied_force = _apply_execution(mgr, ex_b, force=True)
@@ -80,7 +75,6 @@ def test_cross_agent_conflict_detection():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 2. Workflow DAG Node Failure Cascading into Skipped Downstream Nodes ──────
 
 def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
     """If node A fails, node B (which depends on A) is marked SKIPPED, not run."""
@@ -89,7 +83,6 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
     try:
         os.makedirs(os.path.join(tmp, ".compart"))
 
-        # Mock SandboxRunner to simulate node failure without applying kernel Seatbelt to pytest
         class _MockRunner:
             def __init__(self, workdir, verbose=False, block_network=False):
                 pass
@@ -127,7 +120,6 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
         assert "step_skip" in out
         assert "SKIPPED" in out
 
-        # Verify Execution objects on disk
         mgr = ExecutionManager(workdir=tmp)
         execs = mgr.list_all()
         skip_ex = next((e for e in execs if e.command == ["echo", "hello"]), None)
@@ -138,7 +130,6 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 3. Deeply Nested Workspace Discovery ─────────────────────────────────────
 
 def test_deeply_nested_workspace_root_discovery():
     """find_workspace_root correctly locates .compart/ even 5 directories down."""
@@ -156,7 +147,6 @@ def test_deeply_nested_workspace_root_discovery():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 4. Child Process & Subshell Execution ID Inheritance ─────────────────────
 
 def test_child_execution_id_inheritance():
     """Child processes receive COMPART_EXECUTION_ID in extra_env."""
@@ -172,7 +162,6 @@ def test_child_execution_id_inheritance():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 5. Path Traversal Security Checks on ExecutionManager ────────────────────
 
 def test_execution_manager_path_traversal_protection():
     """Malicious execution IDs cannot traverse outside the executions directory."""
@@ -193,7 +182,6 @@ def test_execution_manager_path_traversal_protection():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 6. Read-Only Zero-Change Execution Handling ──────────────────────────────
 
 def test_zero_change_execution_diff_and_commit():
     """An execution that only reads files produces 0 changes and is handled cleanly."""
@@ -236,7 +224,6 @@ def test_zero_change_execution_diff_and_commit():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── 7. Rapid-Fire Execution ID Millisecond Collision Avoidance ───────────────
 
 def test_rapid_fire_execution_id_uniqueness():
     """Creating 20 executions in a tight loop produces 20 unique IDs."""

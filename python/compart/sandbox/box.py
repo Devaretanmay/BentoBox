@@ -20,19 +20,14 @@ from .task_profile import classify as classify_profile
 
 _logger = logging.getLogger("compart.box")
 
-# The Rust _core sandbox is optional - Compart works without it,
-# which lets users run tests and experiments without compiling the native module.
-_CORE = None
+try:
+    from compart._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
+    _CORE = (_core_sandbox_apply, _core_sandbox_check_supported)
+except ImportError:
+    _CORE = ()
 
 
 def _get_core():
-    global _CORE
-    if _CORE is None:
-        try:
-            from compart._core import sandbox_apply, sandbox_check_supported
-            _CORE = (sandbox_apply, sandbox_check_supported)
-        except ImportError:
-            _CORE = ()
     return _CORE
 
 

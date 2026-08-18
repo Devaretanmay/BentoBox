@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import uuid
 import unittest
+from blake3 import blake3
 
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
@@ -49,7 +50,6 @@ class TestSnapshotManagerBasics(_SnapshotTestBase):
         self.assertIn("a.txt", manifest)
         self.assertIn("b.txt", manifest)
         self.assertEqual(len(manifest["a.txt"]), 16)
-        from blake3 import blake3
         self.assertEqual(manifest["a.txt"], blake3(b"aaa").hexdigest()[:16])
 
     def test_cleanup_removes_snapshot_dir(self):
