@@ -1517,8 +1517,35 @@ def main():
         ws_root = find_workspace_root() or os.path.abspath(".")
         sys.exit(_launch_agent(agent_name, ws_root, user_argv=user_argv))
 
+    description = textwrap.dedent("""\
+        Compart — the agent workspace for developers
+
+        Workspace:
+          compart init                     Initialize a Compart workspace
+          compart status                   Show workspace health & active executions
+          compart inspect                  Dump declared compartments & policies
+
+        Agents:
+          compart claude | opencode | codex | cursor | aider
+                                           Run coding agent in governed OS sandbox
+          compart exec -- <cmd>            Run arbitrary command inside a compartment
+
+        Workflows:
+          compart -w <name>                Create a new workflow branch
+          compart step <workflow> <target> Add a step with auto-inferred properties
+          compart --run <workflow>         Execute declared workflow DAG
+
+        Changes:
+          compart diff                     Review change sets attributed by agent
+          compart apply                    Promote changes to workspace baseline
+          compart commit -m <msg>          Commit to Git with RFC-5322 metadata trailers
+          compart undo                     Instant physical snapshot rollback
+          compart restore                  Restore from session checkpoint
+    """)
+
     parser = argparse.ArgumentParser(
-        description="Compart — the agent workspace for developers"
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "-w", "--workflow",
@@ -1532,7 +1559,7 @@ def main():
         default=None,
         help="Run a workflow DAG directly (e.g. compart --run invoice-pipeline)",
     )
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(dest="command", help=argparse.SUPPRESS)
 
     subparsers.add_parser("init", help="Initialize a Compart workspace in the current directory")
 
@@ -1541,16 +1568,16 @@ def main():
     inspect_parser = subparsers.add_parser("inspect", help="Dump declarative topology and project state")
     inspect_parser.add_argument("--json", action="store_true")
 
-    comp_parser = subparsers.add_parser("compartment", help="Manage declared inner compartments")
+    comp_parser = subparsers.add_parser("compartment", help=argparse.SUPPRESS)
     comp_subparsers = comp_parser.add_subparsers(dest="compartment_command")
     comp_create_parser = comp_subparsers.add_parser("create")
     comp_create_parser.add_argument("name")
 
-    connect_parser = subparsers.add_parser("connect", help="Connect two declared compartments")
+    connect_parser = subparsers.add_parser("connect", help=argparse.SUPPRESS)
     connect_parser.add_argument("source")
     connect_parser.add_argument("target")
 
-    run_parser = subparsers.add_parser("run", help="Run a workflow or process in a governed execution")
+    run_parser = subparsers.add_parser("run", help="Run a declared workflow DAG (alias for --run)")
     run_parser.add_argument("target", nargs="?", default=None, help="Workflow name (e.g. invoice-pipeline), workflow file, or command")
     run_parser.add_argument("--compartment", default="default", help="Compartment policy for a standalone file")
     run_parser.add_argument("--verbose", action="store_true")
@@ -1577,13 +1604,13 @@ def main():
     undo_parser.add_argument("--execution", default=None, help="Undo a specific execution's apply")
 
     restore_parser = subparsers.add_parser("restore", help="Restore the workspace from a session's snapshot checkpoint")
-    restore_parser.add_argument("session_id")
+    restore_parser.add_argument("session_id", nargs="?", default=None, help="Session ID to restore (defaults to latest)")
 
     exec_parser = subparsers.add_parser("exec", help="Run a command or launch an agent inside an explicitly selected compartment")
     exec_parser.add_argument("--compartment", default=None, help="Override the compartment for this execution")
     exec_parser.add_argument("cmd", nargs=argparse.REMAINDER)
 
-    wrap_parser = subparsers.add_parser("wrap", help="Govern any CLI agent command in a managed AgentSession & Virtual Lane")
+    wrap_parser = subparsers.add_parser("wrap", help=argparse.SUPPRESS)
     wrap_parser.add_argument("-c", "--claude", nargs="?", const="")
     wrap_parser.add_argument("-o", "--opencode", nargs="?", const="")
     wrap_parser.add_argument("--lane", default="default")
@@ -1592,7 +1619,7 @@ def main():
     wrap_parser.add_argument("--verbose", action="store_true")
     wrap_parser.add_argument("cmd", nargs=argparse.REMAINDER)
 
-    lane_parser = subparsers.add_parser("lane", help="Manage Virtual Agent Lanes")
+    lane_parser = subparsers.add_parser("lane", help=argparse.SUPPRESS)
     lane_subparsers = lane_parser.add_subparsers(dest="lane_command")
     lane_create_p = lane_subparsers.add_parser("create")
     lane_create_p.add_argument("name")
@@ -1601,18 +1628,18 @@ def main():
     lane_inspect_p.add_argument("name")
     lane_inspect_p.add_argument("--json", action="store_true")
 
-    subparsers.add_parser("lanes", help="List all Virtual Agent Lanes")
+    subparsers.add_parser("lanes", help=argparse.SUPPRESS)
 
-    integ_parser = subparsers.add_parser("integrate", help="Manage multi-lane integration candidates")
+    integ_parser = subparsers.add_parser("integrate", help=argparse.SUPPRESS)
     integ_subparsers = integ_parser.add_subparsers(dest="subcommand")
     integ_create = integ_subparsers.add_parser("create")
     integ_create.add_argument("lanes", nargs="+")
     integ_subparsers.add_parser("preview")
     integ_subparsers.add_parser("apply")
 
-    subparsers.add_parser("sessions", help="List all recorded agent sessions")
+    subparsers.add_parser("sessions", help=argparse.SUPPRESS)
 
-    session_parser = subparsers.add_parser("session", help="Manage and inspect agent sessions")
+    session_parser = subparsers.add_parser("session", help=argparse.SUPPRESS)
     session_subparsers = session_parser.add_subparsers(dest="session_command")
     sess_inspect_p = session_subparsers.add_parser("inspect")
     sess_inspect_p.add_argument("session_id")
