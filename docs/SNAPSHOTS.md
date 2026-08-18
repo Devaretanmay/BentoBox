@@ -1,57 +1,62 @@
 # BLAKE3 Snapshot & Differential Rollback Guide
 
-Compart provides fast, hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee workspace immutability between agent turns.
+Compart provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
 
 ---
 
 ## 1. How It Works
 
-1. **Manifest Generation**: Before an agent or tool step executes, `SnapshotManager` scans the workspace directory (excluding build and vendor directories like `node_modules`, `.venv`, `.git`) and computes BLAKE3 hashes for every file.
-2. **Execution Tracking**: The agent code runs inside its granted compartment.
-3. **Differential Restoration**: `restore()` compares the post-execution workspace against the snapshot manifest:
-   - Modified files are restored to their pre-run content.
+1. **Pre-Execution Manifest**: Before an agent or workflow step executes, `SnapshotManager` scans the workspace directory (excluding `.git`, `.venv`, `node_modules`, `target`) and computes 16-byte BLAKE3 hashes for every file.
+2. **Execution Tracking**: The agent runs inside its isolated kernel compartment.
+3. **Differential Restoration (`compart undo`)**:
+   - Modified files are restored to their exact pre-execution content.
    - Deleted files are recovered.
-   - Newly created untrusted files are purged.
+   - Newly created stray files are cleanly purged.
 
 ---
 
-## 2. Python SDK Usage
+## 2. CLI Usage (`compart undo`)
+
+```bash
+# Execute an agent
+compart claude
+
+# Inspect changes
+compart diff
+
+# Rollback physical files instantly if the agent corrupted code
+compart undo
+```
+
+---
+
+## 3. Python SDK Usage
 
 ```python
 from compart.sandbox.snapshot import SnapshotManager
 
 # Initialize manager for the target worktree
 snap = SnapshotManager(
-    workdir="/path/to/project",
-    snapshot_dir="/tmp/.compart_snapshots"
+    workdir=".",
+    snapshot_dir=".compart/snapshots/exec_101"
 )
 
-# Take initial snapshot
+# Take pre-execution snapshot
 file_count = snap.snapshot()
 print(f"Snapshotted {file_count} files.")
 
-# ... Execute untrusted agent steps ...
+# ... Execute agent or tool step ...
 
-# Differential rollback
+# Instant rollback of any altered files
 restored_count = snap.restore()
 print(f"Restored {restored_count} changed file(s).")
 
-# Clean up snapshot manifest files
+# Clean up snapshot files
 snap.cleanup()
 ```
 
 ---
 
-## 3. Automatic Agent Snapshotting (`AgentCompart`)
+## 4. Automatic Snapshotting in Workflows & Agent Sessions
 
-When using `AgentCompart`, snapshotting and differential file diff tracking are enabled automatically. Compartment execution results include structured diff data:
-
-```python
-from compart import AgentCompart
-
-agent = AgentCompart(workdir=".")
-result = agent.run()
-
-# Access tracked file changes
-print("Files modified during run:", result.diffs)
-```
+When using `compart claude`, `compart run <workflow>`, or `AgentCompart`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.

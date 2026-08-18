@@ -1,334 +1,189 @@
-# Compart v1.0.0
+# Compart v1.0.3
 
 [![PyPI version](https://img.shields.io/pypi/v/compart.svg)](https://pypi.org/project/compart/)
 [![License: ELv2](https://img.shields.io/badge/License-ELv2-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://pypi.org/project/compart/)
 
-> **Upcoming Roadmap:** 
-> - `@compart/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS).
+> **Works with your existing workflows and agents.  
+> Zero configuration required. It simply layers onto your current workflow.**
 
-**Compart is the control layer for AI agents and workflows.**
-
-*Compart lets you define, isolate, control, and observe what agents and workflows can access and do.*
-
-> **AI agents are moving from chat into real workflows, tools, codebases, and production systems. Compart gives developers a control layer to run them safely.**
-
-Don't replace your existing agent stack (Claude Code, Cursor, Codex, LangGraph, CrewAI, MCP tools). **Put it under Compart.**
+Compart is the **kernel-enforced control, isolation, and provenance layer for AI coding agents and multi-agent workflows**.
 
 ```text
-Claude Code ----+
-Codex ----------|
-Cursor ---------|
-LangGraph ------+--> COMPART --> OS
-CrewAI ---------|       |
-MCP Tools ------|       |-- Topology
-Custom Agents ───┘       ├── Policies
-                         ├── Compartments
-                         ├── Credentials
-                         ├── Network
-                         └── Behaviour
-```
-
-```python
-from compart import Compart
-from compart.compartments import Compartment, CompartmentConfig
-
-compart = Compart()
-compart.add(Compartment(
-    name="build",
-    fn=lambda ctx: {"status": "ok"},
-    config=CompartmentConfig(permissions=["fs_read", "fs_exec"]),
-))
-result = compart.run()
-print(result.status)  # "success"
+Claude Code ────┐
+OpenCode ───────┤
+Codex / Cursor ─┤
+LangGraph ──────┼───► COMPART ───► OS Kernel (Seatbelt / Landlock)
+CrewAI ─────────┤        │
+Custom Python ──┘        ├── PTY Supervisor (Native TUI)
+                         ├── Dynamic Multi-Agent Workflows
+                         ├── Deny-by-Default Credential Guard
+                         ├── BLAKE3 Snapshot Rollback (undo)
+                         └── Git Provenance Trailers (commit)
 ```
 
 ---
 
 ## Why Compart?
 
-Every developer and team is starting to run AI agents: Claude Code, Cursor, AutoGen, custom scripts, or MCP tool runners. But as agents move from simple chat into real codebases and production systems, they execute code and shell commands you did not write and cannot predict.
+AI agents are moving from chat interfaces into real codebases, terminals, and production pipelines. They execute code, edit files, and run shell commands you did not write and cannot predict.
 
 Existing isolation platforms take a narrow approach:
+- **Cloud VMs / MicroVMs (E2B, Daytona):** High latency (80–150ms+ boot), remote hosting, per-second cloud billing, data leaves the local machine.
+- **Docker Containers:** Heavy image builds, daemon dependencies, slow cold starts, complex file mounting.
+- **Interpreter Guards (`exec()` hooks):** Bypassable via C-extensions, subprocesses, or direct system calls.
 
-```text
-E2B / Daytona / Cloud VMs
-        ↓
-"Give my agent an isolated environment."
-
-Compart
-        ↓
-"Give me control over my agents and workflows."
-```
-
-*The kernel sandbox is what makes that control trustworthy.*
-
-Compart sits directly between your AI agents and your operating system kernel:
-
-- **Define, isolate, control, and observe.** Manage agent topology, credentials, filesystem boundaries, network access, and execution traces.
-- **Enforced by the kernel, not the interpreter.** A compartment cannot open a file it was not granted: even through a subprocess or direct syscall.
-- **Deny-by-default credential protection.** SSH keys (`~/.ssh`), cloud configs (`~/.aws`), git credentials, keychains, and browser data are blocked by default.
-- **Sub-millisecond kernel enforcement.** Sandboxing rules are applied natively on your OS kernel (Landlock on Linux, Seatbelt on macOS) without virtualization overhead.
-- **Declarative topology.** Manage permissions as code in `.compart/topology.json` so security rules are reviewable in Git PRs.
-
-## What you get
-
-| | |
-| :--- | :--- |
-| Kernel-enforced isolation | Landlock (Linux 5.13+) or Seatbelt (macOS) applied at the OS level. Once applied, it cannot be loosened : only tightened. |
-| Compartments | Named units of work with their own permissions, resource limits, and message routes. Compose pipelines, not walls. |
-| Deny-by-default policy | Worktree read-write, system paths read-only, everything else blocked. |
-| Credential protection | SSH keys, cloud configs, git credentials, keychains, and browser data denied by default. |
-| Network control | Full access or localhost-only, per compartment. |
-| Snapshots & rollback | Hash-based file snapshots; restore only the files that changed. Deleted files come back. |
-| Credential proxy | Route rules rewrite request paths and inject API keys from the environment. |
-| Output compression | Long compartment output is compressed before it is stored or returned. |
-| One core, two SDKs | Python and TypeScript wrappers over a single Rust core. |
-
-## Agent Workspace & Product Experience
-
-Compart presents your agent stack as a structured **Agent Workspace**:
-
-```text
-COMPART
-   │
-   ├── Agents & Workflows (Claude Code, Cursor, LangGraph, CrewAI, MCP)
-   ├── Workspace Topology (.compart/topology.json)
-   ├── Permissions & Boundaries (File, Network, Credentials)
-   └── OS Kernel Sandbox (Landlock on Linux / Seatbelt on macOS)
-```
-
-### The Agent Session View
-
-When an agent runs under Compart, execution is tracked as an **Agent Session**:
-
-```text
-Agent Session #42
-────────────────────────────────────────────────────────────────
-Agent       : Claude Code
-Task        : Fix authentication bug
-Workflow    : Research -> Build -> Test -> Review
-Compartment : Builder
-Permissions : [fs_read repo, fs_write src/, fs_exec tests, network blocked]
-Activity    :
-  [OK] Read auth.py
-  [OK] Modified auth.py
-  [OK] Executed pytest (14 passed)
-  [BLOCKED BY KERNEL] Attempted network request to external host
-Changes     : +42 / -18 lines
-Status      : Complete
-```
+**Compart gives you instant, native OS kernel-level control on your local machine with zero infrastructure.**
 
 ---
 
-## Security Model & Boundary Definitions
+## Two Core Workflows
 
-Compart enforces security at three distinct, explicit layers:
-
-| Layer | Type | Scope | Description |
-| :--- | :--- | :--- | :--- |
-| **Kernel Boundary** | **OS Process Sandbox** | Hard OS Boundary | Applied via Linux Landlock or macOS Seatbelt directly at the OS kernel. Restricts process syscalls, filesystem paths, and network access across the process and all child subprocesses. |
-| **Compartment Policy** | **Workflow Boundary** | Logical Topology | Defines granular permissions (`fs_read`, `fs_write`, `fs_exec`, `network`) and allowed communication edges between inner workflow steps. |
-| **Python Enforcer** | **Interpreter Guard** | Application Level | Intercepts Python stdlib calls (`builtins.open`, `os.*`, `subprocess.*`) inside Python-based compartment functions. |
-
----
-
-## Declarative Agent Workspace CLI
-
-Manage your agent workspace topology and govern CLI agents and workflows transparently:
+### 1. Interactive Coding Agents (Terminal TUI)
+Run your favorite interactive coding agent inside an isolated kernel sandbox with full native TUI support (colors, alternate screen, Ctrl+C, window resizing):
 
 ```bash
-# 1. Initialize an agent workspace
+cd my-project
 compart init
 
-# 2. Launch your favorite agent directly inside the kernel sandbox:
+# Launch Claude Code, OpenCode, or Codex directly:
 compart claude
 compart opencode
-
-# 3. Create a workflow branch and add all your scripts:
-compart -w document-pipeline
-compart step document-pipeline src/
-
-# 4. Run the multi-agent workflow DAG:
-compart run document-pipeline
-
-# 5. Review file changes, commit with provenance trailers, or undo:
-compart diff
-compart commit -m "Batch process invoices"
-compart undo
+compart codex
 ```
 
-For detailed CLI usage, see [`docs/CLI.md`](docs/CLI.md) and [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
-
-```python
-config = CompartmentConfig(permissions=["fs_read"])  # read-only
-
-with SandboxEnforcer(compart._current_policy):
-    open("file", "r")  # allowed
-    open("file", "w")  # PermissionError - no fs_write
-    os.remove("file")  # PermissionError
-    subprocess.run(...)  # PermissionError - no fs_exec
+When the agent finishes, review what changed or rollback instantly:
+```bash
+compart diff      # Inspect files created or modified by the agent
+compart commit    # Commit changes to Git with verified RFC-5322 provenance trailers
+compart undo      # Instantly restore files from BLAKE3 pre-execution snapshot
 ```
 
-The enforcer wraps 30+ Python stdlib functions (`builtins.open`, `os.*`, `subprocess.*`, `shutil.*`) and checks the active compartment policy before allowing any operation. On top of path permissions, a command blocklist stops dangerous commands (`rm -rf /`, `sudo`, `dd`, `mkfs`, pipes into shells) even when `fs_exec` is granted.
+---
 
-## Use cases
-
-Real scenarios with working code : sandboxing a CLI coding agent, REPL
-execution, credential handling under prompt injection, file rollback, and
-fan-out agentic workloads: [`docs/USE_CASES.md`](docs/USE_CASES.md).
-
-## SDKs
-
-One Rust core, two language wrappers. All compartment runtime logic (permission enforcement, the command blocklist, filesystem snapshots, credential proxy routing, and message routing) is implemented once in Rust and exposed identically in Python and TypeScript.
-
-## SDKs & Language Bindings
-
-One Rust native core, two language surface layers. All compartment runtime logic (permission enforcement, command blocklist, filesystem snapshots, credential proxy routing, and message routing) is implemented once in Rust (`src/`) and exposed identically in Python and TypeScript.
-
-| Capability | Python (`compart` - Live) | TypeScript (`@compart/sdk` - Upcoming) |
-| :--- | :--- | :--- |
-| **Status** | **Available on PyPI (`pip install compart`)** | **Upcoming NPM Release (`@compart/sdk`)** |
-| Permission checks | `SandboxEnforcer` | `runtimeCheckPermission` |
-| Command blocklist | `SandboxEnforcer` | `runtimeCheckCommand` |
-| Filesystem snapshots | `SnapshotManager` | `runtimeSnapshot` / `runtimeRestore` |
-| Credential routing | `CredentialProxy` / `RouteConfig` | `runtimeCredentialRewrite` |
-| Config validation | `Compart` / `CompartmentConfig` | `runtimeValidate` |
-| Message routing | `compart.edge()` / `compart.run()` | `runtimeCanRoute` |
-| Native Runtime Handle | `Compart` | `new Runtime(...)` |
-
-### Installation
+### 2. Custom Multi-Agent Workflows & Pipelines
+Turn existing Python scripts, LangChain chains, CrewAI agents, and AutoGen loops into sandboxed, dependency-chained DAG pipelines:
 
 ```bash
-# Python (Live on PyPI)
-pip install compart
+# 1. Create a workflow branch
+compart -w invoice-pipeline
 
-# TypeScript / Node.js (Upcoming Release)
-# npm install @compart/sdk
+# 2. Ingest your scripts (scans directory, auto-infers types & compartments)
+compart step invoice-pipeline src/
+
+# 3. Run the workflow DAG under kernel isolation
+compart run invoice-pipeline
 ```
 
-### Python SDK Example
+- **Topological DAG Runner:** Sequences steps and isolates each step in its designated compartment (`research`, `builder`, `network`, `tester`).
+- **Cascade Skip on Failure:** If an upstream step fails, dependent steps are cleanly `SKIPPED` to prevent cascading data corruption.
+- **Zero-Config Auto-Provisioning:** Standard compartments are automatically provisioned at runtime.
 
-The enforcer makes identical allow/deny decisions using standard permission tokens (`fs_read`, `fs_write`, `fs_exec`, `network`):
+---
+
+## Key Capabilities & Subsystems
+
+| Subsystem | Guarantee | Mechanism |
+| :--- | :--- | :--- |
+| **OS Kernel Sandbox** | Hard OS Process Isolation | Applied natively via macOS Seatbelt / Linux Landlock. Sub-millisecond startup, deny-by-default on system paths, child processes strictly inherit boundaries. |
+| **PTY Supervisor** | Full Native TUI Experience | Bridges pseudo-terminals, forwards window resize (`TIOCGWINSZ`), Ctrl+C (`SIGINT`), Ctrl+D (`EOF`), raw mode. |
+| **Credential Defense** | Deny-by-Default Protection | Host SSH keys (`~/.ssh`), cloud credentials (`~/.aws`, `~/.config/gcloud`), git credentials, keychains, and browser data are blocked by default. |
+| **BLAKE3 Snapshot Engine** | Physical Instant Rollback | Computes 16-byte BLAKE3 hashes across all workspace files before execution. `compart undo` restores modified/deleted files instantly. |
+| **Git Provenance Engine** | Auditability & Compliance | `compart commit` automatically attaches RFC-5322 metadata trailers (`Compart-Execution`, `Compart-Agent`, `Compart-Compartment`, `Compart-Security: clean`). |
+| **Credential Proxy** | Safe API Secret Routing | Rewrites requests and injects LLM API tokens (OpenAI, Anthropic) from host environment without exposing raw secrets to the agent. |
+| **Token Compression** | High-Speed Output Crushing | Rust compression engines (`SmartCrusher`, `LogCompressor`, `DiffCompressor`, `TextCrusher`) optimize context before returning outputs. |
+
+---
+
+## Installation
+
+Install Compart via PyPI:
+
+```bash
+pip install compart
+```
+
+*Requires Python 3.10+ on macOS (Apple Silicon / Intel) or Linux (x86_64 / aarch64).*
+
+---
+
+## Quickstart in 60 Seconds
+
+```bash
+# 1. Initialize your project workspace
+compart init
+
+# 2. Run an agent or ephemeral command
+compart exec -- python3 -c "print('Running safely inside kernel sandbox')"
+
+# 3. Build a multi-step pipeline
+compart -w market-research
+compart step market-research src/fetch_data.py --compartment research
+compart step market-research src/analyze_data.py --compartment builder
+compart run market-research
+
+# 4. Review and commit
+compart diff
+compart commit -m "Complete market analysis"
+```
+
+---
+
+## Python SDK Example
+
+Integrate Compart directly into your AI application:
 
 ```python
-import os
-from compart.sandbox.enforcer import SandboxEnforcer
+from compart import Compart, Compartment, CompartmentConfig
 
-policy = {"name": "readonly", "permissions": ["fs_read"]}
-with SandboxEnforcer(policy):
-    data = open("file.txt", "r").read()   # allowed
-    open("file.txt", "w").write("x")      # PermissionError: no fs_write
-    os.system("rm -rf /")                 # PermissionError: blocked command
+compart = Compart(workdir=".")
+
+# Add an isolated research step (read-only filesystem, network allowed)
+compart.add(Compartment(
+    name="researcher",
+    fn=lambda ctx: print("Researching data..."),
+    config=CompartmentConfig(permissions=["fs_read", "network"]),
+))
+
+# Add an isolated build step (read-write workspace, network blocked)
+compart.add(Compartment(
+    name="builder",
+    fn=lambda ctx: print("Building application..."),
+    config=CompartmentConfig(permissions=["fs_read", "fs_write", "fs_exec"]),
+))
+
+# Wire execution flow
+compart.edge("researcher", "builder")
+
+result = compart.run()
+print(f"Status: {result.status}")
 ```
 
-### TypeScript / Node.js SDK Example (Upcoming Release)
+---
 
-The `@compart/sdk` native NAPI-RS bindings interface directly with the Rust engine:
+## Language SDKs & Bindings
 
-```ts
-import * as compart from '@compart/sdk'
+| Language / SDK | Package | Status | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Python** | `compart` | **Live on PyPI (`v1.0.3`)** | Full CLI, Kernel Sandbox, PTY Supervisor, Snapshot Manager, Framework Hooks, Workflow Runner. |
+| **TypeScript / Node.js** | `@compart/sdk` | **Upcoming NPM Release** | Native NAPI-RS bindings for permission verification, command blocklist, and snapshot management. |
 
-// Native OS sandbox check
-if (compart.sandboxSupported()) {
-  // Permission verification
-  const allowed = compart.runtimeCheckPermission(
-    JSON.stringify({ permissions: ['fs_read'] }),
-    JSON.stringify(['fs_read']),
-  )
-
-  // Native command blocklist check
-  const safe = compart.runtimeCheckCommand('rm -rf /') // false (blocked)
-
-  // Topology runtime handle
-  const rt = new compart.Runtime(configs, JSON.stringify([['fetch', 'build']]))
-  console.log(rt.runOrder()) // ['fetch', 'build']
-}
-```
-
-For the complete TypeScript SDK reference, see [`docs/TYPESCRIPT_SDK.md`](docs/TYPESCRIPT_SDK.md).
+---
 
 ## Documentation Map
 
-- **[Product Validation Guide](docs/VALIDATION_GUIDE.md)**: 60-second test suite comparing agent execution with and without Compart.
-- **[Quickstart Guide](docs/QUICKSTART.md)**: 2-minute setup guide for CLI and Python SDK.
-- **[Declarative CLI Guide](docs/CLI.md)**: Infrastructure-as-Code workflow, `.compart/topology.json` schema, and Git PR security reviews.
-- **[Framework Integration Hooks](docs/FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangChain, LangGraph, CrewAI, AutoGen, and Data/RAG agents.
-- **[Zero-Trust Credential Proxy](docs/CREDENTIAL_PROXY.md)**: Path rewriting and secret masking for outbound LLM API requests.
-- **[BLAKE3 Snapshots & Worktree Rollback](docs/SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and differential file restoration.
-- **[Output Crusher & Token Compression](docs/COMPRESSION.md)**: Log crushing, JSON array compaction, and LLM token reduction.
-- **[TypeScript & Node.js SDK](docs/TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
-- **[CI/CD Security & Acceleration](docs/CI_INTEGRATION.md)**: GitHub Actions and CI runner security integration.
-- **[Real-World Use Cases](docs/USE_CASES.md)**: Security scenarios and agent sandboxing patterns.
+- **[Quickstart Guide](docs/QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
+- **[CLI Reference Guide](docs/CLI.md)**: Complete reference for all Compart CLI commands.
+- **[Agent Execution Guide](docs/AGENT_EXECUTION.md)**: Details on PTY supervision, terminal TUI agents, and isolation boundaries.
+- **[Framework Integration Hooks](docs/FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangGraph, LangChain, CrewAI, and AutoGen.
+- **[Credential Proxy & Secret Masking](docs/CREDENTIAL_PROXY.md)**: Safe API key injection and request routing.
+- **[BLAKE3 Snapshots & Rollback](docs/SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and physical restoration.
+- **[Output Compression & Token Crushing](docs/COMPRESSION.md)**: High-performance Rust engines for token optimization.
+- **[API Reference](docs/API_REFERENCE.md)**: Python SDK classes, methods, and configuration options.
+- **[Use Cases & Working Examples](docs/USE_CASES.md)**: Real-world security scenarios, prompt injection defense, and REPL sandboxing.
 
-## Framework hooks
-
-Run AI-agent code inside kernel-enforced compartments from any major agent framework. Hooks are dependency-light: each framework is optional and the hook degrades to a plain duck-typed object when it is absent.
-
-```python
-# LangGraph : wrap any node in a sandboxed compartment.
-from compart.hooks import CompartGraphNode
-
-def crunch(state, ctx):
-    open(f"{ctx.workdir}/out.txt", "w").write(state["value"].upper())
-    return {"done": True}
-
-node = CompartGraphNode(crunch, workdir=".")
-builder.add_edge(START, node.attach(builder))  # permissions ride on node metadata
-```
-
-```python
-# LangChain : a Python REPL tool that runs inside Compart, not exec().
-from compart.hooks import CompartPythonREPLTool
-tool = CompartPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
-tool.invoke("print(6 * 7)")
-```
-
-```python
-# CrewAI : replace the Docker code interpreter with a Compart one.
-from compart.hooks import CompartCodeInterpreterTool
-agent = Agent(tools=[CompartCodeInterpreterTool()], ...)
-```
-
-```python
-# AutoGen : runs each code block in a Compart compartment.
-from compart.hooks import CompartCodeExecutor, CodeBlock
-executor = CompartCodeExecutor()
-result = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
-print(result.exit_code, result.output)
-```
-
-```python
-# Data / RAG agent : isolated workspace, network blocked, no exfiltration.
-from compart.hooks import DataScienceSandboxHook
-hook = DataScienceSandboxHook()
-hook.mount_dataset("customers.csv")
-res = hook.run("import pandas as pd; df = pd.read_csv('customers.csv'); print(df.shape)")
-print(res.diffs)   # BLAKE3 file diffs the agent caused
-```
-
-```python
-# Plain CLI coding agent : sandbox any shell command or CLI agent.
-from compart.hooks import SandboxRunner
-res = SandboxRunner(workdir=".").run("claude -p 'fix the bug'")
-print(res.returncode, res.stdout, res.diffs)
-```
-
-Every hook returns stdout, stderr, an exit code and BLAKE3 file diffs so the
-agent context can react cleanly to what ran.
-
-## Development & Testing
-
-```bash
-# from the repository root, installs the package into your venv
-python -m venv .venv && source .venv/bin/activate
-pip install .
-
-# run the test suite (tests import the installed package)
-pytest
-```
-
-The test suite imports the **installed** package, not the source tree: the compiled native core (`_core`) ships inside the wheel, so the package must be installed before running tests.
+---
 
 ## License
 
-ELv2 (Elastic License 2.0). See [CHANGELOG.md](CHANGELOG.md) for release history.
+Compart is licensed under the [Elastic License 2.0 (ELv2)](LICENSE).

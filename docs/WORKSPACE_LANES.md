@@ -41,10 +41,10 @@ COMPART WORKSPACE
 ### 1. Running Concurrent Agent Lanes
 ```bash
 # Agent 1 (Claude Code) in 'auth-fix' lane
-compart wrap -c "Fix authentication bug" --lane auth-fix
+compart wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
 
 # Agent 2 (OpenCode) in 'logging' lane concurrently
-compart wrap -o "Add structured logging" --lane logging
+compart wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
 ```
 
 ### 2. Inspecting Workspace Lanes
