@@ -1,8 +1,8 @@
-# Compart Workspace Activation
+# Compart Agent Execution
 
 ## What it is
 
-When you run `compart init`, Compart turns your project directory into a **managed workspace**. You can launch your favorite agent directly or via shell PATH activation.
+When you run `compart init`, Compart turns your project directory into a **managed agent workspace**. You launch your favorite agent directly inside an isolated kernel sandbox.
 
 ---
 
@@ -11,43 +11,32 @@ When you run `compart init`, Compart turns your project directory into a **manag
 ```text
 compart init
 └── creates .compart/
-    ├── bin/
-    │   ├── claude     <- shim script
-    │   ├── codex      <- shim script
-    │   └── opencode   <- shim script
-    ├── activate       <- source to activate manually
     ├── config.yaml    <- workspace compartment policy
-    └── ...
+    ├── state/         <- runtime state
+    ├── snapshots/     <- BLAKE3 worktree diff snapshots
+    └── executions/    <- execution records
 
-Option A: Direct Launch (Recommended)
+Direct Execution:
   $ compart claude      -> Launches Claude in kernel sandbox
-
-Option B: Shell Activation
-  $ source .compart/activate
-  $ claude              -> Intercepted by .compart/bin/claude
+  $ compart opencode    -> Launches OpenCode in kernel sandbox
+  $ compart codex       -> Launches Codex in kernel sandbox
 ```
 
 ---
 
-## Direct Launch vs Activation
+## Running Interactive Coding Agents
 
-### Option 1: Direct Command (Zero Setup)
 ```bash
 compart claude
 compart opencode
+compart codex
 ```
 
-### Option 2: Session Activation (One-time per shell)
-```bash
-source .compart/activate
-
-# Or with direnv:
-direnv allow
-
-# Now type agent commands normally:
-claude
-opencode
-```
+Each interactive agent runs with:
+- Full native TUI support (colors, alternate screen, Ctrl+C, Ctrl+D, window resize).
+- Hard OS-level kernel isolation (Seatbelt on macOS / Landlock on Linux).
+- Deny-by-default credential protection (`~/.ssh`, `~/.aws`, git credentials blocked).
+- Automatic BLAKE3 pre-execution snapshots for physical instant rollback (`compart undo`).
 
 ---
 
@@ -74,7 +63,7 @@ SECURITY
 
 ## Running Multi-Agent Workflows
 
-Run a declared workflow DAG or workflow file:
+Run a declared workflow DAG:
 
 ```bash
 compart run feature-development

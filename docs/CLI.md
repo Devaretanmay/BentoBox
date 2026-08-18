@@ -19,23 +19,13 @@ Initializes a `.compart/` control plane in the current directory:
 
 ## 2. Interactive Agent Execution
 
-### Direct Agent Shortcut
+### Direct Agent Execution
 Launch any interactive coding agent inside an isolated kernel sandbox with full native TUI support (colors, Ctrl+C, interactive prompts):
 
 ```bash
 compart claude
 compart opencode
 compart codex
-```
-
-### Transparent PATH Activation (Optional)
-If you prefer running agents without typing `compart`, activate your shell session:
-
-```bash
-source .compart/activate
-# or use direnv: direnv allow
-
-claude    # automatically governed by Compart
 ```
 
 ---
