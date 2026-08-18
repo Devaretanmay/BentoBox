@@ -1009,46 +1009,28 @@ def _infer_step_properties(
         base = os.path.splitext(os.path.basename(target_clean))[0]
         step_name = name_opt or base.replace("_", "-")
         py_bin = "python3" if shutil.which("python3") else "python"
-        if target_clean.endswith(".py"):
-            command = f"{py_bin} {target_clean}"
-        elif target_clean.endswith(".sh"):
-            command = f"bash {target_clean}"
-        elif target_clean.endswith((".js", ".ts")):
-            command = f"node {target_clean}"
-        else:
-            command = target_clean
-
+        runners = {".py": f"{py_bin} {target_clean}", ".sh": f"bash {target_clean}", ".js": f"node {target_clean}", ".ts": f"node {target_clean}"}
+        command = runners.get(os.path.splitext(target_clean)[1], target_clean)
         is_agent = any(k in target_clean.lower() for k in ["agent", "claude", "crewai", "langchain", "llm", "rag", "gpt", "prompt"])
         step_type = type_opt or ("agent" if is_agent else "process")
-
-        if comp_opt:
-            compartment = comp_opt
-        elif any(k in target_clean.lower() for k in ["ocr", "scrape", "extract", "read", "audit", "search", "scan"]):
-            compartment = "research"
-        elif any(k in target_clean.lower() for k in ["build", "patch", "rag", "excel", "write", "generate", "code"]):
-            compartment = "builder"
-        elif any(k in target_clean.lower() for k in ["email", "send", "fetch", "api", "download", "http", "notify"]):
-            compartment = "network"
-        elif any(k in target_clean.lower() for k in ["test", "verify", "check", "pytest"]):
-            compartment = "tester"
-        else:
-            compartment = "default"
     else:
         first_word = target_clean.split()[0] if target_clean else "step"
         step_name = name_opt or os.path.basename(first_word).replace("_", "-")
         command = target_clean
         is_agent = any(k in target_clean.lower() for k in ["claude", "opencode", "codex", "agent", "crewai", "langchain"])
         step_type = type_opt or ("agent" if is_agent else "process")
-        if comp_opt:
-            compartment = comp_opt
-        elif "pytest" in target_clean or "test" in target_clean:
-            compartment = "tester"
-        elif any(k in target_clean for k in ["curl", "fetch", "http", "email"]):
-            compartment = "network"
-        elif any(k in target_clean for k in ["read", "search", "scan"]):
-            compartment = "research"
-        else:
-            compartment = "default"
+
+    if comp_opt:
+        compartment = comp_opt
+    else:
+        tc = target_clean.lower()
+        comp_map = {
+            "research": ["ocr", "scrape", "extract", "read", "audit", "search", "scan"],
+            "builder": ["build", "patch", "rag", "excel", "write", "generate", "code"],
+            "network": ["email", "send", "fetch", "api", "download", "http", "notify", "curl"],
+            "tester": ["test", "verify", "check", "pytest"],
+        }
+        compartment = next((c for c, keywords in comp_map.items() if any(k in tc for k in keywords)), "default")
 
     return step_name, command, step_type, compartment
 
