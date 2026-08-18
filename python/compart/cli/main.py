@@ -1067,6 +1067,32 @@ def cmd_workflow_branch(args):
     print(f"  To execute:    compart workflow run {name}")
 
 
+def cmd_workflow_show(args):
+    """Inspect and visualize declared steps in a workflow branch."""
+    ws_root = find_workspace_root() or os.path.abspath(".")
+    cfg_path = os.path.join(ws_root, ".compart", "config.yaml")
+    cfg = load_config(cfg_path) if os.path.exists(cfg_path) else None
+    name = getattr(args, "name", None)
+    if not name:
+        wfs = sorted(cfg.workflows.keys()) if cfg and cfg.workflows else []
+        print(f"Declared Workflows ({len(wfs)}):")
+        for w in wfs:
+            node_count = len(cfg.workflows[w].nodes)
+            print(f"  - {w:<20} ({node_count} node(s))")
+        return
+
+    if cfg and name in cfg.workflows:
+        wf = cfg.workflows[name]
+        print(f"Workflow: {name} ({len(wf.nodes)} node(s))\n")
+        for nname, node in wf.nodes.items():
+            deps = f"depends_on={node.depends_on}" if node.depends_on else "entrypoint"
+            print(f"  {nname:<18} [{node.type}] -> {node.compartment:<12} ({deps})")
+            print(f"      command: {node.command}")
+        print()
+    else:
+        print(f"Error: Workflow '{name}' not found.")
+
+
 def cmd_step(args):
     """Add step(s) to a workflow branch with smart auto-inferred properties."""
     ws_root = find_workspace_root() or os.path.abspath(".")
@@ -1500,6 +1526,12 @@ def main():
         default=None,
         help="Create a new workflow branch (e.g. compart -w invoice-pipeline)",
     )
+    parser.add_argument(
+        "--run",
+        dest="run_flag",
+        default=None,
+        help="Run a workflow DAG directly (e.g. compart --run invoice-pipeline)",
+    )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     subparsers.add_parser("init", help="Initialize a Compart workspace in the current directory")
@@ -1618,10 +1650,18 @@ def main():
     wf_step_p.add_argument("--type", default=None, choices=["process", "agent"], help="Step type")
     wf_step_p.add_argument("--depends-on", default=None, help="Comma-separated dependencies")
 
+    for alias in ("show", "inspect", "info", "list"):
+        wf_s_p = workflow_subparsers.add_parser(alias, help="Inspect declared workflow steps and DAG")
+        wf_s_p.add_argument("name", nargs="?", default=None, help="Workflow name")
+
     shim_parser = subparsers.add_parser("_exec_shim", help=argparse.SUPPRESS)
     shim_parser.add_argument("shim_args", nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
+
+    if getattr(args, "run_flag", None):
+        cmd_run(argparse.Namespace(target=args.run_flag, compartment="default", verbose=False))
+        return
 
     if getattr(args, "workflow_flag", None):
         cmd_workflow_branch(argparse.Namespace(name=args.workflow_flag))
@@ -1686,6 +1726,8 @@ def main():
             cmd_workflow_branch(args)
         elif wcmd == "step":
             cmd_step(args)
+        elif wcmd in ("show", "inspect", "info", "list"):
+            cmd_workflow_show(args)
         else:
             workflow_parser.print_help()
     elif args.command == "_exec_shim":

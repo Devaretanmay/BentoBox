@@ -193,26 +193,27 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
             workflows[wname] = wf
 
     ws_root = os.path.dirname(os.path.dirname(os.path.abspath(config_path)))
-    wf_dir = os.path.join(ws_root, "workflows")
-    if os.path.isdir(wf_dir) and _YAML_AVAILABLE:
-        for fname in sorted(os.listdir(wf_dir)):
-            if fname.endswith((".yaml", ".yml")):
-                wname = os.path.splitext(fname)[0]
-                try:
-                    with open(os.path.join(wf_dir, fname), encoding="utf-8") as wf_file:
-                        wf_raw = yaml.safe_load(wf_file) or {}
-                    declared_name = wf_raw.get("name") or wname
-                    wf = _parse_workflow_data(declared_name, wf_raw)
-                    if wf:
-                        workflows[declared_name] = wf
-                        if declared_name != wname:
-                            workflows[wname] = wf
-                except Exception as exc:
-                    warnings.warn(
-                        f"Failed to parse workflow file workflows/{fname}: {exc}",
-                        RuntimeWarning,
-                        stacklevel=2,
-                    )
+    for dir_name in ("workflows", os.path.join(".compart", "workflows")):
+        wf_dir = os.path.join(ws_root, dir_name)
+        if os.path.isdir(wf_dir) and _YAML_AVAILABLE:
+            for fname in sorted(os.listdir(wf_dir)):
+                if fname.endswith((".yaml", ".yml")):
+                    wname = os.path.splitext(fname)[0]
+                    try:
+                        with open(os.path.join(wf_dir, fname), encoding="utf-8") as wf_file:
+                            wf_raw = yaml.safe_load(wf_file) or {}
+                        declared_name = wf_raw.get("name") or wname
+                        wf = _parse_workflow_data(declared_name, wf_raw)
+                        if wf:
+                            workflows[declared_name] = wf
+                            if declared_name != wname:
+                                workflows[wname] = wf
+                    except Exception as exc:
+                        warnings.warn(
+                            f"Failed to parse workflow file {dir_name}/{fname}: {exc}",
+                            RuntimeWarning,
+                            stacklevel=2,
+                        )
 
     return WorkspaceConfig(
         compartments=compartments,
