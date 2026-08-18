@@ -1,6 +1,6 @@
 [package]
 name = "compart-core"
-version = "1.0.1"
+version = "1.0.3"
 edition = "2021"
 license = "ELv2"
 description = "Compart - kernel-level sandbox with compartmentalized isolated execution (Rust core)"

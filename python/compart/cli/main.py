@@ -620,6 +620,7 @@ def cmd_exec(args):
         compartment_id=compartment.name,
         policy=policy,
     )
+    execution.snapshot_dir = _snapshot_worktree(ws_root, execution.execution_id)
     execution.start()
     exec_mgr.save(execution)
 
@@ -935,6 +936,7 @@ def _run_declared_workflow(ws_root: str, wf: WorkflowConfig, cfg: WorkspaceConfi
             continue
 
         comp = cfg.compartments[n.compartment]
+        ex.snapshot_dir = _snapshot_worktree(ws_root, ex.execution_id)
         ex.start()
         exec_mgr.save(ex)
         print(f"  [RUN]  {n.name:<16} running in '{n.compartment}' ...")
@@ -1052,8 +1054,9 @@ def _infer_step_properties(
     if is_file:
         base = os.path.splitext(os.path.basename(target_clean))[0]
         step_name = name_opt or base.replace("_", "-")
+        py_bin = "python3" if shutil.which("python3") else "python"
         if target_clean.endswith(".py"):
-            command = f"python {target_clean}"
+            command = f"{py_bin} {target_clean}"
         elif target_clean.endswith(".sh"):
             command = f"bash {target_clean}"
         elif target_clean.endswith((".js", ".ts")):
