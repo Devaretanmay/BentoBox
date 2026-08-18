@@ -1,99 +1,116 @@
 # Compart CLI Reference & User Guide
 
-The Compart CLI is the control layer manager for AI agents and workflows. It provides a transparent wrapper and declarative workspace topology manager for kernel-enforced agent execution.
+Compart is the runtime and control layer for AI coding agents and custom agentic workflows. It layers transparently onto your existing tools with zero configuration.
 
 ---
 
-## 1. Control-Plane Directory Structure
-
-Running `compart init` creates a hidden `.compart/` control plane in your project directory:
-
-```text
-.compart/
-├── topology.json    <-- Declarative workspace topology (versioned in Git)
-├── sessions/        <-- Persisted AgentSession objects
-├── state/           <-- Local workspace runtime state
-├── logs/            <-- Execution logs
-└── snapshots/       <-- BLAKE3 file diff snapshots
-```
-
----
-
-## 2. Transparent Agent Wrapper Commands
-
-### `compart wrap`
-Transparently govern any CLI agent (Claude Code, Cursor, Codex, custom scripts) in a managed `AgentSession` under OS kernel sandbox isolation.
-
-```bash
-compart wrap --agent "Claude Code" --task "Fix auth bug" -- claude -p "fix the bug"
-```
-
-### `compart sessions`
-List all recorded agent sessions in the workspace.
-
-```bash
-compart sessions
-```
-
-### `compart session inspect <session_id>`
-Inspect structured activity logs and BLAKE3 file diffs for a given session.
-
-```bash
-compart session inspect sess_1723635840000
-compart session inspect sess_1723635840000 --json
-```
-
-### `compart session rollback <session_id>`
-Roll back the workspace files to the exact state prior to that session.
-
-```bash
-compart session rollback sess_1723635840000
-```
-
----
-
-## 3. Declarative Topology Commands
-
-### `compart init`
-Initialize a new `.compart/` project directory and default `topology.json`.
+## 1. Quick Workspace Setup
 
 ```bash
 compart init
 ```
 
-### `compart compartment create <name>`
-Declare a new inner compartment in `topology.json`.
+Initializes a `.compart/` control plane in the current directory:
+- Detects installed agents (Claude, Codex, OpenCode, Cursor, Aider).
+- Generates safe default policies in `.compart/config.yaml`.
+- Prepares execution tracking and snapshot storage.
+
+---
+
+## 2. Interactive Agent Execution
+
+### Direct Agent Shortcut
+Launch any interactive coding agent inside an isolated kernel sandbox with full native TUI support (colors, Ctrl+C, interactive prompts):
 
 ```bash
-compart compartment create Research
-compart compartment create Builder
+compart claude
+compart opencode
+compart codex
 ```
 
-### `compart connect <source> <target>`
-Declare a directed communication path between two compartments in `topology.json`.
+### Transparent PATH Activation (Optional)
+If you prefer running agents without typing `compart`, activate your shell session:
 
 ```bash
-compart connect Research Builder
+source .compart/activate
+# or use direnv: direnv allow
+
+claude    # automatically governed by Compart
 ```
 
-### `compart inspect [--json]`
-Display the declared topology. Pass `--json` to output raw JSON for `jq` or CI scripts.
+---
+
+## 3. Agentic Workflows (Git-Style)
+
+### `compart -w <name>`
+Create a new workflow branch in `workflows/<name>.yaml`:
 
 ```bash
-compart inspect
-compart inspect --json
+compart -w invoice-pipeline
 ```
 
-### `compart run`
-Materializes `topology.json` into an ephemeral isolated OS kernel sandbox (macOS Seatbelt / Linux Landlock), executes the configured compartments, and releases the runtime.
+### `compart step <workflow> <target>`
+Add steps to your workflow. Point Compart at an individual file, a command, or an entire directory:
 
 ```bash
-compart run
+# Add a single script with auto-inferred compartment
+compart step invoice-pipeline src/ocr_scrape.py
+
+# Add an entire directory (scans and auto-chains scripts)
+compart step invoice-pipeline src/
+
+# Add a test or shell command
+compart step invoice-pipeline "pytest tests/" --compartment tester
 ```
 
-### `compart exec -- <command>`
-Execute a single command inside an ephemeral kernel sandbox without initializing a project file.
+### `compart run <name>`
+Execute the declared workflow DAG under kernel isolation:
+
+```bash
+compart run invoice-pipeline
+```
+
+---
+
+## 4. Change Management & Review Surface
+
+### `compart diff`
+Inspect file changes made across agent executions:
+
+```bash
+compart diff
+compart diff --unapplied
+compart diff --execution exec_1787056334504
+```
+
+### `compart commit [-m "message"]`
+Promote and commit agent execution changes to Git with structured RFC-5322 metadata trailers:
+
+```bash
+compart commit -m "Process batch invoices"
+```
+
+### `compart undo`
+Physically restore the workspace to its exact state before the execution ran:
+
+```bash
+compart undo
+```
+
+### `compart status`
+Display live workspace status, active executions, virtual lanes, and security events:
+
+```bash
+compart status
+```
+
+---
+
+## 5. Ephemeral Execution (`compart exec`)
+
+Run any arbitrary command inside a governed compartment:
 
 ```bash
 compart exec -- python3 script.py
+compart exec --compartment network -- curl https://api.example.com
 ```

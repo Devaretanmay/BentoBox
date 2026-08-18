@@ -1,16 +1,16 @@
-"""AgentSession Primitive & Session Management Engine.
+"""AgentSession Domain Primitive & Persistent Engine.
 
-Represents an agent execution session as a first-class object, capturing:
-- Agent Identity & Task
-- Compartment & Permissions
-- Activity Logs (OK vs BLOCKED_BY_KERNEL vs BLOCKED_BY_POLICY)
-- BLAKE3 File Diff Manifests
-- Workspace Rollback
+Represents an agent execution session as a first-class domain object with invariants:
+- 1 AgentSession -> 1 Agent
+- 1 AgentSession -> 1 Lane
+- 1 Lane -> 1 Compartment execution boundary
+- 1 Workspace -> Many Lanes & Sessions
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 
@@ -18,92 +18,156 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 from ..sandbox.snapshot import SnapshotManager
 
+_logger = logging.getLogger("compart.session")
+
+
+class SessionStatus:
+    CREATED = "CREATED"
+    STARTING = "STARTING"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    ROLLED_BACK = "ROLLED_BACK"
+
+
 @dataclass
-class AgentSessionAction:
-    """Single activity log entry within an AgentSession."""
+class SessionEvent:
+    """Structured lifecycle event in the AgentSession stream."""
     timestamp: float
-    action_type: str
-    target: str
-    status: str  # "OK", "BLOCKED_BY_KERNEL", "BLOCKED_BY_POLICY"
-    details: str = ""
+    name: str  # e.g., "session.created", "tool.started", "permission.allowed", "permission.denied", "file.changed"
+    payload: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
 
 @dataclass
 class AgentSession:
-    """First-class primitive representing an agent execution session."""
+    """First-class persistent domain primitive representing an agent session."""
     session_id: str
-    agent_name: str
-    task: str
-    workflow_step: str = "Execution"
-    compartment_name: str = "AgentTask"
-    permissions: List[str] = field(default_factory=lambda: ["fs_read", "fs_exec"])
+    workspace_id: str = "default_workspace"
+    lane_id: str = "default_lane"
+    agent: str = "Claude Code"
+    command: str = ""
+    task: str = ""
+    status: str = SessionStatus.CREATED
+    started_at: float = field(default_factory=time.time)
+    finished_at: Optional[float] = None
+    parent_session: Optional[str] = None
+    compartment_id: str = "AgentTask"
+    policy: Dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_exec"]})
+    events: List[Dict[str, Any]] = field(default_factory=list)
+    checkpoints: List[Dict[str, Any]] = field(default_factory=list)
+    changes: List[Dict[str, Any]] = field(default_factory=list)
+    result: Dict[str, Any] = field(default_factory=dict)
+    
+    # Backwards compatibility attributes
     actions: List[Dict[str, Any]] = field(default_factory=list)
     diffs: List[Dict[str, str]] = field(default_factory=list)
-    status: str = "running"  # "running", "completed", "failed", "rolled_back"
-    started_at: float = field(default_factory=time.time)
-    ended_at: Optional[float] = None
     returncode: int = 0
-    snapshot_manifest: Optional[str] = None
+
+    @property
+    def agent_name(self) -> str:
+        return self.agent
+
+    @property
+    def compartment_name(self) -> str:
+        return self.compartment_id
+
+    def emit_event(self, event_name: str, payload: Optional[Dict[str, Any]] = None) -> None:
+        """Append a structured event to the session stream."""
+        event = SessionEvent(
+            timestamp=time.time(),
+            name=event_name,
+            payload=payload or {}
+        )
+        self.events.append(event.to_dict())
 
     def log_action(self, action_type: str, target: str, status: str = "OK", details: str = "") -> None:
-        """Record an activity event in the session log."""
-        action = AgentSessionAction(
-            timestamp=time.time(),
-            action_type=action_type,
-            target=target,
-            status=status,
-            details=details,
-        )
-        self.actions.append(action.to_dict())
+        """Legacy helper mapping log actions to structured events."""
+        event_name = "permission.allowed" if status == "OK" else "permission.denied"
+        self.emit_event(event_name, {"action_type": action_type, "target": target, "details": details})
+        self.actions.append({
+            "timestamp": time.time(),
+            "action_type": action_type,
+            "target": target,
+            "status": status,
+            "details": details,
+        })
+
+    def create_checkpoint(self, name: str, snapshot_manifest: Optional[str] = None) -> Dict[str, Any]:
+        """Record a time-travel checkpoint for this session."""
+        cp = {
+            "checkpoint_id": f"cp_{int(time.time() * 1000)}",
+            "name": name,
+            "timestamp": time.time(),
+            "snapshot_manifest": snapshot_manifest,
+        }
+        self.checkpoints.append(cp)
+        self.emit_event("checkpoint.created", cp)
+        return cp
+
+    def start(self) -> None:
+        self.status = SessionStatus.RUNNING
+        self.started_at = time.time()
+        self.emit_event("session.started", {"agent": self.agent, "task": self.task})
 
     def complete(self, returncode: int = 0, diffs: Optional[List[Dict[str, str]]] = None) -> None:
-        """Mark session as completed cleanly."""
+        """Mark session as finished cleanly."""
         self.returncode = returncode
-        self.ended_at = time.time()
-        self.status = "completed" if returncode == 0 else "failed"
+        self.finished_at = time.time()
+        self.status = SessionStatus.COMPLETED if returncode == 0 else SessionStatus.FAILED
         if diffs is not None:
             self.diffs = diffs
+            self.changes = diffs
+        self.result = {"returncode": returncode, "diff_count": len(self.diffs)}
+        event_name = "session.completed" if returncode == 0 else "session.failed"
+        self.emit_event(event_name, self.result)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        # Ensure agent_name backwards compatibility for legacy callers
+        d["agent_name"] = self.agent
+        d["compartment_name"] = self.compartment_id
+        d["permissions"] = self.policy.get("permissions", ["fs_read", "fs_exec"])
+        d["ended_at"] = self.finished_at
+        return d
 
     def format_ascii_view(self) -> str:
         """Render session details as a structured ASCII view."""
-        duration = round((self.ended_at or time.time()) - self.started_at, 2)
+        duration = round((self.finished_at or time.time()) - self.started_at, 2)
         lines = [
             f"================================================================",
             f"              COMPART AGENT SESSION #{self.session_id}          ",
             f"================================================================",
-            f"Agent       : {self.agent_name}",
+            f"Workspace   : {self.workspace_id}",
+            f"Lane        : {self.lane_id}",
+            f"Agent       : {self.agent}",
             f"Task        : {self.task}",
-            f"Workflow    : {self.workflow_step}",
-            f"Compartment : {self.compartment_name}",
-            f"Permissions : {self.permissions}",
-            f"Status      : {self.status.upper()} (Exit code: {self.returncode})",
+            f"Compartment : {self.compartment_id}",
+            f"Permissions : {self.policy.get('permissions', [])}",
+            f"Status      : {self.status} (Exit code: {self.returncode})",
             f"Duration    : {duration}s",
             f"----------------------------------------------------------------",
-            f"Activity Log:",
+            f"Event Stream ({len(self.events)} events):",
         ]
 
-        if not self.actions:
-            lines.append("  (No activity logged)")
+        if not self.events:
+            lines.append("  (No events recorded)")
         else:
-            for act in self.actions:
-                st = act.get("status", "OK")
-                target = act.get("target", "")
-                atype = act.get("action_type", "")
-                details = act.get("details", "")
-                detail_str = f": {details}" if details else ""
-                lines.append(f"  [{st}] {atype} -> {target}{detail_str}")
+            for ev in self.events[-10:]:  # show latest 10
+                name = ev.get("name", "")
+                payload = ev.get("payload", {})
+                lines.append(f"  [{name}] {payload}")
 
         lines.append("----------------------------------------------------------------")
-        lines.append(f"Changes ({len(self.diffs)} file(s)):")
-        if not self.diffs:
+        lines.append(f"Changes ({len(self.changes)} file(s)):")
+        if not self.changes:
             lines.append("  (No file changes detected)")
         else:
-            for d in self.diffs:
+            for d in self.changes:
                 lines.append(f"  {d.get('status', 'modified').upper()}: {d.get('path', '')}")
         lines.append("================================================================")
         return "\n".join(lines)
@@ -120,22 +184,38 @@ class SessionManager:
     def _session_file(self, session_id: str) -> str:
         return os.path.join(self.sessions_dir, f"{session_id}.json")
 
+    def _next_id(self, prefix: str) -> str:
+        """Millisecond-timestamp id, disambiguated when created in the same ms."""
+        base = f"{prefix}_{int(time.time() * 1000)}"
+        candidate = base
+        n = 1
+        while os.path.exists(self._session_file(candidate)):
+            candidate = f"{base}_{n}"
+            n += 1
+        return candidate
+
     def create_session(
         self,
         agent_name: str = "Claude Code",
         task: str = "Agent Task",
         compartment_name: str = "AgentTask",
         permissions: Optional[List[str]] = None,
+        lane_id: str = "default_lane",
     ) -> AgentSession:
         """Create and persist a new AgentSession."""
-        session_id = f"sess_{int(time.time() * 1000)}"
+        session_id = self._next_id("sess")
+        perms = permissions or ["fs_read", "fs_exec"]
         session = AgentSession(
             session_id=session_id,
-            agent_name=agent_name,
+            workspace_id=os.path.basename(self.workdir),
+            lane_id=lane_id,
+            agent=agent_name,
             task=task,
-            compartment_name=compartment_name,
-            permissions=permissions or ["fs_read", "fs_exec"],
+            compartment_id=compartment_name,
+            policy={"permissions": perms},
+            status=SessionStatus.CREATED
         )
+        session.emit_event("session.created", {"agent": agent_name, "lane_id": lane_id})
         self.save_session(session)
         return session
 
@@ -153,7 +233,18 @@ class SessionManager:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            return AgentSession(**data)
+            # Map legacy field names if necessary
+            if "agent_name" in data and "agent" not in data:
+                data["agent"] = data.pop("agent_name")
+            if "compartment_name" in data and "compartment_id" not in data:
+                data["compartment_id"] = data.pop("compartment_name")
+            if "ended_at" in data and "finished_at" not in data:
+                data["finished_at"] = data.pop("ended_at")
+            
+            # Filter unknown fields for AgentSession
+            valid_fields = AgentSession.__dataclass_fields__.keys()
+            filtered = {k: v for k, v in data.items() if k in valid_fields}
+            return AgentSession(**filtered)
         except Exception:
             return None
 
@@ -172,13 +263,33 @@ class SessionManager:
         return sessions
 
     def rollback_session(self, session_id: str) -> bool:
-        """Roll back workspace using snapshot manager."""
+        """Roll back the workspace to the session's pre-execution snapshot.
+
+        Uses the most recent checkpoint that carries a ``snapshot_manifest``
+        (taken by the CLI before the session ran).  Returns False when the
+        session is unknown or no snapshot checkpoint exists — never a silent
+        no-op.
+        """
         session = self.get_session(session_id)
         if not session:
             return False
 
-        snap = SnapshotManager(workdir=self.workdir)
+        snap_dir = None
+        for cp in reversed(session.checkpoints):
+            manifest = cp.get("snapshot_manifest")
+            if manifest and os.path.isdir(manifest):
+                snap_dir = manifest
+                break
+        if not snap_dir:
+            _logger.warning(
+                "No snapshot checkpoint for session %s; nothing to restore",
+                session_id,
+            )
+            return False
+
+        snap = SnapshotManager(workdir=self.workdir, snapshot_dir=snap_dir)
         snap.restore()
-        session.status = "rolled_back"
+        session.status = SessionStatus.ROLLED_BACK
+        session.emit_event("session.rolled_back", {"session_id": session_id})
         self.save_session(session)
         return True

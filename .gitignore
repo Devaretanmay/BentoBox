@@ -30,3 +30,4 @@ sdk/typescript/sdk-darwin-*/
 .opencode/
 .agents/
 .claude/
+.envrc

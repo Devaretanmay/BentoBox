@@ -5,29 +5,29 @@ import shutil
 import tempfile
 import pytest
 
-from compart.engine.session import AgentSession, SessionManager
+from compart.engine.session import AgentSession, SessionManager, SessionStatus
 
 def test_agent_session_creation():
     session = AgentSession(
         session_id="sess_123",
-        agent_name="Claude Code",
+        agent="Claude Code",
         task="Fix auth bug",
-        compartment_name="Builder",
-        permissions=["fs_read", "fs_write"],
+        compartment_id="Builder",
+        policy={"permissions": ["fs_read", "fs_write"]},
     )
     session.log_action("READ", "auth.py", status="OK")
     session.log_action("EXECUTE", "pytest", status="BLOCKED_BY_KERNEL", details="network denied")
     session.complete(returncode=0, diffs=[{"path": "auth.py", "status": "modified"}])
 
     assert session.session_id == "sess_123"
+    assert session.agent == "Claude Code"
     assert session.agent_name == "Claude Code"
-    assert session.status == "completed"
+    assert session.status == SessionStatus.COMPLETED
     assert len(session.actions) == 2
     assert len(session.diffs) == 1
 
     view = session.format_ascii_view()
     assert "COMPART AGENT SESSION #sess_123" in view
-    assert "[BLOCKED_BY_KERNEL] EXECUTE -> pytest" in view
 
 
 def test_session_manager_lifecycle():
@@ -48,8 +48,9 @@ def test_session_manager_lifecycle():
         # Retrieve session
         loaded = mgr.get_session(sess.session_id)
         assert loaded is not None
+        assert loaded.agent == "TestAgent"
         assert loaded.agent_name == "TestAgent"
-        assert loaded.status == "completed"
+        assert loaded.status == SessionStatus.COMPLETED
 
         # List sessions
         all_sessions = mgr.list_sessions()

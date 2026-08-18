@@ -33,7 +33,7 @@ print(f"  [OK] Modified auth.py ({len(res.diffs)} file change detected)")
 # 3. Attempting host SSH key read (blocked)
 try:
     with open(os.path.expanduser("~/.ssh/id_rsa"), "r") as f:
-        print("  ⚠️ EXPLOIT: SSH Key leaked!")
+        print("  [EXPLOIT]: SSH Key leaked!")
 except Exception as exc:
     print(f"  [BLOCKED BY KERNEL] Attempted access to ~/.ssh/id_rsa: {exc}")
 

@@ -15,12 +15,12 @@
 Don't replace your existing agent stack (Claude Code, Cursor, Codex, LangGraph, CrewAI, MCP tools). **Put it under Compart.**
 
 ```text
-Claude Code ─────┐
-Codex ───────────┤
-Cursor ──────────┤
-LangGraph ───────┼──→ COMPART ──→ OS
-CrewAI ──────────┤       │
-MCP Tools ───────┤       ├── Topology
+Claude Code ----+
+Codex ----------|
+Cursor ---------|
+LangGraph ------+--> COMPART --> OS
+CrewAI ---------|       |
+MCP Tools ------|       |-- Topology
 Custom Agents ───┘       ├── Policies
                          ├── Compartments
                          ├── Credentials
@@ -134,28 +134,30 @@ Compart enforces security at three distinct, explicit layers:
 
 ## Declarative Agent Workspace CLI
 
-Manage your agent workspace topology and govern CLI agents transparently:
+Manage your agent workspace topology and govern CLI agents and workflows transparently:
 
 ```bash
 # 1. Initialize an agent workspace
 compart init
 
-# 2. Transparently govern Claude Code under OS kernel sandbox with -c shorthand:
-compart wrap -c "Fix authentication bug"
-# or with task in brackets:
-compart wrap -c [Fix authentication bug]
+# 2. Launch your favorite agent directly inside the kernel sandbox:
+compart claude
+compart opencode
 
-# 3. List recorded agent sessions
-compart sessions
+# 3. Create a workflow branch and add all your scripts:
+compart -w document-pipeline
+compart step document-pipeline src/
 
-# 4. Inspect a structured AgentSession log
-compart session inspect sess_1723635840000
+# 4. Run the multi-agent workflow DAG:
+compart run document-pipeline
 
-# 5. Roll back workspace to state prior to a session
-compart session rollback sess_1723635840000
+# 5. Review file changes, commit with provenance trailers, or undo:
+compart diff
+compart commit -m "Batch process invoices"
+compart undo
 ```
 
-For detailed CLI usage, see [`docs/CLI.md`](docs/CLI.md) and [`docs/AGENT_SESSION.md`](docs/AGENT_SESSION.md).
+For detailed CLI usage, see [`docs/CLI.md`](docs/CLI.md) and [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
 ```python
 config = CompartmentConfig(permissions=["fs_read"])  # read-only

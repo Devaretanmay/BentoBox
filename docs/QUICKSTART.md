@@ -14,86 +14,57 @@ pip install compart
 
 ---
 
-## 2. Using the Declarative CLI
+## 2. Interactive AI Coding Agents
 
-The Compart CLI provides an Infrastructure-as-Code workflow for configuring and materializing isolated agent sandboxes.
+Run your favorite terminal coding agent inside a kernel-enforced sandbox:
 
-### Step 1: Initialize a Compart Project
 ```bash
-mkdir my-agent && cd my-agent
+cd my-project
 compart init
-```
-This creates a `.compart/` control-plane directory containing `topology.json`.
 
-### Step 2: Declare Compartments & Permission Rules
-```bash
-# Add a compartment for agent reasoning & research
-compart compartment create Research
-
-# Add a compartment for running builds
-compart compartment create Builder
-
-# Wire a communication path from Research to Builder
-compart connect Research Builder
+# Launch Claude Code, OpenCode, or Codex directly:
+compart claude
 ```
 
-### Step 3: Inspect the Declared Topology
-```bash
-compart inspect
-```
-
-You can view the raw JSON topology (versionable in Git) anytime:
-```bash
-compart inspect --json
-```
-
-### Step 4: Materialize and Run
-```bash
-compart run
-```
-Compart materializes `topology.json` into an ephemeral OS-level kernel sandbox (macOS Seatbelt / Linux Landlock), executes the workload, and tears down the environment.
-
----
-
-## 3. Quick Ephemeral Execution (`compart exec`)
-
-Need to run a quick script safely inside a kernel sandbox without creating a project?
+When the agent finishes, inspect changes or rollback if needed:
 
 ```bash
-compart exec -- python3 -c "print('Running safely inside kernel sandbox')"
-```
-
-If the script tries to access `~/.ssh` or unauthorized paths, the kernel blocks it instantly!
-
----
-
-## 4. Using the Python SDK
-
-Integrate Compart directly into your AI application code:
-
-```python
-from compart import Compartment, AgentCompart, CompartConfig
-from compart.compartments import CompartmentConfig
-
-# Initialize the agent container
-agent = AgentCompart(workdir=".")
-
-# Define an inner compartment with restricted permissions
-agent.add(Compartment(
-    name="Researcher",
-    fn=lambda ctx: print("Researching safely..."),
-    config=CompartmentConfig(permissions=["fs_read"])
-))
-
-# Execute the container
-result = agent.run()
-print(f"Status: {result.status}")
+compart diff    # Review what the agent changed
+compart undo    # Instantly restore if something went wrong
 ```
 
 ---
 
-## 5. Security Principles
+## 3. Building Multi-Agent Workflows in 3 Steps
 
-- **Deny-by-Default**: Filesystem paths outside your `workdir` and network access are blocked by default.
-- **Zero-Docker**: Operates natively on OS kernel primitives with sub-millisecond overhead.
-- **Git Security Reviews**: Your `.compart/topology.json` file is checked into Git so `git diff` highlights security permission expansions during PR code reviews.
+Turn your existing Python scripts into a sandboxed, rollback-capable pipeline:
+
+### Step 1: Create a workflow branch
+```bash
+compart -w document-pipeline
+```
+
+### Step 2: Add your scripts
+```bash
+# Add your folder of scripts in one go:
+compart step document-pipeline src/
+```
+
+### Step 3: Run the pipeline
+```bash
+compart run document-pipeline
+```
+
+### Step 4: Commit with provenance
+```bash
+compart commit -m "Automate document pipeline run"
+```
+
+---
+
+## 4. Key Security Guarantees
+
+- **Kernel Enforcement**: Built on native OS isolation (macOS Seatbelt / Linux Landlock).
+- **Credential Protection**: `~/.ssh`, `~/.aws`, git credentials, and keychains are denied by default.
+- **Instant Rollback**: Hash-based file snapshots allow physical restoration of modified and deleted files.
+- **Zero Infrastructure**: No Docker, no daemon, no cloud account required.

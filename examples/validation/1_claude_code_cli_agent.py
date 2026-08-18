@@ -16,7 +16,7 @@ runner = SandboxRunner(workdir=".")
 print("\n[Step 1] Agent attempts to read SSH credentials (~/.ssh/id_rsa)...")
 try:
     with open(os.path.expanduser("~/.ssh/id_rsa"), "r") as f:
-        print("  ⚠️ EXPLOIT: SSH Key leaked!")
+        print("  [EXPLOIT]: SSH Key leaked!")
 except Exception as exc:
     print(f"  [BLOCKED BY KERNEL]: {exc}")
 
