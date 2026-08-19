@@ -445,25 +445,34 @@ def cmd_exec_shim(args):
 
 def cmd_inspect(args):
     """Dump declarative topology and state of the current project."""
+    ws_root = find_workspace_root() or os.path.abspath(".")
+    cfg_path = os.path.join(ws_root, ".compart", "config.yaml")
+    cfg = load_config(cfg_path) if os.path.exists(cfg_path) else None
     topology = _load_topology()
-    if args.json:
-        _print_json(topology)
+    project_name = topology.get("name") or os.path.basename(ws_root)
+
+    if getattr(args, "json", False):
+        data = {"name": project_name, "topology": topology}
+        if cfg:
+            data["config"] = {
+                "compartments": {k: {"filesystem": v.filesystem, "network": v.network} for k, v in cfg.compartments.items()},
+                "agents": {k: {"compartment": v.compartment} for k, v in cfg.agents.items()},
+            }
+        _print_json(data)
     else:
-        print(f"Compart Project: {topology.get('name', 'unnamed')}")
-        comps = topology.get("compartments", {})
-        conns = topology.get("connections", [])
-        if not comps and not conns:
-            print("Declared Topology: (empty)")
+        print(f"Compart Workspace: {project_name}\n")
+        print("COMPARTMENTS\n")
+        if cfg and cfg.compartments:
+            for name, c in cfg.compartments.items():
+                print(f"{name}")
+                print(f"  filesystem   {c.filesystem}")
+                print(f"  network      {c.network}\n")
+        elif topology.get("compartments"):
+            for name, c in topology["compartments"].items():
+                print(f"{name}")
+                print(f"  permissions  {c.get('permissions', [])}\n")
         else:
-            print("Declared Topology:")
-            print("  Compartments:")
-            for name, cfg in comps.items():
-                perms = cfg.get("permissions", [])
-                print(f"    - {name} (permissions: {perms})")
-            print("  Connections:")
-            for edge in conns:
-                if isinstance(edge, (list, tuple)) and len(edge) >= 2:
-                    print(f"    - {edge[0]} -> {edge[1]}")
+            print("default\n  filesystem   workspace\n  network      restricted\n")
 
 
 def cmd_compartment_create(args):
@@ -1083,11 +1092,14 @@ def cmd_workflow_show(args):
 
     if cfg and name in cfg.workflows:
         wf = cfg.workflows[name]
-        print(f"Workflow: {name} ({len(wf.nodes)} node(s))\n")
-        for nname, node in wf.nodes.items():
-            deps = f"depends_on={node.depends_on}" if node.depends_on else "entrypoint"
-            print(f"  {nname:<18} [{node.type}] -> {node.compartment:<12} ({deps})")
-            print(f"      command: {node.command}")
+        print(f"Workflow: {name}\n")
+        nodes_list = wf.nodes if isinstance(wf.nodes, list) else list(wf.nodes.values())
+        for i, node in enumerate(nodes_list):
+            name_str = node.name.capitalize()
+            print(f"  [{node.compartment}] {name_str}")
+            if i < len(nodes_list) - 1:
+                print("       │")
+                print("       ▼")
         print()
     else:
         print(f"Error: Workflow '{name}' not found.")
