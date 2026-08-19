@@ -14,23 +14,11 @@ mod statistics;
 mod stats_math;
 mod types;
 
-pub use analyzer::SmartAnalyzer;
-pub use anchors::{extract_query_anchors, item_matches_anchors};
 
-pub use classifier::{classify_array, ArrayType};
 
-pub use crusher::{CrushArrayResult, SmartCrusher};
-pub use crushers::{compute_k_split, crush_number_array, crush_object, crush_string_array};
+pub use crusher::SmartCrusher;
 
-pub use field_detect::{detect_id_field_statistically, detect_score_field_statistically};
 
-pub use orchestration::{deduplicate_indices_by_content, fill_remaining_slots, prioritize_indices};
-pub use outliers::{
-    detect_error_items_for_preservation, detect_rare_status_values, detect_structural_outliers,
-};
-pub use planning::{item_has_preserve_field_match, map_to_anchor_pattern, SmartCrusherPlanner};
-pub use statistics::{calculate_string_entropy, detect_sequential_pattern, is_uuid_format};
-pub use stats_math::{format_g, mean, median, sample_stdev, sample_variance};
 
 use std::collections::BTreeSet;
 
@@ -264,7 +252,3 @@ mod config_tests {
     }
 }
 
-pub use types::{
-    ArrayAnalysis, CompressionPlan, CompressionStrategy, CrushResult, CrushabilityAnalysis,
-    FieldStats,
-};

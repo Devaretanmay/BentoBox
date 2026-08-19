@@ -14,6 +14,7 @@ pub const SCORE_PRIORITY_PATTERN_BOOST: f64 = 0.3;
 pub const SCORE_TOTAL_CAP: f64 = 1.0;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DiffCompressorConfig {
     pub max_context_lines: usize,
     pub max_hunks_per_file: usize,
@@ -41,6 +42,7 @@ impl Default for DiffCompressorConfig {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DiffCompressionResult {
     pub compressed: String,
     pub original_line_count: usize,

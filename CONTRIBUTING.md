@@ -15,7 +15,7 @@ By contributing to Compart, you agree that your contributions will be licensed u
    ```
 3. **Run Tests**:
    ```bash
-   PYTHONPATH=python python3 -m pytest
+   python3 -m pytest
    ```
 
 ## Pull Request Guidelines

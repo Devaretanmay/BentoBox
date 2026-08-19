@@ -1,9 +1,9 @@
 [package]
 name = "compart-native"
-version = "0.9.4"
+version = "1.0.4"
 edition = "2021"
 description = "Node/TypeScript binding for the Compart kernel sandbox"
-license = "BUSL-1.1"
+license = "ELv2"
 
 [lib]
 crate-type = ["cdylib"]

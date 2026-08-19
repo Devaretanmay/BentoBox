@@ -1,4 +1,5 @@
 from .compart import Compart, AgentCompart, CompartConfig, CompartResult
+from .compartments import Compartment, CompartmentConfig
 
 from . import compartments as compartments
 from . import hooks as hooks
@@ -14,6 +15,9 @@ __all__ = [
     "AgentCompart",
     "CompartConfig",
     "CompartResult",
+    "Compartment",
+    "CompartmentConfig",
     "compartments",
     "hooks",
 ]
+

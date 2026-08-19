@@ -25,6 +25,7 @@ impl CompressionStrategy {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FieldStats {
     pub name: String,
     pub field_type: String,
@@ -60,6 +61,7 @@ impl CrushabilityAnalysis {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ArrayAnalysis {
     pub item_count: usize,
     pub field_stats: BTreeMap<String, FieldStats>,
@@ -71,6 +73,7 @@ pub struct ArrayAnalysis {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CompressionPlan {
     pub strategy: CompressionStrategy,
     pub keep_indices: Vec<usize>,
@@ -94,6 +97,7 @@ impl Default for CompressionPlan {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CrushResult {
     pub compressed: String,
     pub original: String,

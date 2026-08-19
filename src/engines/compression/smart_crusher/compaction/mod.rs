@@ -7,7 +7,7 @@ pub mod walker;
 pub use classifier::{classify_cell, CellClass, ClassifyConfig};
 pub use compactor::{compact, compact_with_store, CompactConfig};
 pub use formatter::{CsvSchemaFormatter, Formatter, JsonFormatter};
-pub use ir::{Bucket, CellValue, Compaction, FieldSpec, OpaqueKind, Row, Schema};
+pub use ir::{Compaction, OpaqueKind};
 pub use walker::{emit_opaque_ccr_marker, try_parse_json_container};
 
 pub struct CompactionStage {

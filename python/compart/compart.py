@@ -171,12 +171,12 @@ class Compart:
 
         try:
             self._box.release()
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.debug("Error during box release: %s", exc)
         try:
             self._box.exit()
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.debug("Error during box exit: %s", exc)
 
         if self._tracer:
             status = "error" if any(

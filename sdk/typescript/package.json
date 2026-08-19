@@ -1,6 +1,6 @@
 {
   "name": "@compart/sdk",
-  "version": "0.9.4",
+  "version": "1.0.4",
   "description": "Compart TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -24,8 +24,8 @@
     "binaryName": "compart-native"
   },
   "optionalDependencies": {
-    "@compart/sdk-darwin-arm64": "0.9.4",
-    "@compart/sdk-darwin-x64": "0.9.4"
+    "@compart/sdk-darwin-arm64": "1.0.4",
+    "@compart/sdk-darwin-x64": "1.0.4"
   },
   "engines": {
     "node": ">= 16.0.0"
@@ -43,7 +43,7 @@
     "agent",
     "compartment"
   ],
-  "license": "BUSL-1.1",
+  "license": "ELv2",
   "author": "Compart Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",

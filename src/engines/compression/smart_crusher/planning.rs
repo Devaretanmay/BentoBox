@@ -13,6 +13,7 @@ use super::SmartCrusherConfig;
 use crate::engines::compression::anchor_selector::{AnchorSelector, DataPattern};
 use crate::engines::compression::bm25::RelevanceScorer;
 
+#[allow(dead_code)]
 pub struct SmartCrusherPlanner<'a> {
     pub config: &'a SmartCrusherConfig,
     pub anchor_selector: &'a AnchorSelector,

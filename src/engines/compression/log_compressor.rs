@@ -19,6 +19,7 @@ pub enum LogFormat {
 }
 
 impl LogFormat {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             LogFormat::Pytest => "pytest",
@@ -43,6 +44,7 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             LogLevel::Error => "error",
@@ -131,6 +133,7 @@ impl Default for LogCompressorConfig {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct LogCompressionResult {
     pub compressed: String,
     pub original: String,
@@ -142,6 +145,7 @@ pub struct LogCompressionResult {
     pub stats: BTreeMap<String, u64>,
 }
 
+#[allow(dead_code)]
 impl LogCompressionResult {
     pub fn tokens_saved_estimate(&self) -> i64 {
         let chars_saved = self.original.len() as i64 - self.compressed.len() as i64;
@@ -568,6 +572,7 @@ impl LogCompressor {
         (result, stats)
     }
 
+    #[allow(dead_code)]
     pub fn detect_format(&self, lines: &[&str]) -> LogFormat {
         self.formats.detect(lines)
     }
@@ -609,6 +614,7 @@ impl LogCompressor {
         out
     }
 
+    #[allow(dead_code)]
     pub fn score_line(&self, line: &LogLine) -> f32 {
         score_log_line(line)
     }

@@ -22,6 +22,7 @@ pub struct Schema {
 }
 
 impl Schema {
+    #[allow(dead_code)]
     pub fn field_names(&self) -> Vec<&str> {
         self.fields.iter().map(|f| f.name.as_str()).collect()
     }
@@ -89,6 +90,7 @@ impl Compaction {
         )
     }
 
+    #[allow(dead_code)]
     pub fn kept_row_count(&self) -> usize {
         match self {
             Compaction::Table { rows, .. } => rows.len(),
@@ -97,6 +99,7 @@ impl Compaction {
         }
     }
 
+    #[allow(dead_code)]
     pub fn original_row_count(&self) -> usize {
         match self {
             Compaction::Table { original_count, .. } => *original_count,

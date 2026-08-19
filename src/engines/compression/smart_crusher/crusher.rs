@@ -20,6 +20,7 @@ use crate::engines::compression::anchor_selector::AnchorSelector;
 use crate::engines::compression::bm25::{BM25Scorer, RelevanceScorer};
 use crate::runtime::ccr::InMemoryCcrStore;
 
+#[allow(dead_code)]
 pub struct CrushArrayResult {
     pub items: Vec<Value>,
     pub strategy_info: String,
