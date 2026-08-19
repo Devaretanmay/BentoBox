@@ -12,11 +12,13 @@ Launch your agent directly inside an isolated sandbox:
 compart claude
 compart opencode
 compart codex
+compart cursor
+compart aider
 ```
 
 Compart automatically:
 1. Detects the genuine binary on system `PATH`.
-2. Allocates a pseudo-terminal master/slave pair (`PTY`).
+2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
 3. Takes a pre-execution BLAKE3 workspace snapshot.
 4. Applies OS kernel sandboxing (Seatbelt on macOS / Landlock on Linux) in the child process.
 5. Bridges terminal I/O so the native agent TUI displays with full fidelity.
@@ -55,12 +57,15 @@ When the agent runs, the OS kernel strictly restricts process syscalls:
 After the agent completes its task:
 
 ```bash
-# 1. Review file changes
+# 1. Review file changes attributed by execution
 compart diff
 
-# 2. If satisfied, commit with provenance trailers
+# 2. Promote changes to workspace baseline
+compart apply
+
+# 3. Commit with provenance trailers
 compart commit -m "feat(auth): add OAuth provider"
 
-# 3. If the agent made a mistake or corrupted code, rollback instantly
+# 4. If the agent made a mistake, rollback instantly
 compart undo
 ```

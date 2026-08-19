@@ -1,6 +1,6 @@
 # Compart API Reference & Documentation Map
 
-**Version:** 1.0.3  
+**Version:** 1.0.4  
 **Package:** `compart` (PyPI)
 
 ---
@@ -8,7 +8,7 @@
 ## 1. Documentation Index
 
 - **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
-- **[CLI Reference Guide](CLI.md)**: Complete guide to all CLI commands (`init`, `claude`, `opencode`, `-w`, `step`, `run`, `diff`, `commit`, `undo`, `status`, `exec`).
+- **[CLI Reference Guide](CLI.md)**: Complete guide to the frozen public CLI contract (`init`, `status`, `inspect`, `claude`, `opencode`, `codex`, `cursor`, `aider`, `exec`, `-w`, `step`, `--run`, `diff`, `apply`, `commit`, `undo`, `restore`).
 - **[Agent Execution & TUI Supervision](AGENT_EXECUTION.md)**: Details on PTY terminal supervision, interactive coding agents, and kernel isolation.
 - **[Framework Integration Hooks](FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangGraph, LangChain, CrewAI, and AutoGen.
 - **[Zero-Trust Credential Proxy](CREDENTIAL_PROXY.md)**: Safe API key injection and request routing without exposing raw secrets.

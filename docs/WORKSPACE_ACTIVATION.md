@@ -1,12 +1,12 @@
-# Compart Agent Execution
+# Compart Workspace Initialization & Agent Execution
 
-## What it is
+## 1. What It Is
 
 When you run `compart init`, Compart turns your project directory into a **managed agent workspace**. You launch your favorite agent directly inside an isolated kernel sandbox.
 
 ---
 
-## How it works
+## 2. How It Works
 
 ```text
 compart init
@@ -17,60 +17,65 @@ compart init
     └── executions/    <- execution records
 
 Direct Execution:
-  $ compart claude      -> Launches Claude in kernel sandbox
+  $ compart claude      -> Launches Claude Code in kernel sandbox
   $ compart opencode    -> Launches OpenCode in kernel sandbox
   $ compart codex       -> Launches Codex in kernel sandbox
+  $ compart cursor      -> Launches Cursor in kernel sandbox
+  $ compart aider       -> Launches Aider in kernel sandbox
 ```
 
 ---
 
-## Running Interactive Coding Agents
+## 3. Running Interactive Coding Agents
 
 ```bash
 compart claude
 compart opencode
 compart codex
+compart cursor
+compart aider
 ```
 
 Each interactive agent runs with:
 - Full native TUI support (colors, alternate screen, Ctrl+C, Ctrl+D, window resize).
 - Hard OS-level kernel isolation (Seatbelt on macOS / Landlock on Linux).
-- Deny-by-default credential protection (`~/.ssh`, `~/.aws`, git credentials blocked).
+- Deny-by-default credential protection (`~/.ssh`, `~/.aws`, `~/.config/gcloud` blocked).
 - Automatic BLAKE3 pre-execution snapshots for physical instant rollback (`compart undo`).
 
 ---
 
-## Checking Workspace Status
+## 4. Checking Workspace Health
 
 ```bash
 compart status
 ```
 
 ```text
-COMPART WORKSPACE: my-project
+COMPART WORKSPACE: billing-service
 
 AGENTS RUNNING
-  * claude      default      pid:12345   0 change(s)  (4s)
+  none
 
-LANES
-  auth-fix    Claude Code   COMPLETED   1 file(s)
+RECENT SESSIONS
+  [OK] Claude       lane:default_lane 1 change(s)  (0.5s)
 
 SECURITY
-  2 blocked action(s)
+  0 blocked action(s)
+  0 credential escapes
 ```
 
 ---
 
-## Running Multi-Agent Workflows
+## 5. Running Multi-Agent Workflows
 
 Run a declared workflow DAG:
 
 ```bash
-compart run feature-development
+compart --run invoice-pipeline
 ```
 
 Or run standalone Python agent scripts:
 
 ```bash
-compart run my_langgraph.py --compartment builder
+compart exec --compartment research -- python3 scraper.py
 ```

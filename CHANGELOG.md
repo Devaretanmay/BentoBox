@@ -2,7 +2,20 @@
 
 All notable changes to Compart are documented here.
 
-## [0.9.4] - 2026-08-02
+## [1.0.4] - 2026-08-19
+
+### Added
+- **Frozen Public CLI Contract.** Clean grouped CLI surface (`init`, `status`, `inspect`, `claude/opencode/codex/cursor/aider`, `exec`, `-w`, `step`, `--run`, `diff`, `apply`, `commit`, `undo`, `restore`). Suppressed internal plumbing commands (`wrap`, `lanes`, `sessions`, `integrate`) from public `--help`.
+- **Primary `--run <workflow>` DAG Command.** Execute multi-step workflow DAGs directly with `compart --run <name>` across isolated compartments (`research`, `builder`, `tester`, `reviewer`).
+- **Dual Workflow Discovery.** Discovers workflow YAMLs in both `workflows/<name>.yaml` and `.compart/workflows/<name>.yaml`.
+- **Hostile Concurrency Test Suite.** Added canonical "Two Agents, Two Realities" integration tests proving simultaneous multi-agent policy isolation, process tree inheritance, and snapshot collision immunity.
+
+## [1.0.3] - 2026-08-18
+
+### Added
+- **Interactive PTY Supervision.** Raw terminal PTY supervisor supporting true native TUI fidelity, ANSI color, alternate screen, and window resize events.
+- **Git Provenance Trailers.** `compart commit` embeds structured RFC-5322 metadata trailers (`Compart-Execution`, `Compart-Agent`, `Compart-Compartment`, `Compart-Security: clean`).
+- **Instant Physical Rollback.** `compart undo` restores pre-execution BLAKE3 hash snapshots in ~2 milliseconds.
 
 ### Fixed
 

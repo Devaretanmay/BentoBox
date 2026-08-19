@@ -59,4 +59,4 @@ snap.cleanup()
 
 ## 4. Automatic Snapshotting in Workflows & Agent Sessions
 
-When using `compart claude`, `compart run <workflow>`, or `AgentCompart`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.
+When using `compart claude`, `compart --run <workflow>`, or `AgentCompart`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.

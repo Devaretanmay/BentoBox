@@ -2,6 +2,8 @@
 
 Get up and running with Compart in under 2 minutes.
 
+> **“Git manages your code. Compart manages your agents.”**
+
 ---
 
 ## 1. Installation
@@ -9,20 +11,20 @@ Get up and running with Compart in under 2 minutes.
 Install Compart via PyPI:
 
 ```bash
-pip install compart
+pip install --upgrade compart
 ```
 
 ---
 
 ## 2. Interactive AI Coding Agents
 
-Run your favorite terminal coding agent inside a kernel-enforced sandbox:
+Run your favorite terminal coding agent inside a kernel-enforced sandbox with full native TUI fidelity:
 
 ```bash
 cd my-project
 compart init
 
-# Launch Claude Code, OpenCode, or Codex directly:
+# Launch Claude Code, OpenCode, Codex, Cursor, or Aider directly:
 compart claude
 ```
 
@@ -30,7 +32,8 @@ When the agent finishes, inspect changes or rollback if needed:
 
 ```bash
 compart diff    # Review what the agent changed
-compart undo    # Instantly restore if something went wrong
+compart commit  # Commit to Git with verified provenance trailers
+compart undo    # Instantly restore files if the agent made a mistake
 ```
 
 ---
@@ -46,13 +49,13 @@ compart -w document-pipeline
 
 ### Step 2: Add your scripts
 ```bash
-# Add your folder of scripts in one go:
+# Add a folder of scripts in one go (auto-infers types & chains dependencies):
 compart step document-pipeline src/
 ```
 
 ### Step 3: Run the pipeline
 ```bash
-compart run document-pipeline
+compart --run document-pipeline
 ```
 
 ### Step 4: Commit with provenance
@@ -62,9 +65,9 @@ compart commit -m "Automate document pipeline run"
 
 ---
 
-## 4. Key Security Guarantees
+## 4. Key Guarantees
 
 - **Kernel Enforcement**: Built on native OS isolation (macOS Seatbelt / Linux Landlock).
-- **Credential Protection**: `~/.ssh`, `~/.aws`, git credentials, and keychains are denied by default.
-- **Instant Rollback**: Hash-based file snapshots allow physical restoration of modified and deleted files.
+- **Credential Protection**: `~/.ssh`, `~/.aws`, `~/.config/gcloud`, git credentials, and keychains are denied by default.
+- **Instant Rollback**: Hash-based BLAKE3 file snapshots allow physical restoration of modified and deleted files in 2ms.
 - **Zero Infrastructure**: No Docker, no daemon, no cloud account required.
